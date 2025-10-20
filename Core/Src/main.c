@@ -68,10 +68,11 @@ DMA_HandleTypeDef hdma_usart3_tx;
 
 /* USER CODE BEGIN PV */
 uint8_t buf[5] = {0x0A,0x0A,0x0A,0x0A,0x0A};
+//uint8_t amplifier_val[3] = {0};
 uint8_t dma_spi4_buf[5] = {0};
 uint8_t dma_spi3_buf[5] = {0};
 uint8_t response_buf[33] = {0};
-uint8_t ampl_buf[3];
+uint8_t ampl_buf[2];
 uint16_t crc = 0;
 uint8_t current_pos = 0;
 uint8_t i = 0;
@@ -81,6 +82,7 @@ uint32_t idata[] = {0x1941, 0x1945};
 uint32_t encoder_offset[2] = {0};
 uint32_t address = ADDR_FLASH_SECTOR_2;
 uint8_t amplifier_val = 0;
+uint8_t amplifier_val_saved = 0;
 uint8_t save_code = 0;
 bool wait_flag = 0;
 
@@ -90,8 +92,8 @@ uint32_t ENCODER_2_OFFSET = 0;
 uint16_t angle_position_drv1 = 0;
 uint8_t uart3_rx_buffer[6] = {0};
 uint8_t uart3_rx_safe_buffer[6] = {0};
-uint8_t uart1_rx_buffer[3] = {0};
-uint8_t uart1_rx_safe_buffer[3] = {0};
+uint8_t uart1_rx_buffer[5] = {0};
+uint8_t uart1_rx_safe_buffer[5] = {0};
 bool uart1_rx_complete = 0;
 bool uart3_rx_complete = 0;
 bool driver_dir1, driver_dir2, chosen_drv = 1; // 0 - forward, 1 - back
@@ -144,6 +146,7 @@ void WriteToFlash(uint32_t *data, uint8_t data_size, uint32_t address, uint32_t 
 void ReadFlash(uint32_t *data, uint8_t data_size, uint32_t address, uint32_t type_of_read);
 void ReadFlash_();
 void usDelay(uint16_t useconds);
+void completeReceivePhotodetector();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -214,6 +217,7 @@ int main(void)
 	  if (uart1_rx_complete) {
 		  	  //HAL_UART_Transmit(&huart3, ampl_buf, 1, 100);
 	  		  uart1_rx_complete = 0;
+          completeReceivePhotodetector();
 	  		  //parser_photodetector();
 	  }
 
@@ -727,7 +731,7 @@ void parser() {
 
 		if (wait_flag == 0) {
 
-			HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 3);
+			HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
 			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
 			//HAL_Delay(1);
 			usDelay(100);
@@ -865,9 +869,9 @@ void parser() {
 		// send response packet
 		createResponsePacket(0x14,ACCEPTED__);
 		wait_flag = 1;
-		uint8_t amplifier_val[3] = {0};
-		amplifier_val[0] = getADCAmplifierVal(uart3_rx_buffer[1]);
-		//HAL_UART_Transmit_DMA(&huart1, &amplifier_val, 1);
+
+		ampl_buf[0] = getADCAmplifierVal(uart3_rx_buffer[1]);
+		ampl_buf[1] = ampl_buf[0];
 		//__disable_irq();
 		//HAL_DMA_Abort(&hdma_usart1_rx);  // или hdma_usartx_rx
 		// Сбрасываем счетчик
@@ -875,12 +879,13 @@ void parser() {
 		//HAL_UART_DMAStop(&huart1);
 		//HAL_UART_Transmit_DMA(&huart1, amplifier_val, 3);
 		//__enable_irq();
-		memcpy(uart1_rx_safe_buffer, uart1_rx_buffer, 3);
+		//memcpy(uart1_rx_safe_buffer, uart1_rx_buffer, 3);
+		//HAL_UART_DMAStop(&huart1);
 		HAL_UART_DMAStop(&huart1);
-		HAL_UART_Transmit(&huart1, amplifier_val, 1,100);
-
-		HAL_UART_Receive_DMA(&huart1, amplifier_val, 1);
+		HAL_UART_Transmit(&huart1, &ampl_buf[1], 1,100);
+		HAL_UART_Receive_IT(&huart1, buf, 5);
 		HAL_TIM_Base_Start_IT(&htim10);
+
 		//usDelay(700);
 		//wait_flag = 0;
 		//HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 3);
@@ -994,8 +999,12 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
 		if (huart->Instance == USART1) {
 			if (wait_flag == 1) {
-				//checkResponsePhotodetector();
-				/\wait_flag = 0;
+				// check response of photodetector
+				if (ampl_buf[1] != (ampl_buf[0] >> 4)) {
+					// handle of error;
+				}
+				wait_flag = 0;
+				//HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer,5);
 			}
 			uart1_rx_complete = 1;
 			//createResponsePacket(0x01,0);
@@ -1049,13 +1058,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 	// timer for checking response of photodetector
 	if (htim->Instance == TIM10) {
-			wait_flag = 0;
-			HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 3);
+			//wait_flag = 0;
+			//HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
 			//HAL_UART_DMAStop(&huart1);
 			//hdma_usart1_rx.Instance->NDTR = 3;
 
 			// ! create handle of error
-			HAL_TIM_Base_Stop_IT(&htim10);
+			HAL_TIM_Base_Stop(&htim10);
 			__HAL_TIM_SET_COUNTER(&htim10, 0);
 		}
 }
@@ -1069,18 +1078,9 @@ void createResponsePacket(uint8_t command_code, uint8_t status_code) {
 		response_buf[3] = trans_states;
 		response_buf[4] = (uint8_t)data_status;
 		response_buf[5] = operation_progress;
-
-		if (wait_flag != 0) {
-			response_buf[6] = uart1_rx_safe_buffer[0];//(adc_value >> 16) & 0xFF;
-			response_buf[7] = uart1_rx_safe_buffer[1];//(adc_value >> 8) & 0xFF;
-			response_buf[8] = uart1_rx_safe_buffer[2];//adc_value & 0x000000FF;
-		} else {
-			response_buf[6] = uart1_rx_buffer[0];//(adc_value >> 16) & 0xFF;
-			response_buf[7] = uart1_rx_buffer[1];//(adc_value >> 8) & 0xFF;
-			response_buf[8] = uart1_rx_buffer[2];//adc_value & 0x000000FF;
-		}
-
-
+		response_buf[6] = uart1_rx_safe_buffer[0];//(adc_value >> 16) & 0xFF;
+		response_buf[7] = uart1_rx_safe_buffer[1];//(adc_value >> 8) & 0xFF;
+		response_buf[8] = uart1_rx_safe_buffer[2];//adc_value & 0x000000FF;
 		response_buf[9] = encoder1_data & 0xFF;
 		response_buf[10] = encoder1_data >> 8;
 		response_buf[11] = encoder1_data >> 16;
@@ -1153,8 +1153,6 @@ void WriteToFlash_() {
 	  }
 
 	  HAL_UART_Transmit(&huart3, (uint8_t*)"Erase OK\n", 9, 100);
-
-
 
 	   for(uint8_t i = 0; i < 2; i++)
 	   {
@@ -1292,6 +1290,21 @@ void usDelay(uint16_t useconds)
 {
   __HAL_TIM_SET_COUNTER(&htim6, 0);
   while(__HAL_TIM_GET_COUNTER(&htim6) < useconds);
+}
+
+void completeReceivePhotodetector() {
+  uint32_t CRC_Photodetector = 0;
+  //calculate CRC
+  CRC_Photodetector = uart1_rx_buffer[0] + uart1_rx_buffer[1] + uart1_rx_buffer[2];
+  CRC_Photodetector = CRC_Photodetector & 0xFF;
+  // check CRC
+  if ((CRC_Photodetector == uart1_rx_buffer[3]) && (uart1_rx_buffer[4] == 0xA5)) {
+    uart1_rx_safe_buffer[0] = uart1_rx_buffer[0];
+    uart1_rx_safe_buffer[1] = uart1_rx_buffer[1];
+    uart1_rx_safe_buffer[2] = uart1_rx_buffer[2];
+  } else {
+    // error handler
+  }
 }
 
 /* USER CODE END 4 */

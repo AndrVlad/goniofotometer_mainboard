@@ -4,4 +4,4 @@
 ../Core/Src/stm32f7xx_hal_msp.c:301:6:HAL_TIM_Base_MspInit	40	static
 ../Core/Src/stm32f7xx_hal_msp.c:376:6:HAL_TIM_Base_MspDeInit	16	static
 ../Core/Src/stm32f7xx_hal_msp.c:451:6:HAL_UART_MspInit	184	static
-../Core/Src/stm32f7xx_hal_msp.c:610:6:HAL_UART_MspDeInit	16	static
+../Core/Src/stm32f7xx_hal_msp.c:613:6:HAL_UART_MspDeInit	16	static
