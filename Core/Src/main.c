@@ -57,6 +57,7 @@ TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim6;
 TIM_HandleTypeDef htim7;
+TIM_HandleTypeDef htim10;
 
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart3;
@@ -76,6 +77,7 @@ uint8_t current_pos = 0;
 uint8_t i = 0;
 char str[64] = {0,};
 uint32_t idata[] = {0x1941, 0x1945};
+
 uint32_t encoder_offset[2] = {0};
 uint32_t address = ADDR_FLASH_SECTOR_2;
 uint8_t amplifier_val = 0;
@@ -87,7 +89,9 @@ uint32_t ENCODER_1_OFFSET = 0;
 uint32_t ENCODER_2_OFFSET = 0;
 uint16_t angle_position_drv1 = 0;
 uint8_t uart3_rx_buffer[6] = {0};
+uint8_t uart3_rx_safe_buffer[6] = {0};
 uint8_t uart1_rx_buffer[3] = {0};
+uint8_t uart1_rx_safe_buffer[3] = {0};
 bool uart1_rx_complete = 0;
 bool uart3_rx_complete = 0;
 bool driver_dir1, driver_dir2, chosen_drv = 1; // 0 - forward, 1 - back
@@ -121,6 +125,7 @@ static void MX_TIM2_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_TIM6_Init(void);
 static void MX_TIM7_Init(void);
+static void MX_TIM10_Init(void);
 /* USER CODE BEGIN PFP */
 void parser();
 void stepDriver(uint8_t step_num);
@@ -183,6 +188,7 @@ int main(void)
   MX_TIM3_Init();
   MX_TIM6_Init();
   MX_TIM7_Init();
+  MX_TIM10_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Stop_IT(&htim2);
   HAL_TIM_Base_Start(&htim6);
@@ -517,6 +523,37 @@ static void MX_TIM7_Init(void)
 }
 
 /**
+  * @brief TIM10 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM10_Init(void)
+{
+
+  /* USER CODE BEGIN TIM10_Init 0 */
+
+  /* USER CODE END TIM10_Init 0 */
+
+  /* USER CODE BEGIN TIM10_Init 1 */
+
+  /* USER CODE END TIM10_Init 1 */
+  htim10.Instance = TIM10;
+  htim10.Init.Prescaler = 10799;
+  htim10.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim10.Init.Period = 7999;
+  htim10.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim10.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim10) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM10_Init 2 */
+
+  /* USER CODE END TIM10_Init 2 */
+
+}
+
+/**
   * @brief USART1 Initialization Function
   * @param None
   * @retval None
@@ -838,12 +875,14 @@ void parser() {
 		//HAL_UART_DMAStop(&huart1);
 		//HAL_UART_Transmit_DMA(&huart1, amplifier_val, 3);
 		//__enable_irq();
-
+		memcpy(uart1_rx_safe_buffer, uart1_rx_buffer, 3);
 		HAL_UART_DMAStop(&huart1);
 		HAL_UART_Transmit(&huart1, amplifier_val, 1,100);
+
 		HAL_UART_Receive_DMA(&huart1, amplifier_val, 1);
+		HAL_TIM_Base_Start_IT(&htim10);
 		//usDelay(700);
-		wait_flag = 0;
+		//wait_flag = 0;
 		//HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 3);
 		//hdma_usart1_rx.Instance->NDTR = 0;
 
@@ -955,7 +994,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
 		if (huart->Instance == USART1) {
 			if (wait_flag == 1) {
-				wait_flag = 0;
+				//checkResponsePhotodetector();
+				/\wait_flag = 0;
 			}
 			uart1_rx_complete = 1;
 			//createResponsePacket(0x01,0);
@@ -1006,6 +1046,18 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		HAL_SPI_Receive_DMA(&hspi4, dma_spi4_buf, 5);
 		__HAL_TIM_SET_COUNTER(&htim7, 0);
 	}
+
+	// timer for checking response of photodetector
+	if (htim->Instance == TIM10) {
+			wait_flag = 0;
+			HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 3);
+			//HAL_UART_DMAStop(&huart1);
+			//hdma_usart1_rx.Instance->NDTR = 3;
+
+			// ! create handle of error
+			HAL_TIM_Base_Stop_IT(&htim10);
+			__HAL_TIM_SET_COUNTER(&htim10, 0);
+		}
 }
 
 void createResponsePacket(uint8_t command_code, uint8_t status_code) {
@@ -1017,9 +1069,18 @@ void createResponsePacket(uint8_t command_code, uint8_t status_code) {
 		response_buf[3] = trans_states;
 		response_buf[4] = (uint8_t)data_status;
 		response_buf[5] = operation_progress;
-		response_buf[6] = uart1_rx_buffer[0];//(adc_value >> 16) & 0xFF;
-		response_buf[7] = uart1_rx_buffer[1];//(adc_value >> 8) & 0xFF;
-		response_buf[8] = uart1_rx_buffer[2];//adc_value & 0x000000FF;
+
+		if (wait_flag != 0) {
+			response_buf[6] = uart1_rx_safe_buffer[0];//(adc_value >> 16) & 0xFF;
+			response_buf[7] = uart1_rx_safe_buffer[1];//(adc_value >> 8) & 0xFF;
+			response_buf[8] = uart1_rx_safe_buffer[2];//adc_value & 0x000000FF;
+		} else {
+			response_buf[6] = uart1_rx_buffer[0];//(adc_value >> 16) & 0xFF;
+			response_buf[7] = uart1_rx_buffer[1];//(adc_value >> 8) & 0xFF;
+			response_buf[8] = uart1_rx_buffer[2];//adc_value & 0x000000FF;
+		}
+
+
 		response_buf[9] = encoder1_data & 0xFF;
 		response_buf[10] = encoder1_data >> 8;
 		response_buf[11] = encoder1_data >> 16;
