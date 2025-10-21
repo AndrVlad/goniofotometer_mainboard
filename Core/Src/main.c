@@ -196,10 +196,13 @@ int main(void)
   HAL_TIM_Base_Stop_IT(&htim2);
   HAL_TIM_Base_Start(&htim6);
   HAL_UART_Receive_DMA(&huart3, uart3_rx_buffer, 6);
+
   HAL_SPI_Receive_DMA(&hspi4, dma_spi4_buf, 5);
   HAL_SPI_Receive_DMA(&hspi3, dma_spi3_buf, 5);
 
   ready_status = READY_;
+
+  FlashInit();
   //HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_SET);
 
   /* USER CODE END 2 */
@@ -855,9 +858,12 @@ void parser() {
 		ENCODER_1_OFFSET = encoder1_data;
 		ENCODER_2_OFFSET = encoder2_data;
 
-		encoder_offset[0] = ENCODER_1_OFFSET;
-		encoder_offset[1] = ENCODER_2_OFFSET;
+		//encoder_offset[0] = ENCODER_1_OFFSET;
+		//encoder_offset[1] = ENCODER_2_OFFSET;
 
+		// test values
+		encoder_offset[0] = 100;
+		encoder_offset[1] = 130000;
 		// save to flash
 		WriteToFlash(encoder_offset, 2, address, FLASH_TYPEPROGRAM_WORD);
 
@@ -882,7 +888,7 @@ void parser() {
 		//memcpy(uart1_rx_safe_buffer, uart1_rx_buffer, 3);
 		//HAL_UART_DMAStop(&huart1);
 		HAL_UART_DMAStop(&huart1);
-		HAL_UART_Transmit(&huart1, &ampl_buf[1], 1,100);
+		HAL_UART_Transmit(&huart1, ampl_buf, 1,100);
 		HAL_UART_Receive_IT(&huart1, buf, 5);
 		HAL_TIM_Base_Start_IT(&htim10);
 
@@ -903,6 +909,10 @@ void parser() {
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
 		HAL_Delay(1);
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
+		break;
+	case 0x17:
+
+		ReadFlash(encoder_offset,2,address,FLASH_TYPEPROGRAM_WORD);
 		break;
 }
 	//stepDriver(1,1);
@@ -1000,7 +1010,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 		if (huart->Instance == USART1) {
 			if (wait_flag == 1) {
 				// check response of photodetector
-				if (ampl_buf[1] != (ampl_buf[0] >> 4)) {
+				if (buf[0] != (ampl_buf[0] >> 4)) {
 					// handle of error;
 				}
 				wait_flag = 0;
@@ -1137,7 +1147,7 @@ uint32_t processSSIData(uint8_t *SSI_buffer) {
 void FlashInit() {
 	EraseInitStruct.TypeErase     = FLASH_TYPEERASE_SECTORS;
 	EraseInitStruct.VoltageRange  = FLASH_VOLTAGE_RANGE_3;
-	EraseInitStruct.Sector        = FLASH_SECTOR_7;
+	EraseInitStruct.Sector        = FLASH_SECTOR_3;
 	EraseInitStruct.NbSectors     = 1;
 }
 
