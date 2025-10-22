@@ -816,7 +816,7 @@ void parser() {
 		createResponsePacket(0x10,ACCEPTED__);
 		if(chosen_drv) {
 
-      angle_position_drv2 = 0;
+      uint32_t angle_position_drv2 = 0;
 			angle_position_drv2 = uart3_rx_buffer[1] << 8;
 			angle_position_drv2 |= uart3_rx_buffer[2];
 
