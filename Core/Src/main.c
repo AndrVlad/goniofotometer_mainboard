@@ -815,7 +815,20 @@ void parser() {
 	case 0x10: // move to the specified angle
 		createResponsePacket(0x10,ACCEPTED__);
 		if(chosen_drv) {
-			//HAL_TIM_Base_Start_IT(&htim3); // start second motor
+
+      angle_position_drv2 = 0;
+			angle_position_drv2 = uart3_rx_buffer[1] << 8;
+			angle_position_drv2 |= uart3_rx_buffer[2];
+
+			if(!(uart3_rx_buffer[3])) { // absolute moving
+				start_position_drv2 = (angle_position_drv2 * ENCODER_RESOLUTION) / 360; // get absolute encoder position
+				start_position_drv2 = calculateEncPosition(start_position_drv2,chosen_drv);
+			}
+
+			changeMotorDirection(chosen_drv, start_position_drv2);
+			HAL_TIM_Base_Start_IT(&htim7);
+			HAL_TIM_Base_Start_IT(&htim3); // start second motor moving
+      
 		} else {
 
 			angle_position_drv1 = 0;
