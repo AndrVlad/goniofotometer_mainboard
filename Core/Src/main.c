@@ -195,15 +195,21 @@ int main(void)
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Stop_IT(&htim2);
   HAL_TIM_Base_Start(&htim6);
+
+  // start receiving of messages from PC
   HAL_UART_Receive_DMA(&huart3, uart3_rx_buffer, 6);
 
+  // start receiving of encoder values
   HAL_SPI_Receive_DMA(&hspi4, dma_spi4_buf, 5);
   HAL_SPI_Receive_DMA(&hspi3, dma_spi3_buf, 5);
 
-  ready_status = READY_;
-
+  // Read encoder offset values from flash
   FlashInit();
-  //HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_SET);
+  ReadFlash(encoder_offset,2,address,FLASH_TYPEPROGRAM_WORD);
+  ENCODER_1_OFFSET = encoder_offset[0];
+  ENCODER_2_OFFSET = encoder_offset[1];
+
+  ready_status = READY_;
 
   /* USER CODE END 2 */
 
@@ -212,11 +218,11 @@ int main(void)
   while (1)
   {
 
-	  // message from PC
+	  // handle of message from PC
 	  if (uart3_rx_complete) {
 	  	  	parser();
 	  }
-	  // message from Photodetector
+	  // handle of message from Photodetector
 	  if (uart1_rx_complete) {
 		  	  //HAL_UART_Transmit(&huart3, ampl_buf, 1, 100);
 	  		  uart1_rx_complete = 0;
@@ -848,27 +854,25 @@ void parser() {
 		break;
 	case 0x13:
 		createResponsePacket(0x13,ACCEPTED__);
-		//HAL_UART_Transmit(&huart3, response_buf,33,100);
+
+		/* UNUSED
 		// get current first encoder data
 		//HAL_SPI_Receive(&hspi4, dma_spi4_buf, 5,100);
 		// get current second encoder data
 		//HAL_SPI_Receive(&hspi3, dma_spi3_buf, 5,100);
+		UNUSED */
 
-		//ENCODER_1_OFFSET = processSSIData(dma_spi4_buf);
+		// Write new values of encoder offset
 		ENCODER_1_OFFSET = encoder1_data;
 		ENCODER_2_OFFSET = encoder2_data;
 
-		//encoder_offset[0] = ENCODER_1_OFFSET;
-		//encoder_offset[1] = ENCODER_2_OFFSET;
+		// Write new values of encoder offset for saving to Flash
+		encoder_offset[0] = ENCODER_1_OFFSET;
+		encoder_offset[1] = ENCODER_2_OFFSET;
 
-		// test values
-		encoder_offset[0] = 100;
-		encoder_offset[1] = 130000;
-		// save to flash
+		// Save data to flash
 		WriteToFlash(encoder_offset, 2, address, FLASH_TYPEPROGRAM_WORD);
 
-		//ENCODER_2_OFFSET = processSSIData(dma_spi3_buf);
-		//processSSIData(dma_spi3_buf);
 		break;
 	case 0x14:
 
@@ -905,17 +909,15 @@ void parser() {
 
 		break;
 	case 0x15:
-		HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 3);
+		HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
 		HAL_Delay(1);
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
 		break;
 	case 0x17:
-
 		ReadFlash(encoder_offset,2,address,FLASH_TYPEPROGRAM_WORD);
 		break;
 }
-	//stepDriver(1,1);
 
 	uart3_rx_complete = 0;
 }
@@ -1124,16 +1126,18 @@ void createResponsePacket(uint8_t command_code, uint8_t status_code) {
 
 uint32_t calculateEncPosition(uint32_t encoder_position, bool chosen_encoder) {
 	if (chosen_encoder) { // chosen vertical platform
-		if(encoder_position + ENCODER_2_OFFSET > ENCODER_RESOLUTION) {
+		if((encoder_position + ENCODER_2_OFFSET) > ENCODER_RESOLUTION) {
 			return (encoder_position + ENCODER_2_OFFSET) - ENCODER_RESOLUTION;
+		} else {
+			return encoder_position + ENCODER_2_OFFSET;
 		}
 	} else { // chosen horizontal platform
-		if(encoder_position + ENCODER_1_OFFSET > ENCODER_RESOLUTION) {
+		if((encoder_position + ENCODER_1_OFFSET) > ENCODER_RESOLUTION) {
 			return (encoder_position + ENCODER_1_OFFSET) - ENCODER_RESOLUTION;
+		} else {
+			return encoder_position + ENCODER_1_OFFSET;
 		}
 	}
-
-	return encoder_position + ENCODER_1_OFFSET;
 }
 
 uint32_t processSSIData(uint8_t *SSI_buffer) {
@@ -1151,119 +1155,51 @@ void FlashInit() {
 	EraseInitStruct.NbSectors     = 1;
 }
 
-void WriteToFlash_() {
-	HAL_FLASH_Unlock();
-
-	  if(HAL_FLASHEx_Erase(&EraseInitStruct, &page_error) != HAL_OK)
-	  {
-	      uint32_t er = HAL_FLASH_GetError();
-	      snprintf(str, 64, "ER %lu\n", er);
-	      HAL_UART_Transmit(&huart3, (uint8_t*)str, strlen(str), 100);
-
-	  }
-
-	  HAL_UART_Transmit(&huart3, (uint8_t*)"Erase OK\n", 9, 100);
-
-	   for(uint8_t i = 0; i < 2; i++)
-	   {
-	           if(HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, address, idata[i]) != HAL_OK)
-	           {
-	                   uint32_t er = HAL_FLASH_GetError();
-	                   snprintf(str, 64, "ER %lu\n", er);
-	                   HAL_UART_Transmit(&huart3, (uint8_t*)str, strlen(str), 100);
-
-	           }
-	           address += 4;
-	   }
-
-	   address = ADDR_FLASH_SECTOR_2;
-
-	   HAL_UART_Transmit(&huart3, (uint8_t*)"Write 32 bits OK\n", strlen("Write 32 bits OK\n"), 100);
-
-	   HAL_FLASH_Lock(); // заблокировать флеш
-
-
-
-}
-
 void WriteToFlash(uint32_t *data, uint8_t data_size, uint32_t address, uint32_t type_of_program) {
 
 	HAL_FLASH_Unlock();
 
 	if(HAL_FLASHEx_Erase(&EraseInitStruct, &page_error) != HAL_OK) {
-	      uint32_t er = HAL_FLASH_GetError();
-	      snprintf(str, 64, "ER %lu\n", er);
-	      HAL_UART_Transmit(&huart3, (uint8_t*)str, strlen(str), 100);
+	      //error handler of erasing flash
 	      return;
 	  }
-
-	  HAL_UART_Transmit(&huart3, (uint8_t*)"Erase OK\n", 9, 100);
 
 	  uint8_t address_inc = 0;
 
 	  if (type_of_program == FLASH_TYPEPROGRAM_WORD) {
 		  address_inc = 4;
-	  } else {
+	  } else if (type_of_program == FLASH_TYPEPROGRAM_HALFWORD) {
 		  address_inc = 2;
 	  }
 
 	  for(uint8_t i = 0; i < data_size; i++)
 	  {
 		  if(HAL_FLASH_Program(type_of_program, address, data[i]) != HAL_OK) {
-	            uint32_t er = HAL_FLASH_GetError();
-	            snprintf(str, 64, "ER %lu\n", er);
-	            HAL_UART_Transmit(&huart3, (uint8_t*)str, strlen(str), 100);
+	            // error handler of programming flash
 	            return;
 	      }
-	           address += address_inc; // ! need to check type_of_program value
+	           address += address_inc;
 	   }
-	   //address = ADDR_FLASH_SECTOR_2; // reset address
-	   HAL_UART_Transmit(&huart3, (uint8_t*)"Write 32 bits OK\n", strlen("Write 32 bits OK\n"), 100);
+
 	   HAL_FLASH_Lock();
-}
-
-void ReadFlash_() {
-
-	snprintf(str, sizeof(str), "Start address = 0x%08lX\r\n", address);
-	    HAL_UART_Transmit(&huart3, (uint8_t*)str, strlen(str), 100);
-
-	for(uint16_t i = 0; i < 2; i++)
-	  {
-
-	          uint32_t dig32 = *(uint32_t*)address;
-
-	          snprintf(str, sizeof(str), "READ_%d Dec: %lu Hex: 0x%08lX\r\n", i, dig32, dig32);
-	          HAL_UART_Transmit(&huart3, (uint8_t*)str, strlen(str), 100);
-	          //printf("Data: %d",dig32);
-
-	          address = address + 4;
-	  }
-	address = ADDR_FLASH_SECTOR_2;
 }
 
 void ReadFlash(uint32_t *data, uint8_t data_size, uint32_t address, uint32_t type_of_read) {
 
-	snprintf(str, sizeof(str), "Start address = 0x%08lX\r\n", address);
-	    HAL_UART_Transmit(&huart3, (uint8_t*)str, strlen(str), 100);
-
 	uint8_t address_inc = 0;
-
+	uint32_t dig32 = 0;
 	if (type_of_read == FLASH_TYPEPROGRAM_WORD) {
 	    address_inc = 4;
-	} else {
-	    address_inc = 2;
+	} else if (type_of_read == FLASH_TYPEPROGRAM_HALFWORD) {
+		address_inc = 2;
 	}
 
 	for(uint16_t i = 0; i < data_size; i++) {
-		//data[i] = *(uint32_t*)address;
-	    //snprintf(str, sizeof(str), "READ_%d Dec: %lu Hex: 0x%08lX\r\n", i, data[i], data[i]);
-		uint32_t dig32 = *(uint32_t*)address;
-		snprintf(str, sizeof(str), "READ_%d Dec: %lu Hex: 0x%08lX\r\n", i, dig32, dig32);
 
-		HAL_UART_Transmit(&huart3, (uint8_t*)str, strlen(str), 100);
+		dig32 = *(uint32_t*)address;
+		data[i] = dig32;
 	    address += address_inc;
 	  }
-	//address = ADDR_FLASH_SECTOR_3;
 }
 
 void clearBuffer(uint8_t *buf, uint8_t size){
