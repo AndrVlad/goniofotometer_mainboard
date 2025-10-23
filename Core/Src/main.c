@@ -135,6 +135,7 @@ void stepDriver(uint8_t step_num);
 void createResponsePacket(uint8_t command_code, uint8_t status_code);
 void moveToPosition();
 void changeMotorDirection(bool chosen_drv, uint32_t target_position);
+void changeMotorDirection_(bool chosen_drv, uint32_t target_position);
 uint32_t processSSIData(uint8_t *SSI_buffer);
 uint32_t calculateEncPosition(uint32_t encoder_position, bool chosen_encoder);
 void clearBuffer(uint8_t *buf, uint8_t size);
@@ -976,10 +977,12 @@ void stepDriver(uint8_t step_num) {
 
 	if(!chosen_drv) {
 		for (int i = 0; i < step_num; i++) {
-			//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
-			//HAL_Delay(2);
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+			HAL_Delay(2);
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+			HAL_Delay(2);
 			HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
-			HAL_Delay(4);
+			//HAL_Delay(4);
 			HAL_SPI_Receive_DMA(&hspi4, dma_spi4_buf, 5);
 			//HAL_SPI_Receive(&hspi4, dma_spi4_buf, 5,100);
 			//HAL_UART_Transmit(&huart1,buf,5,100);
@@ -1006,7 +1009,7 @@ void stepDriver(uint8_t step_num) {
 
 }
 
-void changeMotorDirection(bool chosen_drv, uint32_t target_position) {
+void changeMotorDirection_(bool chosen_drv, uint32_t target_position) {
 
 	if (!chosen_drv) { // first motor
 		if (target_position < encoder1_data) {
@@ -1016,6 +1019,47 @@ void changeMotorDirection(bool chosen_drv, uint32_t target_position) {
 			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET); // moving forward
 			driver_dir1 = 0;
 		}
+	} else { // second motor
+		if (target_position < encoder2_data) {
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_5, GPIO_PIN_RESET); // moving back
+			driver_dir2 = 1;
+		} else {
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_5, GPIO_PIN_SET); // moving forward
+			driver_dir2 = 0;
+		}
+	}
+	/*
+	if (start_position_drv1 < SSI_data_safe) {
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET); // движение назад
+		driver_dir1 = 1;
+	} else {
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET); // движение вперед
+		driver_dir1 = 0;
+	} */
+}
+
+void changeMotorDirection(bool chosen_drv, uint32_t target_position) {
+
+	if (!chosen_drv) { // first motor
+
+		if (target_position < encoder1_data) {
+			if ((encoder1_data - target_position) > (ENCODER_RESOLUTION - encoder1_data + target_position)) {
+				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET); // moving forward
+				driver_dir1 = 0;
+			} else {
+				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET); // moving back
+				driver_dir1 = 1;
+			}
+		} else {
+			if ((ENCODER_RESOLUTION - target_position + encoder1_data) < (target_position - encoder1_data)) {
+				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET); // moving back
+				driver_dir1 = 1;
+			} else {
+				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET); // moving forward
+				driver_dir1 = 0;
+			}
+		}
+
 	} else { // second motor
 		if (target_position < encoder2_data) {
 			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_5, GPIO_PIN_RESET); // moving back
