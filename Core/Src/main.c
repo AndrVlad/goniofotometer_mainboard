@@ -906,7 +906,9 @@ void parser() {
 		//HAL_UART_DMAStop(&huart1);
 		HAL_UART_DMAStop(&huart1);
 		HAL_UART_Transmit(&huart1, ampl_buf, 1,100);
-		HAL_UART_Receive_IT(&huart1, buf, 5);
+		/* this string fixed bug early */
+		//HAL_UART_Receive_IT(&huart1, buf, 5);
+		HAL_UART_Receive_DMA(&huart1, buf, 5);
 		HAL_TIM_Base_Start_IT(&htim10);
 
 		//usDelay(700);
@@ -1056,6 +1058,12 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 				if (buf[0] != (ampl_buf[0] >> 4)) {
 					// handle of error;
 				}
+			/*
+				if(huart->RxXferCount != 0) {
+					HAL_UART_Receive_IT(&huart1, uart1_rx_buffer,5);
+					return;
+				}
+				*/
 				wait_flag = 0;
 				//HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer,5);
 			}
