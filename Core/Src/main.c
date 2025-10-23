@@ -85,6 +85,7 @@ uint8_t amplifier_val = 0;
 uint8_t amplifier_val_saved = 0;
 uint8_t save_code = 0;
 bool wait_flag = 0;
+uint8_t error_code = 0;
 
 uint32_t start_position_drv1, start_position_drv2 = 0;
 uint32_t ENCODER_1_OFFSET = 0;
@@ -147,6 +148,7 @@ void ReadFlash(uint32_t *data, uint8_t data_size, uint32_t address, uint32_t typ
 void ReadFlash_();
 void usDelay(uint16_t useconds);
 void completeReceivePhotodetector();
+void createErrorResponse();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -760,6 +762,11 @@ void parser() {
 			current_horiz_platform = HORIZONTAL_;
 		}
 		break;
+	case 0x0C:
+		createErrorResponse();
+		ready_status = READY_;
+		error_code = 0;
+		break;
 	case 0x0D:
 
 		break;
@@ -1053,12 +1060,33 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 		}
 
 		if (huart->Instance == USART1) {
+
+			// if the coefficient of amplifier of photodetector was set
 			if (wait_flag == 1) {
-				// check response of photodetector
-				if (buf[0] != (ampl_buf[0] >> 4)) {
-					// handle of error;
+
+				// CRC calculation
+				uint32_t CRC_Photodetector = 0;
+				CRC_Photodetector = buf[0] + buf[1] + buf[2];
+				CRC_Photodetector = CRC_Photodetector & 0xFF;
+
+				// Check CRC
+				if (!((CRC_Photodetector == buf[3]) && (buf[4] == 0xA5))) {
+					ready_status = ERROR_;
+				} else {
+					// Check response of photodetector
+					if (buf[0] != (ampl_buf[0] >> 4)) {
+						// handle of error
+						ready_status = ERROR_;
+						error_code = 0x01;
+					}
 				}
-			/*
+				/*
+				if (buf[0] != (ampl_buf[0] >> 4)) {
+					// handle of error
+					ready_status = ERROR_;
+				}
+
+
 				if(huart->RxXferCount != 0) {
 					HAL_UART_Receive_IT(&huart1, uart1_rx_buffer,5);
 					return;
@@ -1067,6 +1095,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 				wait_flag = 0;
 				//HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer,5);
 			}
+
+			// other cases
 			uart1_rx_complete = 1;
 			//createResponsePacket(0x01,0);
 		}
@@ -1300,6 +1330,18 @@ void completeReceivePhotodetector() {
   } else {
     // error handler
   }
+}
+
+void createErrorResponse() {
+	clearBuffer(response_buf,33);
+	// CRC calculation
+	response_buf[0] = 0x0C;
+	response_buf[1] = error_code;
+
+	response_buf[31] = 0x0C;
+	response_buf[32] = error_code;
+
+	HAL_UART_Transmit(&huart3, response_buf,33,100);
 }
 
 /* USER CODE END 4 */
