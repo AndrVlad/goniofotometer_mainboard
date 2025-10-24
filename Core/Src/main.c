@@ -195,12 +195,18 @@ int main(void)
   MX_TIM6_Init();
   MX_TIM7_Init();
   MX_TIM10_Init();
+
+
   /* USER CODE BEGIN 2 */
+
   HAL_TIM_Base_Stop_IT(&htim2);
   HAL_TIM_Base_Start(&htim6);
 
   // start receiving of messages from PC
+  HAL_Delay(1000);
   HAL_UART_Receive_DMA(&huart3, uart3_rx_buffer, 6);
+  //HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
+
 
   // start receiving of encoder values
   HAL_SPI_Receive_DMA(&hspi4, dma_spi4_buf, 5);
@@ -232,6 +238,10 @@ int main(void)
           completeReceivePhotodetector();
 	  		  //parser_photodetector();
 	  }
+	  //HAL_Delay(1000);
+
+	 //printf("USART1 Error: 0x%lX\n", huart1.ErrorCode);
+	 //printf("USART1 SR: 0x%lX\n", huart1.Instance->ISR);
 
     /* USER CODE END WHILE */
 
@@ -578,7 +588,7 @@ static void MX_USART1_UART_Init(void)
 {
 
   /* USER CODE BEGIN USART1_Init 0 */
-
+	__HAL_UART_ENABLE_IT(&huart1, UART_IT_ORE);
   /* USER CODE END USART1_Init 0 */
 
   /* USER CODE BEGIN USART1_Init 1 */
@@ -939,6 +949,8 @@ void parser() {
 		break;
 	case 0x17:
 		ReadFlash(encoder_offset,2,address,FLASH_TYPEPROGRAM_WORD);
+		 HAL_UART_DeInit(&huart1);
+		  MX_USART1_UART_Init();
 		break;
 	case 0x18: // only for test of mainboard
 
@@ -1386,6 +1398,16 @@ void createErrorResponse() {
 	response_buf[32] = error_code;
 
 	HAL_UART_Transmit(&huart3, response_buf,33,100);
+}
+
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
+    if (huart->ErrorCode & HAL_UART_ERROR_ORE) {
+
+        __HAL_UART_CLEAR_FLAG(huart, UART_CLEAR_OREF);
+        volatile uint8_t data = huart1.Instance->RDR;
+
+        //Clear_Overrun_Error(huart);
+    }
 }
 
 /* USER CODE END 4 */
