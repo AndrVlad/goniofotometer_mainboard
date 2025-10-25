@@ -73,6 +73,7 @@ uint8_t dma_spi4_buf[5] = {0};
 uint8_t dma_spi3_buf[5] = {0};
 uint8_t response_buf[33] = {0};
 uint8_t ampl_buf[2];
+uint8_t start_ending_angle_items[2][8] = {{1,2,3,4,5,6,7,8},{180,150,120,90,60,30,10,5}};
 uint16_t crc = 0;
 uint8_t current_pos = 0;
 uint8_t i = 0;
@@ -195,8 +196,6 @@ int main(void)
   MX_TIM6_Init();
   MX_TIM7_Init();
   MX_TIM10_Init();
-
-
   /* USER CODE BEGIN 2 */
 
   HAL_TIM_Base_Stop_IT(&htim2);
@@ -765,6 +764,45 @@ void parser() {
 		createResponsePacket(0x01,0);
 		//HAL_UART_Transmit(&huart3, response_buf,33,100);
 		break;
+	case 0x08:
+		createResponsePacket(0x08,ACCEPTED__);
+		if(uart3_rx_buffer[3] != 0) { // move vertical driver
+			chosen_drv = 1;
+		    uint32_t angle_position_drv2 = 0;
+			angle_position_drv2 = uart3_rx_buffer[1] << 8;
+			angle_position_drv2 |= uart3_rx_buffer[2];
+
+			start_position_drv2 = (angle_position_drv2 * ENCODER_RESOLUTION) / 360; // get absolute encoder position
+			start_position_drv2 = calculateEncPosition(start_position_drv2,chosen_drv);
+
+			changeMotorDirection(chosen_drv, start_position_drv2);
+
+		} else { // move horizontal driver
+
+			chosen_drv = 0;
+			angle_position_drv1 = 0;
+			angle_position_drv1 = uart3_rx_buffer[1] << 8;
+			angle_position_drv1 |= uart3_rx_buffer[2];
+
+			start_position_drv1 = (angle_position_drv1 * ENCODER_RESOLUTION) / 360; // get absolute encoder position
+			start_position_drv1 = calculateEncPosition(start_position_drv1,chosen_drv);
+
+			changeMotorDirection(chosen_drv, start_position_drv1);
+
+		}
+
+		break;
+	case 0x09:
+
+		if (!chosen_drv) {
+			HAL_TIM_Base_Start_IT(&htim7);
+			HAL_TIM_Base_Start_IT(&htim2); // start horizontal motor moving
+		} else {
+			HAL_TIM_Base_Start_IT(&htim7);
+			HAL_TIM_Base_Start_IT(&htim3); // start vertical motor moving
+		}
+
+		break;
 	case 0x0A:
 		createResponsePacket(0xA,ACCEPTED__);
 		if(uart3_rx_buffer[3] != 0) {
@@ -877,7 +915,7 @@ void parser() {
 		break;
 	case 0x12:
 		createResponsePacket(0x12,ACCEPTED__);
-		if(uart3_rx_buffer[1]) {
+		if(uart3_rx_buffer[1] != 0) {
 			chosen_drv = 1; // second motor
 		} else {
 			chosen_drv = 0; // first motor
@@ -980,6 +1018,16 @@ void parser() {
 		}
 
 		break;
+	case 0x19: // get current value of encoder
+		if (!chosen_drv) {
+			HAL_SPI_Receive_DMA(&hspi4, dma_spi4_buf, 5);
+			HAL_UART_Transmit(&huart3,dma_spi4_buf,5,100);
+		} else {
+			HAL_SPI_Receive_DMA(&hspi3, dma_spi3_buf, 5);
+			HAL_UART_Transmit(&huart3,dma_spi3_buf,5,100);
+		}
+
+		break;
 }
 
 	uart3_rx_complete = 0;
@@ -1073,22 +1121,25 @@ void changeMotorDirection(bool chosen_drv, uint32_t target_position) {
 		}
 
 	} else { // second motor
+
 		if (target_position < encoder2_data) {
-			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_5, GPIO_PIN_RESET); // moving back
-			driver_dir2 = 1;
+			if ((encoder2_data - target_position) > (ENCODER_RESOLUTION - encoder2_data + target_position)) {
+				HAL_GPIO_WritePin(GPIOC, GPIO_PIN_5, GPIO_PIN_SET); // moving forward
+				driver_dir2 = 0;
+			} else {
+				HAL_GPIO_WritePin(GPIOC, GPIO_PIN_5, GPIO_PIN_RESET); // moving back
+				driver_dir2 = 1;
+			}
 		} else {
-			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_5, GPIO_PIN_SET); // moving forward
-			driver_dir2 = 0;
+			if ((ENCODER_RESOLUTION - target_position + encoder2_data) < (target_position - encoder2_data)) {
+				HAL_GPIO_WritePin(GPIOC, GPIO_PIN_5, GPIO_PIN_RESET); // moving back
+				driver_dir2 = 1;
+			} else {
+				HAL_GPIO_WritePin(GPIOC, GPIO_PIN_5, GPIO_PIN_SET); // moving forward
+				driver_dir2 = 0;
+			}
 		}
 	}
-	/*
-	if (start_position_drv1 < SSI_data_safe) {
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET); // движение назад
-		driver_dir1 = 1;
-	} else {
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET); // движение вперед
-		driver_dir1 = 0;
-	} */
 }
 
 /**
@@ -1182,8 +1233,8 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 		encoder2_data |=  (((uint32_t)dma_spi3_buf[0] & 0x3F) << 11);
 
 			if ((encoder2_data >= start_position_drv2 - 1) && (encoder2_data <= start_position_drv2 + 1)) {
-				//HAL_TIM_Base_Stop_IT(&htim2);
-				//HAL_UART_Transmit(&huart3,buf,5,100);
+				HAL_TIM_Base_Stop_IT(&htim3);
+				HAL_TIM_Base_Stop_IT(&htim7);
 			}
 		}
 
@@ -1197,9 +1248,19 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		__HAL_TIM_SET_COUNTER(&htim2, 0);
 	}
 
+	if(htim->Instance == TIM3) {
+		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_0);
+		__HAL_TIM_SET_COUNTER(&htim3, 0);
+	}
+
 	// timer for the delay between SPI request to encoder
 	if (htim->Instance == TIM7) {
-		HAL_SPI_Receive_DMA(&hspi4, dma_spi4_buf, 5);
+		if (!chosen_drv) {
+			HAL_SPI_Receive_DMA(&hspi4, dma_spi4_buf, 5);
+		} else {
+			HAL_SPI_Receive_DMA(&hspi3, dma_spi3_buf, 5);
+		}
+
 		__HAL_TIM_SET_COUNTER(&htim7, 0);
 	}
 
@@ -1404,9 +1465,9 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
     if (huart->ErrorCode & HAL_UART_ERROR_ORE) {
 
         __HAL_UART_CLEAR_FLAG(huart, UART_CLEAR_OREF);
+        // clear RXNE flag
         volatile uint8_t data = huart1.Instance->RDR;
 
-        //Clear_Overrun_Error(huart);
     }
 }
 
