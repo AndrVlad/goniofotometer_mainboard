@@ -1295,6 +1295,11 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 
 		if (cur_action == HORIZONTAL || cur_action == VERTICAL) {
 
+			if (!reach_start_pos) {
+				//
+			} else {
+				reach_start_pos = 1;
+			}
 
 		} else {
 
