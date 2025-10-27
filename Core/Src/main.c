@@ -37,6 +37,7 @@ static FLASH_EraseInitTypeDef EraseInitStruct;
 #define ADDR_FLASH_SECTOR_2 ((uint32_t)0x08018000) /* Base address of Sector 3, 32 Kbytes */
 #define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
 #define ENCODER_RESOLUTION 131072
+#define ACCEL_OFFSET = 5; // values in ark degrees
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -74,6 +75,7 @@ uint8_t dma_spi3_buf[5] = {0};
 uint8_t response_buf[33] = {0};
 uint8_t ampl_buf[2];
 uint8_t start_ending_angle_items[2][8] = {{1,2,3,4,5,6,7,8},{180,150,120,90,60,30,10,5}};
+uint16_t measurement_res_items[2][8] = {{1,2,3,4,5,6,7,8},{3600,1800,600,300,60,30,10}}; // The values are set in arc seconds.
 uint16_t crc = 0;
 uint8_t current_pos = 0;
 uint8_t i = 0;
@@ -88,10 +90,11 @@ uint8_t save_code = 0;
 bool wait_flag = 0;
 uint8_t error_code = 0;
 
-uint32_t start_position_drv1, start_position_drv2 = 0;
+uint32_t start_position_drv1, start_position_drv2, end_position_drv1, end_position_drv2 = 0;
 uint32_t ENCODER_1_OFFSET = 0;
 uint32_t ENCODER_2_OFFSET = 0;
 uint16_t angle_position_drv1 = 0;
+uint16_t meas_res_drv1, meas_res_drv2 = 0;
 uint8_t uart3_rx_buffer[6] = {0};
 uint8_t uart3_rx_safe_buffer[6] = {0};
 uint8_t uart1_rx_buffer[5] = {0};
@@ -107,7 +110,7 @@ enum action { NONE, HORIZONTAL, VERTICAL, HEMISPHERE, LIGHT_POWER, CALIBRATION,
 enum response_status { ERROR__, ACCEPTED__, ALREADY_EXEC, EXEC_OTHER};
 bool trans_states = 0; // 0 - no trans_state, 1 - trans_state
 enum data { NONE_, _READY_, SOME_PACKETS} data_status;
-enum horiz_platform { HORIZONTAL_, VERTICAL_} current_horiz_platform;
+enum horiz_platform { HORIZONTAL_, VERTICAL_} current_horiz_platform = HORIZONTAL_;
 uint8_t operation_progress = 0;
 uint32_t SSI_data, SSI_data_safe, encoder1_data, encoder2_data = 0;
 uint32_t adc_value = 0;
@@ -134,7 +137,7 @@ static void MX_TIM10_Init(void);
 void parser();
 void stepDriver(uint8_t step_num);
 void createResponsePacket(uint8_t command_code, uint8_t status_code);
-void moveToPosition();
+void moveToPosition(uint8_t angle, bool chosen_drv);
 void changeMotorDirection(bool chosen_drv, uint32_t target_position);
 void changeMotorDirection_(bool chosen_drv, uint32_t target_position);
 uint32_t processSSIData(uint8_t *SSI_buffer);
@@ -764,6 +767,59 @@ void parser() {
 		createResponsePacket(0x01,0);
 		//HAL_UART_Transmit(&huart3, response_buf,33,100);
 		break;
+	case 0x02:
+
+		cur_action = HORIZONTAL;
+		int16_t accel_angle;
+
+		memcpy(uart3_rx_safe_buffer, uart3_rx_buf, 6);
+
+		accel_position = start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1];
+
+		/*
+		if ((accel_position - ACCEL_OFFSET) < 0) {
+
+		} */
+
+		// choosing a platform
+		chosen_drv = current_horiz_platform;
+
+		// moving to a position based on acceleration
+		moveToPosition(accel_angle-5, chosen_drv);
+
+		// set of start and end positions of measurement
+		if (chosen_drv == HORIZONTAL_) {
+
+			// set start position of measurement
+			start_position_drv1 = start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1];
+			start_position_drv1 = (start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1] * ENCODER_RESOLUTION) / 360; // get absolute encoder position
+			start_position_drv1 = calculateEncPosition(start_position_drv1,chosen_drv);
+
+			// set end position of measurement
+			end_position_drv1 = start_ending_angle_items[1][uart3_rx_safe_buffer[2]-1];
+			end_position_drv1 = (start_ending_angle_items[1][uart3_rx_safe_buffer[2]-1] * ENCODER_RESOLUTION) / 360; // get absolute encoder position
+			end_position_drv1 = calculateEncPosition(end_position_drv1,chosen_drv);
+		} else {
+
+			// set start position of measurement
+			start_position_drv2 = start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1];
+			start_position_drv2 = (start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1] * ENCODER_RESOLUTION) / 360; // get absolute encoder position
+			start_position_drv2 = calculateEncPosition(start_position_drv2,chosen_drv);
+
+			// set end position of measurement
+			end_position_drv2 = start_ending_angle_items[1][uart3_rx_safe_buffer[2]-1];
+			end_position_drv2 = (start_ending_angle_items[1][uart3_rx_safe_buffer[2]-1] * ENCODER_RESOLUTION) / 360; // get absolute encoder position
+			end_position_drv2 = calculateEncPosition(end_position_drv2,chosen_drv);
+		}
+
+		/* choose of measurement resolution  */
+
+		meas_res_drv1 = 365;
+		//measurement_res_items = uart3_rx_safe_buffer[];
+
+		// start measurement
+
+		break;
 	case 0x08:
 		createResponsePacket(0x08,ACCEPTED__);
 		if(uart3_rx_buffer[3] != 0) { // move vertical driver
@@ -872,7 +928,7 @@ void parser() {
 		createResponsePacket(0x10,ACCEPTED__);
 		if(chosen_drv) {
 
-      uint32_t angle_position_drv2 = 0;
+			uint32_t angle_position_drv2 = 0;
 			angle_position_drv2 = uart3_rx_buffer[1] << 8;
 			angle_position_drv2 |= uart3_rx_buffer[2];
 
@@ -907,6 +963,7 @@ void parser() {
 		//HAL_UART_Transmit(&huart3, response_buf,33,100);
 		if(chosen_drv) {
 			HAL_TIM_Base_Stop_IT(&htim3); // stop second motor
+			HAL_TIM_Base_Stop_IT(&htim7);
 		} else {
 			HAL_TIM_Base_Stop_IT(&htim2); // stop first motor
 			HAL_TIM_Base_Stop_IT(&htim7);
@@ -1433,6 +1490,28 @@ void usDelay(uint16_t useconds)
   __HAL_TIM_SET_COUNTER(&htim6, 0);
   while(__HAL_TIM_GET_COUNTER(&htim6) < useconds);
 }
+
+void moveToPosition(uint8_t angle, bool chosen_drv) {
+	if(chosen_drv) {
+
+		start_position_drv2 = (angle * ENCODER_RESOLUTION) / 360; // get absolute encoder position
+		start_position_drv2 = calculateEncPosition(start_position_drv2,chosen_drv);
+
+		changeMotorDirection(chosen_drv, start_position_drv2);
+		HAL_TIM_Base_Start_IT(&htim7);
+		HAL_TIM_Base_Start_IT(&htim3); // start second motor moving
+
+	} else {
+
+		start_position_drv1 = (angle * ENCODER_RESOLUTION) / 360; // get absolute encoder position
+		start_position_drv1 = calculateEncPosition(start_position_drv1,chosen_drv);
+
+		changeMotorDirection(chosen_drv, start_position_drv1);
+		HAL_TIM_Base_Start_IT(&htim7);
+		HAL_TIM_Base_Start_IT(&htim2); // start first motor moving
+	}
+}
+
 
 void completeReceivePhotodetector() {
   uint32_t CRC_Photodetector = 0;
