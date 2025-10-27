@@ -769,26 +769,32 @@ void parser() {
 		break;
 	case 0x02:
 
+		createResponsePacket(0x02,ACCEPTED__);
+
+		// set current action
 		cur_action = HORIZONTAL;
+
+		// choosing a platform
+		chosen_drv = current_horiz_platform;
+
 		int16_t accel_angle;
 
 		memcpy(uart3_rx_safe_buffer, uart3_rx_buf, 6);
 
 		accel_position = start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1];
 
+		// calculate acceleration offset position
+
 		/*
 		if ((accel_position - ACCEL_OFFSET) < 0) {
 
 		} */
 
-		// choosing a platform
-		chosen_drv = current_horiz_platform;
 
-		// moving to a position based on acceleration
-		moveToPosition(accel_angle-5, chosen_drv);
-
-		// set of start and end positions of measurement
 		if (chosen_drv == HORIZONTAL_) {
+
+			// moving to acceleration offset position
+			moveToPosition(accel_angle-5, chosen_drv);
 
 			// set start position of measurement
 			start_position_drv1 = start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1];
@@ -799,6 +805,16 @@ void parser() {
 			end_position_drv1 = start_ending_angle_items[1][uart3_rx_safe_buffer[2]-1];
 			end_position_drv1 = (start_ending_angle_items[1][uart3_rx_safe_buffer[2]-1] * ENCODER_RESOLUTION) / 360; // get absolute encoder position
 			end_position_drv1 = calculateEncPosition(end_position_drv1,chosen_drv);
+
+			/* choose of measurement resolution  */
+			meas_res_drv1 = 183; // 0.5 degree
+
+			//measurement_res_items = uart3_rx_safe_buffer[];
+
+			// start measurement
+			HAL_TIM_Base_Start_IT(&htim7);
+			HAL_TIM_Base_Start_IT(&htim2); // start first motor moving
+
 		} else {
 
 			// set start position of measurement
@@ -810,14 +826,16 @@ void parser() {
 			end_position_drv2 = start_ending_angle_items[1][uart3_rx_safe_buffer[2]-1];
 			end_position_drv2 = (start_ending_angle_items[1][uart3_rx_safe_buffer[2]-1] * ENCODER_RESOLUTION) / 360; // get absolute encoder position
 			end_position_drv2 = calculateEncPosition(end_position_drv2,chosen_drv);
+
+			/* choose of measurement resolution  */
+			meas_res_drv1 = 183; // 0.5 degree
+
+			//measurement_res_items = uart3_rx_safe_buffer[];
+
+			HAL_TIM_Base_Start_IT(&htim7);
+			HAL_TIM_Base_Start_IT(&htim3); // start second motor moving
 		}
 
-		/* choose of measurement resolution  */
-
-		meas_res_drv1 = 365;
-		//measurement_res_items = uart3_rx_safe_buffer[];
-
-		// start measurement
 
 		break;
 	case 0x08:
@@ -1275,12 +1293,20 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 		encoder1_data |=  ((uint32_t)dma_spi4_buf[1] << 3);
 		encoder1_data |=  (((uint32_t)dma_spi4_buf[0] & 0x3F) << 11);
 
-		if ((encoder1_data >= start_position_drv1 - 1) && (encoder1_data <= start_position_drv1 + 1)) {
-			HAL_TIM_Base_Stop_IT(&htim2); // stop motor
-			HAL_TIM_Base_Stop_IT(&htim7);
-			//HAL_SPI_DMAStop(&hspi4);
-			//HAL_UART_Transmit(&huart3,dma_spi4_buf,5,100);
+		if (cur_action == HORIZONTAL || cur_action == VERTICAL) {
+
+
+		} else {
+
+			if ((encoder1_data >= start_position_drv1 - 1) && (encoder1_data <= start_position_drv1 + 1)) {
+				HAL_TIM_Base_Stop_IT(&htim2); // stop motor
+				HAL_TIM_Base_Stop_IT(&htim7);
+				//HAL_SPI_DMAStop(&hspi4);
+				//HAL_UART_Transmit(&huart3,dma_spi4_buf,5,100);
+			}
 		}
+
+
 	}
 
 	// second encoder
