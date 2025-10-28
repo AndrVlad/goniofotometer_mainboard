@@ -37,7 +37,7 @@ static FLASH_EraseInitTypeDef EraseInitStruct;
 #define ADDR_FLASH_SECTOR_2 ((uint32_t)0x08018000) /* Base address of Sector 3, 32 Kbytes */
 #define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
 #define ENCODER_RESOLUTION 131072
-#define ACCEL_OFFSET = 5; // values in ark degrees
+#define ACCEL_OFFSET 5 // values in ark degrees
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -89,6 +89,7 @@ uint8_t amplifier_val_saved = 0;
 uint8_t save_code = 0;
 bool wait_flag = 0;
 uint8_t error_code = 0;
+bool reach_start_pos = 0;
 
 uint32_t start_position_drv1, start_position_drv2, end_position_drv1, end_position_drv2 = 0;
 uint32_t ENCODER_1_OFFSET = 0;
@@ -235,9 +236,11 @@ int main(void)
 	  }
 	  // handle of message from Photodetector
 	  if (uart1_rx_complete) {
-		  	  //HAL_UART_Transmit(&huart3, ampl_buf, 1, 100);
-	  		  uart1_rx_complete = 0;
+
+		  uart1_rx_complete = 0;
           completeReceivePhotodetector();
+
+
 	  		  //parser_photodetector();
 	  }
 	  //HAL_Delay(1000);
@@ -777,9 +780,9 @@ void parser() {
 		// choosing a platform
 		chosen_drv = current_horiz_platform;
 
-		int16_t accel_angle;
+		int16_t accel_position;
 
-		memcpy(uart3_rx_safe_buffer, uart3_rx_buf, 6);
+		memcpy(uart3_rx_safe_buffer, uart3_rx_buffer, 6);
 
 		accel_position = start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1];
 
@@ -794,7 +797,7 @@ void parser() {
 		if (chosen_drv == HORIZONTAL_) {
 
 			// moving to acceleration offset position
-			moveToPosition(accel_angle-5, chosen_drv);
+			moveToPosition(accel_position-ACCEL_OFFSET, chosen_drv);
 
 			// set start position of measurement
 			start_position_drv1 = start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1];
@@ -810,6 +813,9 @@ void parser() {
 			meas_res_drv1 = 183; // 0.5 degree
 
 			//measurement_res_items = uart3_rx_safe_buffer[];
+
+			// reset flag of reaching start position
+			reach_start_pos = 0;
 
 			// start measurement
 			HAL_TIM_Base_Start_IT(&htim7);
@@ -828,7 +834,7 @@ void parser() {
 			end_position_drv2 = calculateEncPosition(end_position_drv2,chosen_drv);
 
 			/* choose of measurement resolution  */
-			meas_res_drv1 = 183; // 0.5 degree
+			meas_res_drv2 = 183; // 0.5 degree
 
 			//measurement_res_items = uart3_rx_safe_buffer[];
 
@@ -1025,6 +1031,9 @@ void parser() {
 		wait_flag = 1;
 
 		ampl_buf[0] = getADCAmplifierVal(uart3_rx_buffer[1]);
+		if (uart3_rx_buffer[2] == 1) {
+			ampl_buf[0] |= 0b10001000;
+		}
 		ampl_buf[1] = ampl_buf[0];
 		//__disable_irq();
 		//HAL_DMA_Abort(&hdma_usart1_rx);  // или hdma_usartx_rx
@@ -1040,7 +1049,7 @@ void parser() {
 		/* this string fixed bug early */
 		//HAL_UART_Receive_IT(&huart1, buf, 5);
 		HAL_UART_Receive_DMA(&huart1, buf, 5);
-		HAL_TIM_Base_Start_IT(&htim10);
+		//HAL_TIM_Base_Start_IT(&htim10);
 
 		//usDelay(700);
 		//wait_flag = 0;
@@ -1295,10 +1304,29 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 
 		if (cur_action == HORIZONTAL || cur_action == VERTICAL) {
 
-			if (!reach_start_pos) {
-				//
+			if (reach_start_pos == 1) {
+				if (encoder1_data >= end_position_drv1) {
+					cur_action = NONE;
+					reach_start_pos = 0;
+					// stop measurement
+					HAL_TIM_Base_Stop_IT(&htim2); // stop motor
+					HAL_TIM_Base_Stop_IT(&htim7); // stop SPI timer
+				} else {
+					HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
+					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
+					usDelay(100);
+					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
+				}
 			} else {
-				reach_start_pos = 1;
+
+				if (encoder1_data >= start_position_drv1) {
+					reach_start_pos = 1;
+					// start poll photodetector
+					HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
+					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
+					usDelay(100);
+					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
+				}
 			}
 
 		} else {
@@ -1310,8 +1338,6 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 				//HAL_UART_Transmit(&huart3,dma_spi4_buf,5,100);
 			}
 		}
-
-
 	}
 
 	// second encoder
