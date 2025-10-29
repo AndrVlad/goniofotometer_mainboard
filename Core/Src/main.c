@@ -816,16 +816,14 @@ void parser() {
 
 		// calculate acceleration offset position
 
-
 		if ((start_angle - ACCEL_OFFSET) < 0) {
-
+			accel_angle = 360 + (start_angle - ACCEL_OFFSET);
 		}
-
 
 		if (chosen_drv == HORIZONTAL_) {
 
 			// moving to acceleration offset position
-			moveToPosition(accel_angle-ACCEL_OFFSET, chosen_drv);
+			moveToPosition(accel_angle, chosen_drv);
 
 			// set current action
 			cur_action = HORIZONTAL;
