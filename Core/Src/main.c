@@ -73,6 +73,9 @@ uint8_t buf[5] = {0x0A,0x0A,0x0A,0x0A,0x0A};
 uint8_t dma_spi4_buf[5] = {0};
 uint8_t dma_spi3_buf[5] = {0};
 uint8_t response_buf[33] = {0};
+uint8_t adc_data_buf[33] = {0};
+uint8_t data_buf_counter = 0;
+uint8_t data_elem_cnt = 0;
 uint8_t ampl_buf[2];
 uint8_t start_ending_angle_items[2][8] = {{1,2,3,4,5,6,7,8},{180,150,120,90,60,30,10,5}};
 uint16_t measurement_res_items[2][8] = {{1,2,3,4,5,6,7,8},{3600,1800,600,300,60,30,10}}; // The values are set in arc seconds.
@@ -90,6 +93,8 @@ uint8_t save_code = 0;
 bool wait_flag = 0;
 uint8_t error_code = 0;
 bool reach_start_pos = 0;
+bool end_meas_flag = 0;
+
 
 uint32_t start_position_drv1, start_position_drv2, end_position_drv1, end_position_drv2 = 0;
 uint32_t ENCODER_1_OFFSET = 0;
@@ -145,6 +150,7 @@ uint32_t processSSIData(uint8_t *SSI_buffer);
 uint32_t calculateEncPosition(uint32_t encoder_position, bool chosen_encoder);
 void clearBuffer(uint8_t *buf, uint8_t size);
 uint8_t getADCAmplifierVal(uint8_t value);
+void createDataPacket();
 
 
 void FlashInit();
@@ -238,8 +244,29 @@ int main(void)
 	  if (uart1_rx_complete) {
 
 		  uart1_rx_complete = 0;
+		  // check CRC of packet
           completeReceivePhotodetector();
 
+          if (cur_action == HORIZONTAL || cur_action == VERTICAL || cur_action == HEMISPHERE || cur_action == LIGHT_POWER) {
+
+        	  for (uint8_t i = 0, data_elem_cnt = 1; i < 2; i++, data_elem_cnt++) {
+        		  adc_data_buf[data_elem_cnt] = uart1_rx_safe_buffer[i];
+        	  }
+
+        	  data_buf_counter++;
+
+        	  if (data_buf_counter == 9) {
+
+        		  data_buf_counter = 0;
+        		  data_elem_cnt = 0;
+        		  data_status = _READY_;
+        	  } else if ((data_buf_counter == 9 && end_meas_flag == 1) || (data_buf_counter != 9 && end_meas_flag == 1)) {
+        		  data_buf_counter = 0;
+        		  data_elem_cnt = 0;
+        		  data_status = _READY_;
+        		  cur_action = NONE;
+        	  }
+          }
 
 	  		  //parser_photodetector();
 	  }
@@ -774,30 +801,34 @@ void parser() {
 
 		createResponsePacket(0x02,ACCEPTED__);
 
-		// set current action
-		cur_action = HORIZONTAL;
-
 		// choosing a platform
 		chosen_drv = current_horiz_platform;
 
-		int16_t accel_position;
+		// set data availability status
+		data_status = NONE_;
 
+		int16_t start_angle, end_angle;
+		uint8_t accel_angle;
 		memcpy(uart3_rx_safe_buffer, uart3_rx_buffer, 6);
 
-		accel_position = start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1];
+		start_angle = start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1] - 180;
+		end_angle = 360 - (start_ending_angle_items[1][uart3_rx_safe_buffer[2]-1] + start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1]);
 
 		// calculate acceleration offset position
 
-		/*
-		if ((accel_position - ACCEL_OFFSET) < 0) {
 
-		} */
+		if ((start_angle - ACCEL_OFFSET) < 0) {
+
+		}
 
 
 		if (chosen_drv == HORIZONTAL_) {
 
 			// moving to acceleration offset position
-			moveToPosition(accel_position-ACCEL_OFFSET, chosen_drv);
+			moveToPosition(accel_angle-ACCEL_OFFSET, chosen_drv);
+
+			// set current action
+			cur_action = HORIZONTAL;
 
 			// set start position of measurement
 			start_position_drv1 = start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1];
@@ -809,7 +840,7 @@ void parser() {
 			end_position_drv1 = (start_ending_angle_items[1][uart3_rx_safe_buffer[2]-1] * ENCODER_RESOLUTION) / 360; // get absolute encoder position
 			end_position_drv1 = calculateEncPosition(end_position_drv1,chosen_drv);
 
-			/* choose of measurement resolution  */
+			// choose of measurement resolution
 			meas_res_drv1 = 183; // 0.5 degree
 
 			//measurement_res_items = uart3_rx_safe_buffer[];
@@ -833,7 +864,7 @@ void parser() {
 			end_position_drv2 = (start_ending_angle_items[1][uart3_rx_safe_buffer[2]-1] * ENCODER_RESOLUTION) / 360; // get absolute encoder position
 			end_position_drv2 = calculateEncPosition(end_position_drv2,chosen_drv);
 
-			/* choose of measurement resolution  */
+			/* choose measurement resolution  */
 			meas_res_drv2 = 183; // 0.5 degree
 
 			//measurement_res_items = uart3_rx_safe_buffer[];
@@ -891,6 +922,11 @@ void parser() {
 			current_horiz_platform = HORIZONTAL_;
 		}
 		break;
+
+	case 0x0B:
+		createDataPacket();
+		break;
+
 	case 0x0C:
 		createErrorResponse();
 		ready_status = READY_;
@@ -1306,8 +1342,13 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 
 			if (reach_start_pos == 1) {
 				if (encoder1_data >= end_position_drv1) {
-					cur_action = NONE;
+
+					HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
+					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
+					usDelay(100);
+					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
 					reach_start_pos = 0;
+					end_meas_flag = 1;
 					// stop measurement
 					HAL_TIM_Base_Stop_IT(&htim2); // stop motor
 					HAL_TIM_Base_Stop_IT(&htim7); // stop SPI timer
@@ -1431,6 +1472,23 @@ void createResponsePacket(uint8_t command_code, uint8_t status_code) {
 	}
 
 	HAL_UART_Transmit(&huart3, response_buf,33,100);
+
+}
+
+void createDataPacket() {
+	uint16_t crc=0;
+	adc_data_buf[0] = 0x0B;
+	adc_data_buf[31] = 0;
+	adc_data_buf[32] = 0;
+
+		// CRC calculation
+		for (int i = 0; i < 30; i+=2) {
+			crc += (uint16_t)response_buf[i] + ((uint16_t)(response_buf[i+1])<<8);
+		}
+		crc += response_buf[30];
+		*(uint16_t*)(response_buf+31) = crc;
+
+	HAL_UART_Transmit(&huart3, adc_data_buf,33,100);
 
 }
 
