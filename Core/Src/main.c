@@ -75,7 +75,7 @@ uint8_t dma_spi3_buf[5] = {0};
 uint8_t response_buf[33] = {0};
 uint8_t adc_data_buf[33] = {0};
 uint8_t data_buf_counter = 0;
-uint8_t data_elem_cnt = 0;
+volatile uint8_t data_elem_cnt = 0;
 uint8_t ampl_buf[2];
 uint8_t start_ending_angle_items[2][8] = {{1,2,3,4,5,6,7,8},{180,150,120,90,60,30,10,5}};
 uint16_t measurement_res_items[2][8] = {{1,2,3,4,5,6,7,8},{3600,1800,600,300,60,30,10}}; // The values are set in arc seconds.
@@ -112,7 +112,7 @@ bool driver_dir1, driver_dir2, chosen_drv = 1; // 0 - forward, 1 - back
 /* Telemetry status values */
 enum status { ERROR_, READY_, BUSY_ } ready_status;
 enum action { NONE, HORIZONTAL, VERTICAL, HEMISPHERE, LIGHT_POWER, CALIBRATION,
-				TEST_TURN, TEST_ROTATION, TEST_ANGLE_OFFSET } cur_action;
+				TEST_TURN, TEST_ROTATION, TEST_ANGLE_OFFSET } cur_action = NONE;
 enum response_status { ERROR__, ACCEPTED__, ALREADY_EXEC, EXEC_OTHER};
 bool trans_states = 0; // 0 - no trans_state, 1 - trans_state
 enum data { NONE_, _READY_, SOME_PACKETS} data_status;
@@ -243,7 +243,7 @@ int main(void)
 	  // handle of message from Photodetector
 	  if (uart1_rx_complete) {
 
-		  uart1_rx_complete = 0;
+
 		  // check CRC of packet
           completeReceivePhotodetector();
 
@@ -267,6 +267,8 @@ int main(void)
         		  cur_action = NONE;
         	  }
           }
+
+          uart1_rx_complete = 0;
 
 	  		  //parser_photodetector();
 	  }
@@ -808,7 +810,7 @@ void parser() {
 		data_status = NONE_;
 
 		int16_t start_angle, end_angle;
-		uint8_t accel_angle;
+		uint8_t accel_angle = 0;
 		memcpy(uart3_rx_safe_buffer, uart3_rx_buffer, 6);
 
 		start_angle = start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1] - 180;
@@ -818,6 +820,8 @@ void parser() {
 
 		if ((start_angle - ACCEL_OFFSET) < 0) {
 			accel_angle = 360 + (start_angle - ACCEL_OFFSET);
+		} else {
+			accel_angle -= ACCEL_OFFSET;
 		}
 
 		if (chosen_drv == HORIZONTAL_) {
@@ -825,17 +829,23 @@ void parser() {
 			// moving to acceleration offset position
 			moveToPosition(accel_angle, chosen_drv);
 
-			// set current action
-			cur_action = HORIZONTAL;
-
 			// set start position of measurement
+			/*
 			start_position_drv1 = start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1];
 			start_position_drv1 = (start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1] * ENCODER_RESOLUTION) / 360; // get absolute encoder position
+			start_position_drv1 = calculateEncPosition(start_position_drv1,chosen_drv); */
+
+
+			start_position_drv1 = (start_angle * ENCODER_RESOLUTION) / 360; // get absolute encoder position
 			start_position_drv1 = calculateEncPosition(start_position_drv1,chosen_drv);
 
 			// set end position of measurement
+			/*
 			end_position_drv1 = start_ending_angle_items[1][uart3_rx_safe_buffer[2]-1];
 			end_position_drv1 = (start_ending_angle_items[1][uart3_rx_safe_buffer[2]-1] * ENCODER_RESOLUTION) / 360; // get absolute encoder position
+			end_position_drv1 = calculateEncPosition(end_position_drv1,chosen_drv); */
+
+			end_position_drv1 = (end_angle * ENCODER_RESOLUTION) / 360; // get absolute encoder position
 			end_position_drv1 = calculateEncPosition(end_position_drv1,chosen_drv);
 
 			// choose of measurement resolution
@@ -845,6 +855,9 @@ void parser() {
 
 			// reset flag of reaching start position
 			reach_start_pos = 0;
+
+			// set current action
+			cur_action = HORIZONTAL;
 
 			// start measurement
 			HAL_TIM_Base_Start_IT(&htim7);
@@ -922,7 +935,9 @@ void parser() {
 		break;
 
 	case 0x0B:
-		createDataPacket();
+			//createDataPacket();
+			data_status = NONE_;
+
 		break;
 
 	case 0x0C:
@@ -1343,7 +1358,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 
 					HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
 					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
-					usDelay(100);
+					usDelay(10);
 					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
 					reach_start_pos = 0;
 					end_meas_flag = 1;
@@ -1353,7 +1368,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 				} else {
 					HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
 					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
-					usDelay(100);
+					usDelay(10);
 					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
 				}
 			} else {
@@ -1363,7 +1378,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 					// start poll photodetector
 					HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
 					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
-					usDelay(100);
+					usDelay(10);
 					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
 				}
 			}
@@ -1471,6 +1486,7 @@ void createResponsePacket(uint8_t command_code, uint8_t status_code) {
 
 	HAL_UART_Transmit(&huart3, response_buf,33,100);
 
+
 }
 
 void createDataPacket() {
@@ -1485,7 +1501,7 @@ void createDataPacket() {
 		}
 		crc += response_buf[30];
 		*(uint16_t*)(response_buf+31) = crc;
-
+		HAL_UART_DMAStop(&huart3);
 	HAL_UART_Transmit(&huart3, adc_data_buf,33,100);
 
 }
