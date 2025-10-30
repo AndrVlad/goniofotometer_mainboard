@@ -75,6 +75,7 @@ uint8_t dma_spi3_buf[5] = {0};
 uint8_t response_buf[33] = {0};
 uint8_t adc_data_buf[33] = {0};
 uint8_t data_buf_counter = 0;
+uint8_t data_elem_cnt = 1;
 volatile uint8_t data_elem_cnt = 0;
 uint8_t ampl_buf[2];
 uint8_t start_ending_angle_items[2][8] = {{1,2,3,4,5,6,7,8},{180,150,120,90,60,30,10,5}};
@@ -93,10 +94,12 @@ uint8_t save_code = 0;
 bool wait_flag = 0;
 uint8_t error_code = 0;
 bool reach_start_pos = 0;
+bool reach_end_pos = 0;
+bool reach_accel_pos = 0;
 bool end_meas_flag = 0;
 
 
-uint32_t start_position_drv1, start_position_drv2, end_position_drv1, end_position_drv2 = 0;
+uint32_t start_position_drv1, start_position_drv2, end_position_drv1, end_position_drv2, accel_position_drv1, accel_position_drv2 = 0;
 uint32_t ENCODER_1_OFFSET = 0;
 uint32_t ENCODER_2_OFFSET = 0;
 uint16_t angle_position_drv1 = 0;
@@ -107,6 +110,8 @@ uint8_t uart1_rx_buffer[5] = {0};
 uint8_t uart1_rx_safe_buffer[5] = {0};
 bool uart1_rx_complete = 0;
 bool uart3_rx_complete = 0;
+bool spi4_rx_complete = 0;
+bool spi3_rx_complete = 0;
 bool driver_dir1, driver_dir2, chosen_drv = 1; // 0 - forward, 1 - back
 
 /* Telemetry status values */
@@ -242,14 +247,12 @@ int main(void)
 	  }
 	  // handle of message from Photodetector
 	  if (uart1_rx_complete) {
-
-
 		  // check CRC of packet
           completeReceivePhotodetector();
 
           if (cur_action == HORIZONTAL || cur_action == VERTICAL || cur_action == HEMISPHERE || cur_action == LIGHT_POWER) {
 
-        	  for (uint8_t i = 0, data_elem_cnt = 1; i < 2; i++, data_elem_cnt++) {
+        	  for (uint8_t i = 0; i < 2; i++, data_elem_cnt++) {
         		  adc_data_buf[data_elem_cnt] = uart1_rx_safe_buffer[i];
         	  }
 
@@ -272,6 +275,73 @@ int main(void)
 
 	  		  //parser_photodetector();
 	  }
+
+	  if (spi4_rx_complete) {
+
+		  if (cur_action == TEST_ANGLE_OFFSET) {
+			  if ((encoder1_data >= start_position_drv1 - 1) && (encoder1_data <= start_position_drv1 + 1)) {
+				  HAL_TIM_Base_Stop_IT(&htim2); // stop motor
+				  HAL_TIM_Base_Stop_IT(&htim7); // stop encoder poll
+				  cur_action = NONE;
+			  }
+		  }
+
+		  if (cur_action == HORIZONTAL || cur_action == VERTICAL) {
+
+			  // State - move to acceleration position
+			  if (!reach_accel_pos) {
+				  if ((encoder1_data >= accel_position_drv1 - 5) && (encoder1_data <= accel_position_drv1 + 5)) {
+					  HAL_TIM_Base_Stop_IT(&htim2);
+					  changeMotorDirection(chosen_drv, start_position_drv1);
+					  reach_accel_pos = 1;
+					  HAL_TIM_Base_Start_IT(&htim2);
+				  }
+			  }
+
+			  // State - move to start position
+			  if (reach_accel_pos) {
+
+				  if (!reach_start_position) {
+
+					  if ((encoder1_data >= start_position_drv1 - 5) && (encoder1_data <= start_position_drv1 + 5)) {
+					  	reach_start_position = 1;
+					  	// start photodetector polling
+					  	HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
+					  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
+					  	usDelay(10);
+					  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
+					  }
+				  }
+
+				  if (reach_start_position) {
+
+					  if (!reach_end_position) {
+
+						  if ((encoder1_data >= end_position_drv1)) {
+
+							  // poll photodetector
+							  HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
+							  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
+							  usDelay(10);
+							  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
+
+							  reach_end_pos = 1;
+
+							  // stop measurement
+							  HAL_TIM_Base_Stop_IT(&htim2); // stop motor
+							  HAL_TIM_Base_Stop_IT(&htim7); // stop SPI timer
+
+						  } else {
+							  HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
+							  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
+							  usDelay(10);
+							  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
+						  }
+					  }
+				  }
+		  spi4_rx_complete = 0;
+	  }
+
 	  //HAL_Delay(1000);
 
 	 //printf("USART1 Error: 0x%lX\n", huart1.ErrorCode);
@@ -280,7 +350,8 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-  }
+		 }
+	  }
   /* USER CODE END 3 */
 }
 
@@ -813,7 +884,7 @@ void parser() {
 		uint8_t accel_angle = 0;
 		memcpy(uart3_rx_safe_buffer, uart3_rx_buffer, 6);
 
-		start_angle = start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1] - 180;
+		start_angle = abs(start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1] - 180);
 		end_angle = 360 - (start_ending_angle_items[1][uart3_rx_safe_buffer[2]-1] + start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1]);
 
 		// calculate acceleration offset position
@@ -821,20 +892,28 @@ void parser() {
 		if ((start_angle - ACCEL_OFFSET) < 0) {
 			accel_angle = 360 + (start_angle - ACCEL_OFFSET);
 		} else {
-			accel_angle -= ACCEL_OFFSET;
+			accel_angle = start_angle - ACCEL_OFFSET;
 		}
+
+		// reset flag of reaching start position
+		reach_start_pos = 0;
+		reach_accel_pos = 0;
+		reach_end_pos = 0;
 
 		if (chosen_drv == HORIZONTAL_) {
 
 			// moving to acceleration offset position
-			moveToPosition(accel_angle, chosen_drv);
+			//moveToPosition(accel_angle, chosen_drv);
+
+			accel_position_drv1 = (accel_angle * ENCODER_RESOLUTION) / 360; // get absolute encoder position
+			accel_position_drv1 = calculateEncPosition(accel_position_drv1,chosen_drv);
+			changeMotorDirection(chosen_drv, accel_position_drv1);
 
 			// set start position of measurement
 			/*
 			start_position_drv1 = start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1];
 			start_position_drv1 = (start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1] * ENCODER_RESOLUTION) / 360; // get absolute encoder position
 			start_position_drv1 = calculateEncPosition(start_position_drv1,chosen_drv); */
-
 
 			start_position_drv1 = (start_angle * ENCODER_RESOLUTION) / 360; // get absolute encoder position
 			start_position_drv1 = calculateEncPosition(start_position_drv1,chosen_drv);
@@ -853,14 +932,11 @@ void parser() {
 
 			//measurement_res_items = uart3_rx_safe_buffer[];
 
-			// reset flag of reaching start position
-			reach_start_pos = 0;
-
 			// set current action
 			cur_action = HORIZONTAL;
 
 			// start measurement
-			HAL_TIM_Base_Start_IT(&htim7);
+			HAL_TIM_Base_Start_IT(&htim7);	// start poll encoder
 			HAL_TIM_Base_Start_IT(&htim2); // start first motor moving
 
 		} else {
@@ -999,6 +1075,7 @@ void parser() {
 
 	case 0x10: // move to the specified angle
 		createResponsePacket(0x10,ACCEPTED__);
+		cur_action = TEST_ANGLE_OFFSET;
 		if(chosen_drv) {
 
 			uint32_t angle_position_drv2 = 0;
@@ -1351,6 +1428,10 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 		encoder1_data |=  ((uint32_t)dma_spi4_buf[1] << 3);
 		encoder1_data |=  (((uint32_t)dma_spi4_buf[0] & 0x3F) << 11);
 
+		spi3_flag_complete = 1;
+
+		/*
+
 		if (cur_action == HORIZONTAL || cur_action == VERTICAL) {
 
 			if (reach_start_pos == 1) {
@@ -1392,6 +1473,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 				//HAL_UART_Transmit(&huart3,dma_spi4_buf,5,100);
 			}
 		}
+		*/
 	}
 
 	// second encoder
