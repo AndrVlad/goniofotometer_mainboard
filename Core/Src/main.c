@@ -251,13 +251,13 @@ int main(void)
 
           if (cur_action == HORIZONTAL || cur_action == VERTICAL || cur_action == HEMISPHERE || cur_action == LIGHT_POWER) {
 
-        	  for (uint8_t i = 0; i < 2; i++, data_elem_cnt++) {
+        	  for (uint8_t i = 0; i < 3; i++, data_elem_cnt++) {
         		  adc_data_buf[data_elem_cnt] = uart1_rx_safe_buffer[i];
         	  }
 
         	  data_buf_counter++;
 
-        	  if (data_buf_counter == 9) {
+        	  if (data_buf_counter == 10) {
         		  data_buf_counter = 0;
         		  data_elem_cnt = 0;
         		  data_status = _READY_;
@@ -333,6 +333,7 @@ int main(void)
 							  HAL_TIM_Base_Stop_IT(&htim7); // stop SPI timer
 
 						  } else {
+							  // while not reached end_position
 							  if ((encoder1_data >= (encoder1_data_last - 1)) && (encoder1_data <= (encoder1_data_last + 1))) {
 							 		encoder1_data_last += meas_res_drv1;
 									HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
@@ -890,16 +891,17 @@ void parser() {
 		data_status = NONE_;
 
 		int16_t start_angle, end_angle;
-		uint8_t accel_angle = 0;
+		uint16_t accel_angle = 0;
 		memcpy(uart3_rx_safe_buffer, uart3_rx_buffer, 6);
 
 		start_angle = abs(start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1] - 180);
-		end_angle = 360 - (start_ending_angle_items[1][uart3_rx_safe_buffer[2]-1] + start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1]);
+		end_angle = start_ending_angle_items[1][uart3_rx_safe_buffer[2]-1] + start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1];
 
 		// calculate acceleration offset position
 
 		if ((start_angle - ACCEL_OFFSET) < 0) {
-			accel_angle = 360 + (start_angle - ACCEL_OFFSET);
+			accel_angle = abs(start_angle - ACCEL_OFFSET);
+			accel_angle = 360 - accel_angle;
 		} else {
 			accel_angle = start_angle - ACCEL_OFFSET;
 		}
@@ -1021,7 +1023,7 @@ void parser() {
 		break;
 
 	case 0x0B:
-			//createDataPacket();
+			createDataPacket();
 			data_status = NONE_;
 
 		break;
@@ -1592,12 +1594,14 @@ void createDataPacket() {
 
 		// CRC calculation
 		for (int i = 0; i < 30; i+=2) {
-			crc += (uint16_t)response_buf[i] + ((uint16_t)(response_buf[i+1])<<8);
+			crc += (uint16_t)adc_data_buf[i] + ((uint16_t)(adc_data_buf[i+1])<<8);
 		}
-		crc += response_buf[30];
-		*(uint16_t*)(response_buf+31) = crc;
+		crc += adc_data_buf[30];
+		*(uint16_t*)(adc_data_buf+31) = crc;
 		HAL_UART_DMAStop(&huart3);
-	HAL_UART_Transmit(&huart3, adc_data_buf,33,100);
+		HAL_UART_Transmit(&huart3, adc_data_buf,33,100);
+		HAL_UART_Receive_DMA(&huart3, uart3_rx_buffer,6);
+		clearBuffer(adc_data_buf,33);
 
 }
 
