@@ -2233,9 +2233,9 @@ void parser() {
  80010a8:	f000 fe4c 	bl	8001d44 <createResponsePacket>
 
 		// stop sending photodetector data to telemetry packet
-		wait_flag = 1;
+		wait_flag = 0;
  80010ac:	4b62      	ldr	r3, [pc, #392]	; (8001238 <parser+0x264>)
- 80010ae:	2201      	movs	r2, #1
+ 80010ae:	2200      	movs	r2, #0
  80010b0:	701a      	strb	r2, [r3, #0]
 		// choosing a platform
 		chosen_drv = current_horiz_platform;

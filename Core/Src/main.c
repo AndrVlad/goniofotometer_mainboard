@@ -883,7 +883,7 @@ void parser() {
 		createResponsePacket(0x02,ACCEPTED__);
 
 		// stop sending photodetector data to telemetry packet
-		wait_flag = 1;
+		wait_flag = 0;
 		// choosing a platform
 		chosen_drv = current_horiz_platform;
 
