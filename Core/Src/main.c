@@ -78,7 +78,7 @@ uint8_t data_buf_counter = 0;
 uint8_t data_elem_cnt = 1;
 uint8_t ampl_buf[2];
 uint8_t start_ending_angle_items[2][8] = {{1,2,3,4,5,6,7,8},{179,150,120,90,60,30,10,5}};
-uint16_t measurement_res_items[2][8] = {{1,2,3,4,5,6,7,8},{3600,1800,600,300,60,30,10}}; // The values are set in arc seconds.
+uint16_t measurement_res_items[2][8] = {{1,2,3,4,5,6,7,8},{365,182,61,30,6,3,1}}; // The values are set in arc seconds.
 uint16_t crc = 0;
 uint8_t current_pos = 0;
 uint8_t i = 0;
@@ -259,11 +259,11 @@ int main(void)
 
         	  if (data_buf_counter == 10) {
         		  data_buf_counter = 0;
-        		  data_elem_cnt = 0;
+        		  data_elem_cnt = 1;
         		  data_status = _READY_;
-        	  } else if ((data_buf_counter == 9 && reach_end_position == 1) || (data_buf_counter != 9 && reach_end_position == 1)) {
+        	  } else if ((data_buf_counter == 10 && reach_end_position == 1) || (data_buf_counter != 10 && reach_end_position == 1)) {
         		  data_buf_counter = 0;
-        		  data_elem_cnt = 0;
+        		  data_elem_cnt = 1;
         		  data_status = _READY_;
         		  cur_action = NONE;
         		  wait_flag = 0;
@@ -940,8 +940,8 @@ void parser() {
 			end_position_drv1 = calculateEncPosition(end_position_drv1,chosen_drv);
 
 			// choose of measurement resolution
-			meas_res_drv1 = 183; // 0.5 degree
-
+			//meas_res_drv1 = 183; // 0.5 degree
+			meas_res_drv1 = measurement_res_items[1][uart3_rx_safe_buffer[3]-1];
 			//measurement_res_items = uart3_rx_safe_buffer[];
 
 			// set current action
