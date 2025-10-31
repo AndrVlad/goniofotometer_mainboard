@@ -76,6 +76,8 @@ uint8_t response_buf[33] = {0};
 uint8_t adc_data_buf[33] = {0};
 uint8_t data_buf_counter = 0;
 uint8_t data_elem_cnt = 1;
+uint16_t test_counter_adc_data = 0;
+uint16_t test_counter_adc_data2 = 0;
 uint8_t ampl_buf[2];
 uint8_t start_ending_angle_items[2][8] = {{1,2,3,4,5,6,7,8},{179,150,120,90,60,30,10,5}};
 uint16_t measurement_res_items[2][8] = {{1,2,3,4,5,6,7,8},{365,182,61,30,6,3,1}}; // The values are set in arc seconds.
@@ -251,24 +253,30 @@ int main(void)
 
           if (cur_action == HORIZONTAL || cur_action == VERTICAL || cur_action == HEMISPHERE || cur_action == LIGHT_POWER) {
 
-        	  for (uint8_t i = 0; i < 3; i++, data_elem_cnt++) {
-        		  adc_data_buf[data_elem_cnt] = uart1_rx_safe_buffer[i];
+        	  if (reach_accel_position) {
+
+        		  for (uint8_t i = 0; i < 3; i++, data_elem_cnt++) {
+        			  adc_data_buf[data_elem_cnt] = uart1_rx_safe_buffer[i];
+        		  }
+
+        		  data_buf_counter++;
+        		  test_counter_adc_data++;
+
+        		  if (data_buf_counter == 10) {
+        			  data_buf_counter = 0;
+        			  data_elem_cnt = 1;
+        			  data_status = _READY_;
+        		  } else if ((data_buf_counter == 10 && reach_end_position == 1) || (data_buf_counter != 10 && reach_end_position == 1)) {
+        			  data_buf_counter = 0;
+        			  data_elem_cnt = 1;
+        			  data_status = _READY_;
+        			  cur_action = NONE;
+        			  wait_flag = 0;
+        			  ready_status = READY_;
         	  }
 
-        	  data_buf_counter++;
-
-        	  if (data_buf_counter == 10) {
-        		  data_buf_counter = 0;
-        		  data_elem_cnt = 1;
-        		  data_status = _READY_;
-        	  } else if ((data_buf_counter == 10 && reach_end_position == 1) || (data_buf_counter != 10 && reach_end_position == 1)) {
-        		  data_buf_counter = 0;
-        		  data_elem_cnt = 1;
-        		  data_status = _READY_;
-        		  cur_action = NONE;
-        		  wait_flag = 0;
         	  }
-          }
+        }
 
           uart1_rx_complete = 0;
 
@@ -306,7 +314,7 @@ int main(void)
 					  	// start photodetector polling
 					  	HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
 					  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
-					  	usDelay(10);
+					  	usDelay(5);
 					  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
 					  }
 				  }
@@ -317,13 +325,14 @@ int main(void)
 
 					  if (!reach_end_position) {
 
-						  if ((encoder1_data >= end_position_drv1 - 2)) {
+						  // if reached end position
+						  if ((encoder1_data >= end_position_drv1)) {
 
 							  // poll photodetector
 
 							  HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
 							  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
-							  usDelay(10);
+							  usDelay(5);
 							  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
 
 							  reach_end_position = 1;
@@ -334,12 +343,13 @@ int main(void)
 
 						  } else {
 							  // while not reached end_position
-							  if ((encoder1_data >= (encoder1_data_last - 1)) && (encoder1_data <= (encoder1_data_last + 1))) {
+							  if ((encoder1_data >= (encoder1_data_last - 4)) && (encoder1_data <= (encoder1_data_last + 4))) {
 							 		encoder1_data_last += meas_res_drv1;
 									HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
 								 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
-								 	usDelay(10);
+								 	usDelay(5);
 								 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
+								 	test_counter_adc_data2++;
 							  }
 						  }
 					  }
@@ -882,6 +892,8 @@ void parser() {
 
 		createResponsePacket(0x02,ACCEPTED__);
 
+		test_counter_adc_data = 0;
+
 		// stop sending photodetector data to telemetry packet
 		wait_flag = 0;
 		// choosing a platform
@@ -895,7 +907,7 @@ void parser() {
 		memcpy(uart3_rx_safe_buffer, uart3_rx_buffer, 6);
 
 		start_angle = abs(start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1] - 180);
-		end_angle = start_ending_angle_items[1][uart3_rx_safe_buffer[2]-1] + start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1];
+		end_angle = start_ending_angle_items[1][uart3_rx_safe_buffer[2]-1] + 180;
 
 		// calculate acceleration offset position
 
@@ -946,6 +958,9 @@ void parser() {
 
 			// set current action
 			cur_action = HORIZONTAL;
+
+			// set status
+			ready_status = BUSY_;
 
 			// start measurement
 			HAL_TIM_Base_Start_IT(&htim7);	// start poll encoder
