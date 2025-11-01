@@ -98,6 +98,7 @@ bool reach_start_position = 0;
 bool reach_end_position = 0;
 bool reach_accel_position = 0;
 bool end_meas_flag = 0;
+bool wait_adc_data_flag = 0;
 
 
 uint32_t start_position_drv1, start_position_drv2, end_position_drv1, end_position_drv2, accel_position_drv1, accel_position_drv2 = 0;
@@ -109,6 +110,10 @@ uint8_t uart3_rx_buffer[6] = {0};
 uint8_t uart3_rx_safe_buffer[6] = {0};
 uint8_t uart1_rx_buffer[5] = {0};
 uint8_t uart1_rx_safe_buffer[5] = {0};
+uint8_t uart1_rx_safe_buffer_meas[5] = {0};
+uint32_t encoder_data_buf_trg[800] = {0};
+uint16_t enc_cnt_trg, enc_cnt_setdata = 0;
+uint32_t encoder_data_buf_setdata[800] = {0};
 bool uart1_rx_complete = 0;
 bool uart3_rx_complete = 0;
 bool spi4_rx_complete = 0;
@@ -253,20 +258,23 @@ int main(void)
 
           if (cur_action == HORIZONTAL || cur_action == VERTICAL || cur_action == HEMISPHERE || cur_action == LIGHT_POWER) {
 
-        	  if (reach_accel_position) {
+        	  if (wait_adc_data_flag) {
 
         		  for (uint8_t i = 0; i < 3; i++, data_elem_cnt++) {
-        			  adc_data_buf[data_elem_cnt] = uart1_rx_safe_buffer[i];
+        			  adc_data_buf[data_elem_cnt] = uart1_rx_safe_buffer_meas[i];
         		  }
 
+        		  wait_adc_data_flag = 0;
+
         		  data_buf_counter++;
+
         		  test_counter_adc_data++;
 
         		  if (data_buf_counter == 10) {
         			  data_buf_counter = 0;
         			  data_elem_cnt = 1;
         			  data_status = _READY_;
-        		  } else if ((data_buf_counter == 10 && reach_end_position == 1) || (data_buf_counter != 10 && reach_end_position == 1)) {
+        		  } else if (reach_end_position == 1) {
         			  data_buf_counter = 0;
         			  data_elem_cnt = 1;
         			  data_status = _READY_;
@@ -296,6 +304,7 @@ int main(void)
 
 			  // State - move to acceleration position
 			  if (!reach_accel_position) {
+				  trans_states = 1;
 				  if ((encoder1_data >= accel_position_drv1 - 5) && (encoder1_data <= accel_position_drv1 + 5)) {
 					  HAL_TIM_Base_Stop_IT(&htim2);
 					  changeMotorDirection(chosen_drv, start_position_drv1);
@@ -308,13 +317,21 @@ int main(void)
 			  if (reach_accel_position) {
 
 				  if (!reach_start_position) {
+					  trans_states = 0;
 
 					  if ((encoder1_data >= start_position_drv1 - 5) && (encoder1_data <= start_position_drv1 + 5)) {
 					  	reach_start_position = 1;
 					  	// start photodetector polling
+
 					  	HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
+
+					 	encoder_data_buf_trg[enc_cnt_trg] = encoder1_data;
+					 	enc_cnt_trg++;
+
 					  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
-					  	usDelay(5);
+					  	wait_adc_data_flag = 1;
+					  	usDelay(2);
+
 					  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
 					  }
 				  }
@@ -332,7 +349,10 @@ int main(void)
 
 							  HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
 							  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
-							  usDelay(5);
+							  wait_adc_data_flag = 1;
+							 encoder_data_buf_trg[enc_cnt_trg] = encoder1_data;
+							 enc_cnt_trg++;
+							  usDelay(2);
 							  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
 
 							  reach_end_position = 1;
@@ -346,8 +366,13 @@ int main(void)
 							  if ((encoder1_data >= (encoder1_data_last - 4)) && (encoder1_data <= (encoder1_data_last + 4))) {
 							 		encoder1_data_last += meas_res_drv1;
 									HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
+
 								 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
-								 	usDelay(5);
+								 	wait_adc_data_flag = 1;
+								 	encoder_data_buf_trg[enc_cnt_trg] = encoder1_data;
+								 	enc_cnt_trg++;
+								 	usDelay(2);
+
 								 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
 								 	test_counter_adc_data2++;
 							  }
@@ -526,7 +551,7 @@ static void MX_TIM2_Init(void)
   htim2.Instance = TIM2;
   htim2.Init.Prescaler = 107;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 7999;
+  htim2.Init.Period = 15999;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
@@ -892,7 +917,9 @@ void parser() {
 
 		createResponsePacket(0x02,ACCEPTED__);
 
+		// only for debug
 		test_counter_adc_data = 0;
+		enc_cnt_trg = 0;
 
 		// stop sending photodetector data to telemetry packet
 		wait_flag = 0;
@@ -1018,7 +1045,7 @@ void parser() {
 
 		break;
 	case 0x09:
-
+		createResponsePacket(0x09,ACCEPTED__);
 		if (!chosen_drv) {
 			HAL_TIM_Base_Start_IT(&htim7);
 			HAL_TIM_Base_Start_IT(&htim2); // start horizontal motor moving
@@ -1265,7 +1292,17 @@ void parser() {
 		}
 
 		break;
+	case 0x20:
+
+			for (int i = 0; i < 130; i++) {
+				printf("%lu,\r\n",encoder_data_buf_trg[i]);
+
+			}
+			printf("'\r\n");
+
+			break;
 }
+
 
 	uart3_rx_complete = 0;
 }
@@ -1616,7 +1653,7 @@ void createDataPacket() {
 		HAL_UART_DMAStop(&huart3);
 		HAL_UART_Transmit(&huart3, adc_data_buf,33,100);
 		HAL_UART_Receive_DMA(&huart3, uart3_rx_buffer,6);
-		clearBuffer(adc_data_buf,33);
+		//clearBuffer(adc_data_buf,33);
 
 }
 
@@ -1763,9 +1800,17 @@ void completeReceivePhotodetector() {
   CRC_Photodetector = CRC_Photodetector & 0xFF;
   // check CRC
   if ((CRC_Photodetector == uart1_rx_buffer[3]) && (uart1_rx_buffer[4] == 0xA5)) {
-    uart1_rx_safe_buffer[0] = uart1_rx_buffer[0];
-    uart1_rx_safe_buffer[1] = uart1_rx_buffer[1];
-    uart1_rx_safe_buffer[2] = uart1_rx_buffer[2];
+	  if (wait_adc_data_flag) {
+		  uart1_rx_safe_buffer_meas[0] = uart1_rx_buffer[0];
+		  uart1_rx_safe_buffer_meas[1] = uart1_rx_buffer[1];
+		  uart1_rx_safe_buffer_meas[2] = uart1_rx_buffer[2];
+
+	  } else {
+		  uart1_rx_safe_buffer[0] = uart1_rx_buffer[0];
+		  uart1_rx_safe_buffer[1] = uart1_rx_buffer[1];
+		  uart1_rx_safe_buffer[2] = uart1_rx_buffer[2];
+	  }
+
   } else {
     // error handler
   }
