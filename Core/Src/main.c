@@ -104,7 +104,7 @@ bool wait_adc_data_flag = 0;
 uint32_t start_position_drv1, start_position_drv2, end_position_drv1, end_position_drv2, accel_position_drv1, accel_position_drv2 = 0;
 uint32_t ENCODER_1_OFFSET = 0;
 uint32_t ENCODER_2_OFFSET = 0;
-uint16_t angle_position_drv1 = 0;
+uint16_t angle_position_drv1, angle_position_drv2 = 0;
 uint16_t meas_res_drv1, meas_res_drv2 = 0;
 uint8_t uart3_rx_buffer[6] = {0};
 uint8_t uart3_rx_safe_buffer[6] = {0};
@@ -293,11 +293,22 @@ int main(void)
 	  if (spi4_rx_complete) {
 
 		  if (cur_action == TEST_ANGLE_OFFSET) {
-			  if ((encoder1_data >= start_position_drv1 - 1) && (encoder1_data <= start_position_drv1 + 1)) {
-				  HAL_TIM_Base_Stop_IT(&htim2); // stop motor
-				  HAL_TIM_Base_Stop_IT(&htim7); // stop encoder poll
-				  cur_action = NONE;
+
+			  if (chosen_drv) {
+				  if ((encoder2_data >= angle_position_drv2 - 4) && (encoder1_data <= angle_position_drv2 + 4)) {
+					  HAL_TIM_Base_Stop_IT(&htim3); // stop motor
+					  HAL_TIM_Base_Stop_IT(&htim7); // stop encoder poll
+					  cur_action = NONE;
+				  }
+			  } else {
+				  if ((encoder1_data >= angle_position_drv1 - 4) && (encoder1_data <= angle_position_drv1 + 4)) {
+					  HAL_TIM_Base_Stop_IT(&htim2); // stop motor
+					  HAL_TIM_Base_Stop_IT(&htim7); // stop encoder poll
+					  cur_action = NONE;
+				  }
 			  }
+
+
 		  }
 
 		  if (cur_action == HORIZONTAL || cur_action == VERTICAL) {
@@ -919,6 +930,7 @@ void parser() {
 
 		// only for debug
 		test_counter_adc_data = 0;
+		test_counter_adc_data2 = 0;
 		enc_cnt_trg = 0;
 
 		// stop sending photodetector data to telemetry packet
@@ -952,8 +964,7 @@ void parser() {
 
 		if (chosen_drv == HORIZONTAL_) {
 
-			// moving to acceleration offset position
-			//moveToPosition(accel_angle, chosen_drv);
+			// set acceleration offset position
 
 			accel_position_drv1 = (accel_angle * ENCODER_RESOLUTION) / 360; // get absolute encoder position
 			accel_position_drv1 = calculateEncPosition(accel_position_drv1,chosen_drv);
