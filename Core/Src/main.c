@@ -100,6 +100,7 @@ bool reach_end_position = 0;
 bool reach_accel_position = 0;
 bool end_meas_flag = 0;
 bool wait_adc_data_flag = 0;
+uint16_t start_angle_offset_1, start_angle_offset_2;
 
 
 uint32_t start_position_drv1, start_position_drv2, end_position_drv1, end_position_drv2, accel_position_drv1, accel_position_drv2 = 0;
@@ -276,14 +277,14 @@ int main(void)
         			  data_buf_counter = 0;
         			  data_elem_cnt = 1;
         			  data_status = _READY_;
-        		  } else if (reach_end_position == 1) {
+        		  } /* else if ((reach_end_position == 1 && data_buf_counter == 10) || (reach_end_position == 1 && data_buf_counter != 10)) {
         			  data_buf_counter = 0;
         			  data_elem_cnt = 1;
         			  data_status = _READY_;
         			  cur_action = NONE;
         			  wait_flag = 0;
         			  ready_status = READY_;
-        	  }
+        	  } */
 
         	  }
         }
@@ -309,9 +310,27 @@ int main(void)
 					  cur_action = NONE;
 				  }
 			  }
-
-
 		  }
+
+		  if (cur_action == TEST_ROTATION) {
+
+			  if (chosen_drv) {
+				  if ((encoder2_data >= start_position_drv2 - 4) && (encoder1_data <= start_position_drv2 + 4)) {
+					  HAL_TIM_Base_Stop_IT(&htim3); // stop motor
+					  HAL_TIM_Base_Stop_IT(&htim7); // stop encoder poll
+					  cur_action = NONE;
+					  trans_states = 0;
+				  }
+			  } else {
+				  if ((encoder1_data >= start_position_drv1 - 4) && (encoder1_data <= start_position_drv1 + 4)) {
+					  HAL_TIM_Base_Stop_IT(&htim2); // stop motor
+					  HAL_TIM_Base_Stop_IT(&htim7); // stop encoder poll
+					  cur_action = NONE;
+					  trans_states = 0;
+				  }
+			  }
+		  }
+
 
 		  if (cur_action == HORIZONTAL || cur_action == VERTICAL) {
 
@@ -360,6 +379,7 @@ int main(void)
 
 							  // poll photodetector
 
+							  /*
 							  HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
 							  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
 							  wait_adc_data_flag = 1;
@@ -368,7 +388,19 @@ int main(void)
 							  usDelay(2);
 							  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
 
+
+	*/
+							  if (data_buf_counter > 0) {
+								  data_status = _READY_;
+							  }
+
+							  data_buf_counter = 0;
+							  data_elem_cnt = 1;
+							  cur_action = NONE;
+							  wait_flag = 0;
+							  ready_status = READY_;
 							  reach_end_position = 1;
+							  wait_adc_data_flag = 0;
 
 							  // stop measurement
 							  HAL_TIM_Base_Stop_IT(&htim2); // stop motor
@@ -935,8 +967,9 @@ void parser() {
 		test_counter_adc_data2 = 0;
 		enc_cnt_trg = 0;
 
-		// stop sending photodetector data to telemetry packet
+		// stop sending photodetector data to telemetry packet (if wait_flag == 0)
 		wait_flag = 0;
+
 		// choosing a platform
 		chosen_drv = current_horiz_platform;
 
@@ -947,8 +980,23 @@ void parser() {
 		uint16_t accel_angle = 0;
 		memcpy(uart3_rx_safe_buffer, uart3_rx_buffer, 6);
 
+		// set start angle of measurement
 		start_angle = abs(start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1] - 180);
+
+		// calculate offset of the measurement from specified start position
+		if ((start_angle + start_angle_offset_1) > 360) {
+			start_angle = (start_angle + start_angle_offset_1) - 360;
+		} else {
+			start_angle = start_angle + start_angle_offset_1;
+		}
+
+		// set end angle of measurement
 		end_angle = start_ending_angle_items[1][uart3_rx_safe_buffer[2]-1] + 180;
+		if ((end_angle + start_angle_offset_1) > 360) {
+			end_angle = (end_angle + start_angle_offset_1) - 360;
+		} else {
+			end_angle = end_angle + start_angle_offset_1;
+		}
 
 		// calculate acceleration offset position
 
@@ -1031,36 +1079,44 @@ void parser() {
 		break;
 	case 0x08:
 		createResponsePacket(0x08,ACCEPTED__);
-		/*
-		if(uart3_rx_buffer[3] != 0) { // move vertical driver
-			chosen_drv = 1;
-		    uint32_t angle_position_drv2 = 0;
-			angle_position_drv2 = uart3_rx_buffer[1] << 8;
-			angle_position_drv2 |= uart3_rx_buffer[2];
 
-			start_position_drv2 = (angle_position_drv2 * ENCODER_RESOLUTION) / 360; // get absolute encoder position
+		if(uart3_rx_buffer[3] != 0) { // move vertical driver
+
+			//set start position
+			start_angle_offset_2 = 0;
+			chosen_drv = 1;
+
+			start_angle_offset_2 = uart3_rx_buffer[1] << 8;
+			start_angle_offset_2 |= uart3_rx_buffer[2];
+
+			start_position_drv2 = (start_angle_offset_2 * ENCODER_RESOLUTION) / 360; // get absolute encoder position
 			start_position_drv2 = calculateEncPosition(start_position_drv2,chosen_drv);
 
 			changeMotorDirection(chosen_drv, start_position_drv2);
 
 		} else { // move horizontal driver
 
+			//set start position
+			start_angle_offset_1 = 0;
 			chosen_drv = 0;
-			angle_position_drv1 = 0;
-			angle_position_drv1 = uart3_rx_buffer[1] << 8;
-			angle_position_drv1 |= uart3_rx_buffer[2];
 
-			start_position_drv1 = (angle_position_drv1 * ENCODER_RESOLUTION) / 360; // get absolute encoder position
+			start_position_drv1 = 0;
+			start_position_drv1 = uart3_rx_buffer[1] << 8;
+			start_position_drv1 |= uart3_rx_buffer[2];
+
+			start_position_drv1 = (start_angle_offset_1 * ENCODER_RESOLUTION) / 360; // get absolute encoder position
 			start_position_drv1 = calculateEncPosition(start_position_drv1,chosen_drv);
 
 			changeMotorDirection(chosen_drv, start_position_drv1);
 
 		}
-		*/
 
 		break;
 	case 0x09:
 		createResponsePacket(0x09,ACCEPTED__);
+		cur_action = TEST_ROTATION;
+		trans_states = 1;
+
 		if (!chosen_drv) {
 			HAL_TIM_Base_Start_IT(&htim7);
 			HAL_TIM_Base_Start_IT(&htim2); // start horizontal motor moving
@@ -1149,7 +1205,6 @@ void parser() {
 		test_angle = 0;
 		test_angle = uart3_rx_buffer[2] << 8;
 		test_angle |= uart3_rx_buffer[1];
-
 
 		if(chosen_drv) { // second motor
 
