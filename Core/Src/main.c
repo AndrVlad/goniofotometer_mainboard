@@ -38,6 +38,7 @@ static FLASH_EraseInitTypeDef EraseInitStruct;
 #define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
 #define ENCODER_RESOLUTION 131072
 #define ACCEL_OFFSET 5 // values in ark degrees
+#define POSITION_ERROR 4
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -104,7 +105,8 @@ bool wait_adc_data_flag = 0;
 uint32_t start_position_drv1, start_position_drv2, end_position_drv1, end_position_drv2, accel_position_drv1, accel_position_drv2 = 0;
 uint32_t ENCODER_1_OFFSET = 0;
 uint32_t ENCODER_2_OFFSET = 0;
-uint16_t angle_position_drv1, angle_position_drv2 = 0;
+uint32_t angle_position_drv1, angle_position_drv2 = 0;
+uint32_t test_angle = 0;
 uint16_t meas_res_drv1, meas_res_drv2 = 0;
 uint8_t uart3_rx_buffer[6] = {0};
 uint8_t uart3_rx_safe_buffer[6] = {0};
@@ -1029,6 +1031,7 @@ void parser() {
 		break;
 	case 0x08:
 		createResponsePacket(0x08,ACCEPTED__);
+		/*
 		if(uart3_rx_buffer[3] != 0) { // move vertical driver
 			chosen_drv = 1;
 		    uint32_t angle_position_drv2 = 0;
@@ -1053,6 +1056,7 @@ void parser() {
 			changeMotorDirection(chosen_drv, start_position_drv1);
 
 		}
+		*/
 
 		break;
 	case 0x09:
@@ -1141,33 +1145,35 @@ void parser() {
 	case 0x10: // move to the specified angle
 		createResponsePacket(0x10,ACCEPTED__);
 		cur_action = TEST_ANGLE_OFFSET;
-		if(chosen_drv) {
+		uint32_t temp_pos;
+		test_angle = 0;
+		test_angle = uart3_rx_buffer[2] << 8;
+		test_angle |= uart3_rx_buffer[1];
 
-			uint32_t angle_position_drv2 = 0;
-			angle_position_drv2 = uart3_rx_buffer[1] << 8;
-			angle_position_drv2 |= uart3_rx_buffer[2];
+
+		if(chosen_drv) { // second motor
+
+			angle_position_drv2 = 0;
 
 			if(!(uart3_rx_buffer[3])) { // absolute moving
-				start_position_drv2 = (angle_position_drv2 * ENCODER_RESOLUTION) / 360; // get absolute encoder position
-				start_position_drv2 = calculateEncPosition(start_position_drv2,chosen_drv);
+				temp_pos = (test_angle * ENCODER_RESOLUTION) / 360; // get absolute encoder position
+				angle_position_drv2 = calculateEncPosition(angle_position_drv2,chosen_drv);
 			}
 
-			changeMotorDirection(chosen_drv, start_position_drv2);
+			changeMotorDirection(chosen_drv, angle_position_drv2);
 			HAL_TIM_Base_Start_IT(&htim7);
 			HAL_TIM_Base_Start_IT(&htim3); // start second motor moving
       
-		} else {
+		} else { // first motor
 
 			angle_position_drv1 = 0;
-			angle_position_drv1 = uart3_rx_buffer[1] << 8;
-			angle_position_drv1 |= uart3_rx_buffer[2];
 
 			if(!(uart3_rx_buffer[3])) { // absolute moving
-				start_position_drv1 = (angle_position_drv1 * ENCODER_RESOLUTION) / 360; // get absolute encoder position
-				start_position_drv1 = calculateEncPosition(start_position_drv1,chosen_drv);
+				temp_pos = (test_angle * ENCODER_RESOLUTION) / 360; // get absolute encoder position
+				angle_position_drv1 = calculateEncPosition(temp_pos,chosen_drv);
 			}
 
-			changeMotorDirection(chosen_drv, start_position_drv1);
+			changeMotorDirection(chosen_drv, angle_position_drv1);
 			HAL_TIM_Base_Start_IT(&htim7);
 			HAL_TIM_Base_Start_IT(&htim2); // start first motor moving
 		}
@@ -1669,19 +1675,33 @@ void createDataPacket() {
 }
 
 uint32_t calculateEncPosition(uint32_t encoder_position, bool chosen_encoder) {
+
+	uint32_t encoder_pos_ret = 0;
+
 	if (chosen_encoder) { // chosen vertical platform
 		if((encoder_position + ENCODER_2_OFFSET) > ENCODER_RESOLUTION) {
-			return (encoder_position + ENCODER_2_OFFSET) - ENCODER_RESOLUTION;
+			//return (encoder_position + ENCODER_2_OFFSET) - ENCODER_RESOLUTION;
+			encoder_pos_ret = (encoder_position + ENCODER_2_OFFSET) - ENCODER_RESOLUTION;
 		} else {
-			return encoder_position + ENCODER_2_OFFSET;
+			//return encoder_position + ENCODER_2_OFFSET;
+			encoder_pos_ret = encoder_position + ENCODER_2_OFFSET;
 		}
 	} else { // chosen horizontal platform
 		if((encoder_position + ENCODER_1_OFFSET) > ENCODER_RESOLUTION) {
-			return (encoder_position + ENCODER_1_OFFSET) - ENCODER_RESOLUTION;
+			//return (encoder_position + ENCODER_1_OFFSET) - ENCODER_RESOLUTION;
+			encoder_pos_ret = (encoder_position + ENCODER_1_OFFSET) - ENCODER_RESOLUTION;
 		} else {
-			return encoder_position + ENCODER_1_OFFSET;
+			//return encoder_position + ENCODER_1_OFFSET;
+			encoder_pos_ret = encoder_position + ENCODER_1_OFFSET;
 		}
 	}
+
+	if (encoder_pos_ret == 0) {
+		encoder_pos_ret = POSITION_ERROR;
+	}
+
+	return encoder_pos_ret;
+
 }
 
 uint32_t processSSIData(uint8_t *SSI_buffer) {
