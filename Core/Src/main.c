@@ -100,7 +100,8 @@ bool reach_end_position = 0;
 bool reach_accel_position = 0;
 bool end_meas_flag = 0;
 bool wait_adc_data_flag = 0;
-uint16_t start_angle_offset_1, start_angle_offset_2;
+uint16_t start_angle_offset_1 = 180, start_angle_offset_2 = 0;
+bool reducing_pos_calc = 0;
 
 
 uint32_t start_position_drv1, start_position_drv2, end_position_drv1, end_position_drv2, accel_position_drv1, accel_position_drv2 = 0;
@@ -315,7 +316,7 @@ int main(void)
 		  if (cur_action == TEST_ROTATION) {
 
 			  if (chosen_drv) {
-				  if ((encoder2_data >= start_position_drv2 - 4) && (encoder1_data <= start_position_drv2 + 4)) {
+				  if ((encoder2_data >= start_position_drv2 - 4) && (encoder2_data <= start_position_drv2 + 4)) {
 					  HAL_TIM_Base_Stop_IT(&htim3); // stop motor
 					  HAL_TIM_Base_Stop_IT(&htim7); // stop encoder poll
 					  cur_action = NONE;
@@ -1028,6 +1029,8 @@ void parser() {
 
 			start_position_drv1 = (start_angle * ENCODER_RESOLUTION) / 360; // get absolute encoder position
 			start_position_drv1 = calculateEncPosition(start_position_drv1,chosen_drv);
+// !!!!!
+			// !! need to check this
 			encoder1_data_last = start_position_drv1 + meas_res_drv1;
 
 			// set end position of measurement
@@ -1038,6 +1041,10 @@ void parser() {
 
 			end_position_drv1 = (end_angle * ENCODER_RESOLUTION) / 360; // get absolute encoder position
 			end_position_drv1 = calculateEncPosition(end_position_drv1,chosen_drv);
+
+			if (end_position_drv1 < start_position_drv1) {
+				reducing_pos_calc = 1;
+			}
 
 			// choose of measurement resolution
 			//meas_res_drv1 = 183; // 0.5 degree
@@ -1086,8 +1093,8 @@ void parser() {
 			start_angle_offset_2 = 0;
 			chosen_drv = 1;
 
-			start_angle_offset_2 = uart3_rx_buffer[1] << 8;
-			start_angle_offset_2 |= uart3_rx_buffer[2];
+			start_angle_offset_2 = uart3_rx_buffer[2] << 8;
+			start_angle_offset_2 |= uart3_rx_buffer[1];
 
 			start_position_drv2 = (start_angle_offset_2 * ENCODER_RESOLUTION) / 360; // get absolute encoder position
 			start_position_drv2 = calculateEncPosition(start_position_drv2,chosen_drv);
@@ -1101,19 +1108,26 @@ void parser() {
 			chosen_drv = 0;
 
 			start_position_drv1 = 0;
-			start_position_drv1 = uart3_rx_buffer[1] << 8;
-			start_position_drv1 |= uart3_rx_buffer[2];
+			start_angle_offset_1  = uart3_rx_buffer[2] << 8;
+			start_angle_offset_1  |= uart3_rx_buffer[1];
 
 			start_position_drv1 = (start_angle_offset_1 * ENCODER_RESOLUTION) / 360; // get absolute encoder position
 			start_position_drv1 = calculateEncPosition(start_position_drv1,chosen_drv);
 
 			changeMotorDirection(chosen_drv, start_position_drv1);
 
+			HAL_TIM_Base_Start_IT(&htim7);
+			HAL_TIM_Base_Start_IT(&htim2); // start horizontal motor moving
+
 		}
+
+		cur_action = TEST_ROTATION;
+		trans_states = 1;
 
 		break;
 	case 0x09:
 		createResponsePacket(0x09,ACCEPTED__);
+		/*
 		cur_action = TEST_ROTATION;
 		trans_states = 1;
 
@@ -1123,7 +1137,7 @@ void parser() {
 		} else {
 			HAL_TIM_Base_Start_IT(&htim7);
 			HAL_TIM_Base_Start_IT(&htim3); // start vertical motor moving
-		}
+		} */
 
 		break;
 	case 0x0A:
