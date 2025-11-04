@@ -127,7 +127,7 @@ bool driver_dir1, driver_dir2, chosen_drv = 1; // 0 - forward, 1 - back
 /* Telemetry status values */
 enum status { ERROR_, READY_, BUSY_ } ready_status;
 enum action { NONE, HORIZONTAL, VERTICAL, HEMISPHERE, LIGHT_POWER, CALIBRATION,
-				TEST_TURN, TEST_ROTATION, TEST_ANGLE_OFFSET } cur_action = NONE;
+				TEST_TURN, TEST_ROTATION, TEST_ANGLE_OFFSET, MOVING } cur_action = NONE;
 enum response_status { ERROR__, ACCEPTED__, ALREADY_EXEC, EXEC_OTHER};
 bool trans_states = 0; // 0 - no trans_state, 1 - trans_state
 enum data { NONE_, _READY_, SOME_PACKETS} data_status;
@@ -170,7 +170,7 @@ void createDataPacket();
 
 /* Measurement functions */
 void handleTestAngleOffset();
-void handleTestRotationOffset();
+void handleMovingToStartOffset();
 void handleHorizontalMeasurement();
 
 void FlashInit();
@@ -298,7 +298,11 @@ int main(void)
 			  handleTestAngleOffset();
 			  break;
 		  case TEST_ROTATION:
-			  handleTestRotationOffset();
+// only for previous desktop app
+			  handleMovingToStartOffset();
+			  break;
+		  case MOVING:
+			  handleMovingToStartOffset();
 			  break;
 		  case HORIZONTAL:
 			  handleHorizontalMeasurement();
@@ -987,11 +991,13 @@ void parser() {
 
 			changeMotorDirection(chosen_drv, start_position_drv1);
 
+			// only for previous version of desktop app
 			HAL_TIM_Base_Start_IT(&htim7);
 			HAL_TIM_Base_Start_IT(&htim2); // start horizontal motor moving
 
 		}
 
+		// only for previous version of desktop app
 		cur_action = TEST_ROTATION;
 		trans_states = 1;
 
@@ -999,7 +1005,9 @@ void parser() {
 	case 0x09:
 		createResponsePacket(0x09,ACCEPTED__);
 		/*
-		cur_action = TEST_ROTATION;
+		ready_status = READY_;
+		cur_action = MOVING;
+
 		trans_states = 1;
 
 		if (!chosen_drv) {
@@ -1587,12 +1595,9 @@ void createResponsePacket(uint8_t command_code, uint8_t status_code) {
 		response_buf[1] = status_code;
 		response_buf[31] = command_code;
 		response_buf[32] = status_code;
-
 	}
 
 	HAL_UART_Transmit(&huart3, response_buf,33,100);
-
-
 }
 
 void createDataPacket() {
@@ -1820,7 +1825,7 @@ void handleTestAngleOffset() {
   }
 }
 
-void handleTestRotationOffset() {
+void handleMovingToStartOffset() {
   if (chosen_drv) {
 	  if ((encoder2_data >= start_position_drv2 - 4) && (encoder2_data <= start_position_drv2 + 4)) {
 		  HAL_TIM_Base_Stop_IT(&htim3); // stop motor
@@ -1880,8 +1885,8 @@ void handleHorizontalMeasurement() {
 			  if (!reach_end_position) {
 
 				  // if reached end position
-				  if ((encoder1_data >= end_position_drv1)) {
-
+				 // if ((encoder1_data >= end_position_drv1)) {
+				  if ((encoder1_data >= end_position_drv1 - 4) && (encoder1_data <= end_position_drv1 - 4)) {
 					  // measurement end but adc buffer is not empty
 					  if (data_buf_counter > 0) {
 						  // clearing the part of the buffer that does not include useful data
