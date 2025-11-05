@@ -40,6 +40,7 @@ static FLASH_EraseInitTypeDef EraseInitStruct;
 #define ACCEL_OFFSET 5 // values in ark degrees
 #define POSITION_ERROR 90
 #define VERTICAL_ROTATION_ANGLE 180
+#define ENCODER_TOLERANCE 8
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -980,7 +981,9 @@ void parser() {
 		ready_status = BUSY_;
 
 		//move vertical platform to start position and start measurement
-		moveToPosition(0, VERTICAL_);
+		trans_states = 1;
+		/* work version
+		moveToPosition(0, VERTICAL_); */
 
 		break;
 	case 0x02:
@@ -1157,10 +1160,6 @@ void parser() {
 
 			changeMotorDirection(chosen_drv, begin_pos_drv1);
 
-			// only for previous version of desktop app
-			HAL_TIM_Base_Start_IT(&htim7);
-			HAL_TIM_Base_Start_IT(&htim2); // start horizontal motor moving
-
 		}
 
 		/* last version
@@ -1215,7 +1214,7 @@ void parser() {
 
 		trans_states = 1;
 
-		if (!chosen_drv) {
+		if (uart3_rx_buffer[1] == 0) {
 			HAL_TIM_Base_Start_IT(&htim7);
 			HAL_TIM_Base_Start_IT(&htim2); // start horizontal motor moving
 		} else {
@@ -2044,7 +2043,7 @@ void handleMovingToStartOffset() {
 		  trans_states = 0;
 	  }
   } else {
-	  if ((encoder1_data >= begin_pos_drv1 - 4) && (encoder1_data <= begin_pos_drv1 + 4)) {
+	  if ((encoder1_data >= begin_pos_drv1 - ENCODER_TOLERANCE) && (encoder1_data <= begin_pos_drv1 + ENCODER_TOLERANCE)) {
 		  HAL_TIM_Base_Stop_IT(&htim2); // stop motor
 		  HAL_TIM_Base_Stop_IT(&htim7); // stop encoder poll
 		  cur_action = NONE;
@@ -2156,6 +2155,10 @@ void handleHorizontalMeasurement() {
 void handleVerticalMeasurement() {
 
 	if (!reach_start_position_vertical) {
+
+		reach_start_position_vertical = 1;
+
+		/* work version
 		if ((encoder2_data >= start_position_drv2 - 5) && (encoder2_data <= start_position_drv2 + 5)) {
 
 			// stop move vertical platform
@@ -2167,7 +2170,7 @@ void handleVerticalMeasurement() {
 			HAL_TIM_Base_Start_IT(&htim7);
 			HAL_TIM_Base_Start_IT(&htim2);
 
-		}
+		} */
 	}
 
 	if (reach_start_position_vertical && !step_1_vertical_meas) {
@@ -2239,7 +2242,8 @@ void handleVerticalMeasurement() {
 						  step_1_vertical_meas = 1;
 						  // start rotation of vertical position;
 						  trans_states = 1;
-						  moveToPosition(VERTICAL_ROTATION_ANGLE,VERTICAL);
+						  /* work version
+						  moveToPosition(VERTICAL_ROTATION_ANGLE,VERTICAL); */
 
 					  } else {
 						  // while not reached end_position
@@ -2267,8 +2271,9 @@ void handleVerticalMeasurement() {
 		if (step_2_vertical_meas) {
 			reverseHorizontalMeasurement();
 		} else {
-			if ((encoder2_data >= start_position_drv2 - 5) && (encoder2_data <= start_position_drv2 + 5)) {
-
+			// work version
+			//if ((encoder2_data >= start_position_drv2 - 5) && (encoder2_data <= start_position_drv2 + 5)) {
+			if (step_1_vertical_meas) {
 				// stop move vertical platform
 				HAL_TIM_Base_Stop_IT(&htim7);
 				HAL_TIM_Base_Stop_IT(&htim3);
