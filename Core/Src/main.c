@@ -322,7 +322,8 @@ int main(void)
 			  handleHorizontalMeasurement();
 			  break;
 		  case VERTICAL:
-			  handleVerticalMeasurement();
+			  //handleVerticalMeasurement();
+			  handleHorizontalMeasurement();
 			  break;
 		  case HEMISPHERE:
 			  break;
@@ -982,6 +983,10 @@ void parser() {
 
 		//move vertical platform to start position and start measurement
 		trans_states = 1;
+
+		// start measurement
+		HAL_TIM_Base_Start_IT(&htim7);	// start poll encoder
+		HAL_TIM_Base_Start_IT(&htim2); // start first motor moving
 		/* work version
 		moveToPosition(0, VERTICAL_); */
 
