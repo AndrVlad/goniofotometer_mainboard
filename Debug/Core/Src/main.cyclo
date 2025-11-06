@@ -36,8 +36,8 @@ main.c:2014:6:createErrorResponse	1
 main.c:2026:6:handleTestAngleOffset	6
 main.c:2042:6:handleMovingToStartOffset	6
 main.c:2060:6:handleTestTurn	6
-main.c:2075:6:handleHorizontalMeasurement	15
-main.c:2160:6:handleVerticalMeasurement	22
-main.c:2320:6:reverseHorizontalMeasurement	15
-main.c:2405:6:HAL_UART_ErrorCallback	2
-main.c:2421:6:Error_Handler	1
+main.c:2075:6:handleHorizontalMeasurement	18
+main.c:2194:6:handleVerticalMeasurement	22
+main.c:2354:6:reverseHorizontalMeasurement	15
+main.c:2439:6:HAL_UART_ErrorCallback	2
+main.c:2455:6:Error_Handler	1

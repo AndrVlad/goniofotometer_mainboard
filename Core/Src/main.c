@@ -38,7 +38,7 @@ static FLASH_EraseInitTypeDef EraseInitStruct;
 #define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
 #define ENCODER_RESOLUTION 131072
 #define ACCEL_OFFSET 5 // values in ark degrees
-#define POSITION_ERROR 90
+#define POSITION_ERROR 92
 #define VERTICAL_ROTATION_ANGLE 180
 #define ENCODER_TOLERANCE 8
 /* USER CODE END PD */
@@ -2116,6 +2116,19 @@ void handleHorizontalMeasurement() {
 				  // if reached end position
 				 //if ((encoder1_data >= end_position_drv1)) {
 				  if ((encoder1_data >= end_position_drv1 - 8) && (encoder1_data <= end_position_drv1 + 8)) {
+
+					  HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
+					  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
+					  wait_adc_data_flag = 1;
+					  //encoder_data_buf_trg[enc_cnt_trg] = encoder1_data;
+					  //enc_cnt_trg++;
+					  usDelay(2);
+					  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
+					  test_counter_adc_data2++;
+					  reach_end_position = 1;
+					  return;
+
+					  /* was here
 					  // measurement end but adc buffer is not empty
 					  if (data_buf_counter > 0) {
 						  // clearing the part of the buffer that does not include useful data
@@ -2134,7 +2147,7 @@ void handleHorizontalMeasurement() {
 
 					  // stop measurement
 					  HAL_TIM_Base_Stop_IT(&htim2); // stop motor
-					  HAL_TIM_Base_Stop_IT(&htim7); // stop SPI timer
+					  HAL_TIM_Base_Stop_IT(&htim7); // stop SPI timer */
 
 				  } else {
 					  // while not reached end_position
@@ -2154,6 +2167,27 @@ void handleHorizontalMeasurement() {
 				  }
 			  }
 		  }
+	  }
+
+	  if (reach_end_position && !wait_adc_data_flag && data_status == NONE_) {
+		  if (data_buf_counter > 0) {
+			  // clearing the part of the buffer that does not include useful data
+			  clearSpecifiedElemOfBuffer(adc_data_buf,33,data_buf_counter*3+1);
+			  data_status = _READY_;
+		  }
+
+		  // reset flags and state
+		  data_buf_counter = 0;
+		  data_elem_cnt = 1;
+		  cur_action = NONE;
+		  wait_flag = 0;
+		  ready_status = READY_;
+		  reach_end_position = 1;
+		  wait_adc_data_flag = 0;
+
+		  // stop measurement
+		  HAL_TIM_Base_Stop_IT(&htim2); // stop motor
+		  HAL_TIM_Base_Stop_IT(&htim7); // stop SPI timer
 	  }
 }
 
