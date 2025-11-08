@@ -1162,9 +1162,10 @@ void parser() {
 			end_position_drv1 = (end_angle * ENCODER_RESOLUTION) / 360; // get absolute encoder position
 			end_position_drv1 = calculateEncPosition(end_position_drv1,chosen_drv);
 
+			/* not used
 			if (end_position_drv1 < start_position_drv1) {
 				reducing_pos_calc = 1;
-			}
+			} */
 
 			// set current action
 			cur_action = HORIZONTAL;
@@ -1854,11 +1855,15 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 		encoder2_data |=  ((uint32_t)dma_spi3_buf[1] << 3);
 		encoder2_data |=  (((uint32_t)dma_spi3_buf[0] & 0x3F) << 11);
 
+		/*
 			if ((encoder2_data >= start_position_drv2 - 1) && (encoder2_data <= start_position_drv2 + 1)) {
 				HAL_TIM_Base_Stop_IT(&htim3);
 				HAL_TIM_Base_Stop_IT(&htim7);
 			}
-		}
+		} */
+
+		spi3_rx_complete = 1;
+	}
 
 }
 
@@ -2461,6 +2466,10 @@ void handleHorizontalMeasurementVertPlatf() {
 			  data_status = _READY_;
 		  }
 
+		  // stop measurement
+		  HAL_TIM_Base_Stop_IT(&htim7); // stop SPI timer
+		  HAL_TIM_Base_Stop_IT(&htim3); // stop motor
+
 		  // reset flags and state
 		  data_buf_counter = 0;
 		  data_elem_cnt = 1;
@@ -2470,9 +2479,6 @@ void handleHorizontalMeasurementVertPlatf() {
 		  reach_end_position = 1;
 		  wait_adc_data_flag = 0;
 
-		  // stop measurement
-		  HAL_TIM_Base_Stop_IT(&htim3); // stop motor
-		  HAL_TIM_Base_Stop_IT(&htim7); // stop SPI timer
 	  }
 }
 
