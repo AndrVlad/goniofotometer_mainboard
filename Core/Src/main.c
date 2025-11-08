@@ -86,7 +86,7 @@ uint16_t test_counter_adc_data2 = 0;
 uint8_t ampl_buf[2];
 uint8_t start_ending_angle_items[2][8] = {{1,2,3,4,5,6,7,8},{180,150,120,90,60,30,10,5}};
 uint16_t measurement_res_items[2][8] = {{1,2,3,4,5,6,7,8},{365,182,61,30,6,3,1}}; // The values are set in arc seconds.
-uint32_t light_pow_period_items[9] = {36000000,18000000,6000000,600000,300000,100000,10000,5000,1000}; // values for TIMER_5 ARR
+uint32_t light_pow_period_items[9] = {36000000,18000000,6000000,600000,300000,110000,10000,5000,1000}; // values for TIMER_5 ARR
 uint16_t light_pow_res_items[12] = {50000,25000,10000,5000,2500,1000,500,250,100,50,25,10}; // values for TIMER ARR
 uint16_t crc = 0;
 uint8_t current_pos = 0;
@@ -112,6 +112,7 @@ bool wait_adc_data_flag = 0;
 uint16_t start_angle_offset_1 = 0, start_angle_offset_2 = 0;
 bool reducing_pos_calc = 0;
 bool reach_test_turn_pos = 0;
+bool start_light_pow_meas = 0;
 
 
 uint32_t start_position_drv1, start_position_drv2, end_position_drv1, end_position_drv2, accel_position_drv1, accel_position_drv2 = 0;
@@ -626,7 +627,7 @@ static void MX_TIM5_Init(void)
 
   /* USER CODE END TIM5_Init 1 */
   htim5.Instance = TIM5;
-  htim5.Init.Prescaler = 107;
+  htim5.Init.Prescaler = 10799;
   htim5.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim5.Init.Period = 4294967295;
   htim5.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -1229,13 +1230,15 @@ void parser() {
 		__HAL_TIM_SET_COUNTER(&htim5, 0);
 
 		HAL_TIM_Base_Stop(&htim14);
-		htim14.Instance->ARR = light_pow_res_items[uart3_rx_safe_buffer[1]-1];
+		htim14.Instance->ARR = light_pow_res_items[uart3_rx_safe_buffer[2]-1];
 		__HAL_TIM_SET_COUNTER(&htim14, 0);
 
 		// start measurement
 		createResponsePacket(0x05,ACCEPTED__);
 		cur_action = LIGHT_POWER;
-		HAL_TIM_Base_Start_IT(&htim5);
+		ready_status = BUSY_;
+		start_light_pow_meas = 1;
+		//HAL_TIM_Base_Start_IT(&htim5);
 		HAL_TIM_Base_Start_IT(&htim14);
 
 	break;
@@ -1294,6 +1297,7 @@ void parser() {
 
 			HAL_TIM_Base_Stop(&htim14);
 			HAL_TIM_Base_Stop(&htim5);
+
 			// checking for remaining data packets
 			if (data_buf_counter > 0 && data_status == NONE_) {
 				// clearing the part of the buffer that does not include useful data
@@ -1307,6 +1311,8 @@ void parser() {
 			wait_flag = 0;
 			wait_adc_data_flag = 0;
 
+			break;
+		default:
 			break;
 		}
 
@@ -1973,19 +1979,35 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		ready_status = READY_;
 		wait_adc_data_flag = 0;
 
+
 		HAL_TIM_Base_Stop(&htim5);
 	}
 
 	// resolution of light power measurement timer
 	if (htim->Instance == TIM14) {
 
-		HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
-		wait_adc_data_flag = 1;
-		usDelay(2);
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
+		if (start_light_pow_meas) {
 
-		__HAL_TIM_SET_COUNTER(&htim14, 0);
+			HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
+					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
+					wait_adc_data_flag = 1;
+					usDelay(2);
+					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
+					__HAL_TIM_SET_COUNTER(&htim14, 0);
+			HAL_TIM_Base_Start_IT(&htim5);
+			start_light_pow_meas = 0;
+
+		} else {
+			HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
+			wait_adc_data_flag = 1;
+			usDelay(2);
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
+			__HAL_TIM_SET_COUNTER(&htim14, 0);
+		}
+
+		test_counter_adc_data2++;
+
 	}
 }
 
