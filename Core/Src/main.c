@@ -1264,6 +1264,56 @@ void parser() {
 		HAL_TIM_Base_Start_IT(&htim2); // start horizontal motor moving
 
 		break;
+
+	case 0x07:
+		createResponsePacket(0x07,ACCEPTED__);
+
+		switch(cur_action) {
+		case HORIZONTAL:
+		case VERTICAL:
+
+			  // stop measurement
+			HAL_TIM_Base_Stop_IT(&htim2); // stop motor
+			HAL_TIM_Base_Stop_IT(&htim3);
+			HAL_TIM_Base_Stop_IT(&htim7); // stop SPI timer
+
+			if (data_buf_counter > 0 && data_status == NONE_) {
+				// clearing the part of the buffer that does not include useful data
+				clearSpecifiedElemOfBuffer(adc_data_buf,33,data_buf_counter*3+1);
+				data_status = _READY_;
+			}
+
+			// reset flags and state
+			data_buf_counter = 0;
+			data_elem_cnt = 1;
+			wait_flag = 0;
+			wait_adc_data_flag = 0;
+
+			break;
+		case LIGHT_POWER:
+
+			HAL_TIM_Base_Stop(&htim14);
+			HAL_TIM_Base_Stop(&htim5);
+			// checking for remaining data packets
+			if (data_buf_counter > 0 && data_status == NONE_) {
+				// clearing the part of the buffer that does not include useful data
+				clearSpecifiedElemOfBuffer(adc_data_buf,33,data_buf_counter*3+1);
+				data_status = _READY_;
+			}
+
+			// reset flags and state
+			data_buf_counter = 0;
+			data_elem_cnt = 1;
+			wait_flag = 0;
+			wait_adc_data_flag = 0;
+
+			break;
+		}
+
+		cur_action = NONE;
+		ready_status = READY_;
+
+		break;
 	case 0x08:
 		createResponsePacket(0x08,ACCEPTED__);
 		uint16_t angle_tmp = 0;
@@ -1909,7 +1959,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		// stop polling of photodetector
 		HAL_TIM_Base_Stop(&htim14);
 		// checking for remaining data packets
-		 if (data_buf_counter > 0) {
+		 if (data_buf_counter > 0 && data_status == NONE_) {
 			// clearing the part of the buffer that does not include useful data
 			clearSpecifiedElemOfBuffer(adc_data_buf,33,data_buf_counter*3+1);
 			data_status = _READY_;
