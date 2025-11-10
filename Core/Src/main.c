@@ -81,7 +81,7 @@ uint8_t response_buf[33] = {0};
 uint8_t adc_data_buf[33] = {0};
 uint8_t data_buf_counter = 0;
 uint8_t data_elem_cnt = 1;
-uint16_t test_counter_adc_data = 0;
+uint16_t test_counter_adc_data, test_cnt_uart1_rx, uart1_received_cnt, uart1_received_cnt_global = 0;
 uint16_t test_counter_adc_data2 = 0;
 uint8_t ampl_buf[2];
 uint8_t start_ending_angle_items[2][8] = {{1,2,3,4,5,6,7,8},{180,150,120,90,60,30,10,5}};
@@ -123,6 +123,7 @@ uint32_t test_angle = 0;
 uint16_t meas_res_drv1, meas_res_drv2 = 0;
 int16_t start_angle, end_angle;
 uint16_t accel_angle = 0;
+uint16_t test_data_buf_cnt = 0;
 uint8_t uart3_rx_buffer[6] = {0};
 uint8_t uart3_rx_safe_buffer[6] = {0};
 uint8_t uart1_rx_buffer[5] = {0};
@@ -283,7 +284,7 @@ int main(void)
 	  }
 	  // handle of message from Photodetector
 	  if (uart1_rx_complete) {
-
+		  uart1_received_cnt_global++;
           checkCRCPhotodetectorData();
 
           if (cur_action == HORIZONTAL || cur_action == VERTICAL || cur_action == HEMISPHERE || cur_action == LIGHT_POWER) {
@@ -297,8 +298,8 @@ int main(void)
         		  wait_adc_data_flag = 0;
 
         		  data_buf_counter++;
-
-        		  test_counter_adc_data = data_buf_counter;
+        		  test_data_buf_cnt = data_buf_counter;
+        		  test_counter_adc_data++;
 
         		  if (data_buf_counter == 10) {
         			  data_buf_counter = 0;
@@ -989,7 +990,8 @@ void parser() {
 			HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
 			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
 			//HAL_Delay(1);
-			usDelay(100);
+			//usDelay(100);
+			usDelay(10);
 			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
 
 		}
@@ -1244,6 +1246,7 @@ void parser() {
 	case 0x05:
 
 		memcpy(uart3_rx_safe_buffer, uart3_rx_buffer, 6);
+		end_meas_flag = 0;
 
 		// Init of timers
 		HAL_TIM_Base_Stop(&htim5);
@@ -2010,7 +2013,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	if (htim->Instance == TIM14) {
 
 		if (start_light_pow_meas) {
-
+			uart1_received_cnt = 0;
+			uart1_received_cnt_global = 0;
 			HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
 					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
 					wait_adc_data_flag = 1;
@@ -2266,11 +2270,14 @@ void checkCRCPhotodetectorData() {
 		  uart1_rx_safe_buffer_meas[0] = uart1_rx_buffer[0];
 		  uart1_rx_safe_buffer_meas[1] = uart1_rx_buffer[1];
 		  uart1_rx_safe_buffer_meas[2] = uart1_rx_buffer[2];
+		  test_cnt_uart1_rx++;
 	  } else {
 		  uart1_rx_safe_buffer[0] = uart1_rx_buffer[0];
 		  uart1_rx_safe_buffer[1] = uart1_rx_buffer[1];
 		  uart1_rx_safe_buffer[2] = uart1_rx_buffer[2];
 	  }
+	  uart1_received_cnt++;
+
 
   } else {
     // error handler
