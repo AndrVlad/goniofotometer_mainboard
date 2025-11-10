@@ -81,12 +81,12 @@ uint8_t response_buf[33] = {0};
 uint8_t adc_data_buf[33] = {0};
 uint8_t data_buf_counter = 0;
 uint8_t data_elem_cnt = 1;
-uint16_t test_counter_adc_data, test_cnt_uart1_rx, uart1_received_cnt, uart1_received_cnt_global = 0;
+uint16_t test_counter_adc_data, test_cnt_uart1_rx, uart1_received_cnt, uart1_received_cnt_global, take_data_cnt = 0;
 uint16_t test_counter_adc_data2 = 0;
 uint8_t ampl_buf[2];
 uint8_t start_ending_angle_items[2][8] = {{1,2,3,4,5,6,7,8},{180,150,120,90,60,30,10,5}};
 uint16_t measurement_res_items[2][8] = {{1,2,3,4,5,6,7,8},{365,182,61,30,6,3,1}}; // The values are set in arc seconds.
-uint32_t light_pow_period_items[9] = {36000000,18000000,6000000,600000,300000,110000,10000,5000,1000}; // values for TIMER_5 ARR
+uint32_t light_pow_period_items[9] = {36000000,18000000,6000000,600000,300000,115000,10000,5000,1000}; // values for TIMER_5 ARR
 uint16_t light_pow_res_items[12] = {50000,25000,10000,5000,2500,1000,500,250,100,50,25,10}; // values for TIMER ARR
 uint16_t crc = 0;
 uint8_t current_pos = 0;
@@ -113,6 +113,8 @@ uint16_t start_angle_offset_1 = 0, start_angle_offset_2 = 0;
 bool reducing_pos_calc = 0;
 bool reach_test_turn_pos = 0;
 bool start_light_pow_meas = 0;
+bool adc_coeff_command_set = 0;
+bool adc_coeff_set_complete = 0;
 
 
 uint32_t start_position_drv1, start_position_drv2, end_position_drv1, end_position_drv2, accel_position_drv1, accel_position_drv2 = 0;
@@ -137,6 +139,8 @@ bool uart3_rx_complete = 0;
 bool spi4_rx_complete = 0;
 bool spi3_rx_complete = 0;
 bool driver_dir1, driver_dir2, chosen_drv = 1; // 0 - forward, 1 - back
+bool init_state = 1;
+uint8_t next_command = 0xFF;
 
 /* Telemetry status values */
 enum status { ERROR_, READY_, BUSY_ } ready_status;
@@ -381,7 +385,8 @@ int main(void)
 
 	 if (end_meas_flag) {
 
-		 if (data_buf_counter > 0 && data_status == NONE_) {
+		 //if (data_buf_counter > 0 && data_status == NONE_) {
+		 if (data_buf_counter > 0) {
 			 wait_adc_data_flag = 0;
 			// clearing the part of the buffer that does not include useful data
 			clearSpecifiedElemOfBuffer(adc_data_buf,33,data_buf_counter*3+1);
@@ -397,6 +402,18 @@ int main(void)
 			wait_adc_data_flag = 0;
 		}
 
+	 }
+
+
+	 if (adc_coeff_command_set && adc_coeff_set_complete && next_command == 0x05) {
+		adc_coeff_command_set = 0;
+		adc_coeff_set_complete = 0;
+		next_command = 0xFF;
+		cur_action = LIGHT_POWER;
+		ready_status = BUSY_;
+		start_light_pow_meas = 1;
+		//HAL_TIM_Base_Start_IT(&htim5);
+		HAL_TIM_Base_Start_IT(&htim14);
 	 }
   }
 
@@ -1246,6 +1263,14 @@ void parser() {
 	case 0x05:
 
 		memcpy(uart3_rx_safe_buffer, uart3_rx_buffer, 6);
+
+		// check of setting adc coefficient command
+		if (adc_coeff_command_set) {
+			next_command = 0x05;
+		} else {
+			next_command = 0;
+		}
+
 		end_meas_flag = 0;
 
 		// Init of timers
@@ -1257,14 +1282,11 @@ void parser() {
 		htim14.Instance->ARR = light_pow_res_items[uart3_rx_safe_buffer[2]-1];
 		__HAL_TIM_SET_COUNTER(&htim14, 0);
 
-		// start measurement
 		createResponsePacket(0x05,ACCEPTED__);
-		cur_action = LIGHT_POWER;
-		ready_status = BUSY_;
-		start_light_pow_meas = 1;
-		//HAL_TIM_Base_Start_IT(&htim5);
-		HAL_TIM_Base_Start_IT(&htim14);
 
+
+
+		// then wait adc_coeff installation in the while ...
 	break;
 
 	case 0x06:
@@ -1452,6 +1474,7 @@ void parser() {
 	case 0x0B:
 			createDataPacket();
 			data_status = NONE_;
+			take_data_cnt++;
 
 		break;
 
@@ -1595,6 +1618,8 @@ void parser() {
 		// send response packet
 		createResponsePacket(0x14,ACCEPTED__);
 		wait_flag = 1;
+
+		adc_coeff_command_set = 1;
 
 		ampl_buf[0] = getADCAmplifierVal(uart3_rx_buffer[1]);
 		if (uart3_rx_buffer[2] == 1) {
@@ -1847,25 +1872,20 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 						error_code = 0x01;
 					}
 				}
-				/*
-				if (buf[0] != (ampl_buf[0] >> 4)) {
-					// handle of error
-					ready_status = ERROR_;
+				// handle of setting 0x14 command at the step of initialization of mainboard
+				if (init_state) {
+					init_state = 0;
+					adc_coeff_set_complete = 0;
+					adc_coeff_command_set = 0;
+				} else {
+					adc_coeff_set_complete = 1;
 				}
 
-
-				if(huart->RxXferCount != 0) {
-					HAL_UART_Receive_IT(&huart1, uart1_rx_buffer,5);
-					return;
-				}
-				*/
 				wait_flag = 0;
-				//HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer,5);
 			}
 
 			// other cases
 			uart1_rx_complete = 1;
-			//createResponsePacket(0x01,0);
 		}
 
 }
