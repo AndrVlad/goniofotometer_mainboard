@@ -298,12 +298,13 @@ int main(void)
 
         		  data_buf_counter++;
 
-        		  test_counter_adc_data++;
+        		  test_counter_adc_data = data_buf_counter;
 
         		  if (data_buf_counter == 10) {
         			  data_buf_counter = 0;
         			  data_elem_cnt = 1;
         			  data_status = _READY_;
+
         		  }
         	  }
         }
@@ -376,6 +377,26 @@ int main(void)
 		  }
 		  spi3_rx_complete = 0;
 	  }
+
+	 if (end_meas_flag) {
+
+		 if (data_buf_counter > 0 && data_status == NONE_) {
+			 wait_adc_data_flag = 0;
+			// clearing the part of the buffer that does not include useful data
+			clearSpecifiedElemOfBuffer(adc_data_buf,33,data_buf_counter*3+1);
+			data_status = _READY_;
+			data_buf_counter = 0;
+			data_elem_cnt = 1;
+
+		} else if (data_buf_counter == 0 && data_status == NONE_) {
+			cur_action = NONE;
+			wait_flag = 0;
+			ready_status = READY_;
+			end_meas_flag = 0;
+			wait_adc_data_flag = 0;
+		}
+
+	 }
   }
 
     /* USER CODE END WHILE */
@@ -1964,6 +1985,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 		// stop polling of photodetector
 		HAL_TIM_Base_Stop(&htim14);
+		/*
 		// checking for remaining data packets
 		 if (data_buf_counter > 0 && data_status == NONE_) {
 			// clearing the part of the buffer that does not include useful data
@@ -1978,9 +2000,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		wait_flag = 0;
 		ready_status = READY_;
 		wait_adc_data_flag = 0;
-
+		*/
 
 		HAL_TIM_Base_Stop(&htim5);
+		end_meas_flag = 1;
 	}
 
 	// resolution of light power measurement timer
