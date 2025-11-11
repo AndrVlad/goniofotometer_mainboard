@@ -83,6 +83,7 @@ uint8_t data_buf_counter = 0;
 uint8_t data_elem_cnt = 1;
 uint16_t test_counter_adc_data, test_cnt_uart1_rx, uart1_received_cnt, uart1_received_cnt_global, take_data_cnt = 0;
 uint16_t test_counter_adc_data2 = 0;
+uint16_t busy_cnt = 0;
 uint8_t ampl_buf[2];
 uint8_t start_ending_angle_items[2][8] = {{1,2,3,4,5,6,7,8},{180,150,120,90,60,30,10,5}};
 uint16_t measurement_res_items[2][8] = {{1,2,3,4,5,6,7,8},{365,182,61,30,6,3,1}}; // The values are set in arc seconds.
@@ -93,6 +94,7 @@ uint8_t current_pos = 0;
 uint8_t i = 0;
 char str[64] = {0,};
 uint32_t idata[] = {0x1941, 0x1945};
+uint32_t CRC_Photodetector = 0;
 
 uint32_t encoder_offset[2] = {0};
 uint32_t address = ADDR_FLASH_SECTOR_2;
@@ -2031,28 +2033,34 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	// resolution of light power measurement timer
 	if (htim->Instance == TIM14) {
 
-		if (start_light_pow_meas) {
-			uart1_received_cnt = 0;
-			uart1_received_cnt_global = 0;
-			HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
-					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
-					wait_adc_data_flag = 1;
-					usDelay(2);
-					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
-					__HAL_TIM_SET_COUNTER(&htim14, 0);
-			HAL_TIM_Base_Start_IT(&htim5);
-			start_light_pow_meas = 0;
+		if (huart1.hdmarx->State != HAL_DMA_STATE_BUSY) {
+			if (start_light_pow_meas) {
+				uart1_received_cnt = 0;
+				uart1_received_cnt_global = 0;
+				HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
+						HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
+						wait_adc_data_flag = 1;
+						usDelay(2);
+						HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
+						__HAL_TIM_SET_COUNTER(&htim14, 0);
+				HAL_TIM_Base_Start_IT(&htim5);
+				start_light_pow_meas = 0;
 
+			} else {
+				HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
+				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
+				wait_adc_data_flag = 1;
+				usDelay(2);
+				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
+				__HAL_TIM_SET_COUNTER(&htim14, 0);
+			}
+
+			test_counter_adc_data2++;
 		} else {
-			HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
-			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
-			wait_adc_data_flag = 1;
-			usDelay(2);
-			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
-			__HAL_TIM_SET_COUNTER(&htim14, 0);
+			busy_cnt++;
 		}
 
-		test_counter_adc_data2++;
+
 
 	}
 }
@@ -2277,7 +2285,7 @@ void moveToPosition(uint8_t angle, bool chosen_drv) {
 	}
 }
 
-
+/*
 void checkCRCPhotodetectorData() {
   uint32_t CRC_Photodetector = 0;
   //calculate CRC
@@ -2285,6 +2293,28 @@ void checkCRCPhotodetectorData() {
   CRC_Photodetector = CRC_Photodetector & 0xFF;
   // check CRC
   if ((CRC_Photodetector == uart1_rx_buffer[3]) && (uart1_rx_buffer[4] == 0xA5)) {
+	  if (wait_adc_data_flag) {
+		  uart1_rx_safe_buffer_meas[0] = uart1_rx_buffer[0];
+		  uart1_rx_safe_buffer_meas[1] = uart1_rx_buffer[1];
+		  uart1_rx_safe_buffer_meas[2] = uart1_rx_buffer[2];
+		  test_cnt_uart1_rx++;
+	  } else {
+		  uart1_rx_safe_buffer[0] = uart1_rx_buffer[0];
+		  uart1_rx_safe_buffer[1] = uart1_rx_buffer[1];
+		  uart1_rx_safe_buffer[2] = uart1_rx_buffer[2];
+	  }
+	  uart1_received_cnt++;
+
+
+  } else {
+    // error handler
+  }
+}
+ */
+
+void checkCRCPhotodetectorData() {
+  // check CRC
+  if ((((uart1_rx_buffer[0] + uart1_rx_buffer[1] + uart1_rx_buffer[2]) & 0xFF) == uart1_rx_buffer[3]) && (uart1_rx_buffer[4] == 0xA5)) {
 	  if (wait_adc_data_flag) {
 		  uart1_rx_safe_buffer_meas[0] = uart1_rx_buffer[0];
 		  uart1_rx_safe_buffer_meas[1] = uart1_rx_buffer[1];
