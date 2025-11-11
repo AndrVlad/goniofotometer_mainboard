@@ -388,7 +388,7 @@ int main(void)
 		 //if (data_buf_counter > 0 && data_status == NONE_) {
 		 if (data_buf_counter > 0) {
 			 wait_adc_data_flag = 0;
-			// clearing the part of the buffer that does not include useful data
+			// clearing the part of the buffer that does not contain useful data
 			clearSpecifiedElemOfBuffer(adc_data_buf,33,data_buf_counter*3+1);
 			data_status = _READY_;
 			data_buf_counter = 0;
@@ -1284,8 +1284,6 @@ void parser() {
 
 		createResponsePacket(0x05,ACCEPTED__);
 
-
-
 		// then wait adc_coeff installation in the while ...
 	break;
 
@@ -1620,6 +1618,7 @@ void parser() {
 		wait_flag = 1;
 
 		adc_coeff_command_set = 1;
+		adc_coeff_set_complete = 0;
 
 		ampl_buf[0] = getADCAmplifierVal(uart3_rx_buffer[1]);
 		if (uart3_rx_buffer[2] == 1) {
