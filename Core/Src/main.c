@@ -117,6 +117,7 @@ bool reach_test_turn_pos = 0;
 bool start_light_pow_meas = 0;
 bool adc_coeff_command_set = 0;
 bool adc_coeff_set_complete = 0;
+bool tim14_cnt = 0;
 
 
 uint32_t start_position_drv1, start_position_drv2, end_position_drv1, end_position_drv2, accel_position_drv1, accel_position_drv2 = 0;
@@ -416,6 +417,33 @@ int main(void)
 		start_light_pow_meas = 1;
 		//HAL_TIM_Base_Start_IT(&htim5);
 		HAL_TIM_Base_Start_IT(&htim14);
+	 }
+
+	 if (tim14_cnt) {
+		 tim14_cnt = 0;
+		 if (start_light_pow_meas) {
+			uart1_received_cnt = 0;
+			uart1_received_cnt_global = 0;
+			HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
+			wait_adc_data_flag = 1;
+			usDelay(10);
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
+			__HAL_TIM_SET_COUNTER(&htim14, 0);
+			HAL_TIM_Base_Start_IT(&htim5);
+			start_light_pow_meas = 0;
+
+		} else {
+			HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
+			wait_adc_data_flag = 1;
+			usDelay(10);
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
+			__HAL_TIM_SET_COUNTER(&htim14, 0);
+		}
+
+		test_counter_adc_data2++;
+
 	 }
   }
 
@@ -2014,29 +2042,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	// resolution of light power measurement timer
 	if (htim->Instance == TIM14) {
 
-		//if (huart1.hdmarx->State != HAL_DMA_STATE_BUSY) {
-			if (start_light_pow_meas) {
-				uart1_received_cnt = 0;
-				uart1_received_cnt_global = 0;
-				HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
-						HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
-						wait_adc_data_flag = 1;
-						usDelay(2);
-						HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
-						__HAL_TIM_SET_COUNTER(&htim14, 0);
-				HAL_TIM_Base_Start_IT(&htim5);
-				start_light_pow_meas = 0;
+		tim14_cnt = 1;
 
-			} else {
-				HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
-				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
-				wait_adc_data_flag = 1;
-				usDelay(2);
-				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
-				__HAL_TIM_SET_COUNTER(&htim14, 0);
-			}
+		if (huart1.hdmarx->State == HAL_DMA_STATE_BUSY) {
+			//HAL_UART_DMAStop(&huart1);
+		}
 
-			test_counter_adc_data2++;
+
 	//	} else {
 	//		busy_cnt++;
 	//	}
@@ -2404,7 +2416,7 @@ void handleHorizontalMeasurement() {
 
 			  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
 			  	wait_adc_data_flag = 1;
-			  	usDelay(2);
+			  	usDelay(10);
 
 			  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
 			  }
@@ -2425,7 +2437,7 @@ void handleHorizontalMeasurement() {
 					  wait_adc_data_flag = 1;
 					  //encoder_data_buf_trg[enc_cnt_trg] = encoder1_data;
 					  //enc_cnt_trg++;
-					  usDelay(2);
+					  usDelay(10);
 					  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
 					  test_counter_adc_data2++;
 					  reach_end_position = 1;
@@ -2462,7 +2474,7 @@ void handleHorizontalMeasurement() {
 						 	wait_adc_data_flag = 1;
 						 	//encoder_data_buf_trg[enc_cnt_trg] = encoder1_data;
 						 	//enc_cnt_trg++;
-						 	usDelay(2);
+						 	usDelay(10);
 
 						 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
 						 	test_counter_adc_data2++;
