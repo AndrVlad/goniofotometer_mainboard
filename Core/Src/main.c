@@ -1006,13 +1006,14 @@ void parser() {
 
 		if (wait_flag == 0) {
 
-			HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
-			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
-			//HAL_Delay(1);
-			//usDelay(100);
-			usDelay(10);
-			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
-
+			if(huart1.hdmarx->State == HAL_DMA_STATE_READY) {
+				HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
+				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
+				//HAL_Delay(1);
+				//usDelay(100);
+				usDelay(10);
+				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
+			}
 		}
 
 		//clearBuffer(response_buf,33);
@@ -1627,32 +1628,12 @@ void parser() {
 			ampl_buf[0] |= 0b10001000;
 		}
 		ampl_buf[1] = ampl_buf[0];
-		//__disable_irq();
-		//HAL_DMA_Abort(&hdma_usart1_rx);  // или hdma_usartx_rx
-		// Сбрасываем счетчик
-		//__HAL_DMA_SET_COUNTER(&hdma_usart1_rx, 0);
-		//HAL_UART_DMAStop(&huart1);
-		//HAL_UART_Transmit_DMA(&huart1, amplifier_val, 3);
-		//__enable_irq();
-		//memcpy(uart1_rx_safe_buffer, uart1_rx_buffer, 3);
-		//HAL_UART_DMAStop(&huart1);
+
 		HAL_UART_DMAStop(&huart1);
 		HAL_UART_Transmit(&huart1, ampl_buf, 1,100);
 		/* this string fixed bug early */
 		//HAL_UART_Receive_IT(&huart1, buf, 5);
 		HAL_UART_Receive_DMA(&huart1, buf, 5);
-		//HAL_TIM_Base_Start_IT(&htim10);
-
-		//usDelay(700);
-		//wait_flag = 0;
-		//HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 3);
-		//hdma_usart1_rx.Instance->NDTR = 0;
-
-
-		/*
-		if (!(ampl_buf[0] == (amplifier_val[0] >> 4))) {
-			// handle of error;
-		} */
 
 		break;
 	case 0x15:
@@ -2033,7 +2014,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	// resolution of light power measurement timer
 	if (htim->Instance == TIM14) {
 
-		if (huart1.hdmarx->State != HAL_DMA_STATE_BUSY) {
+		//if (huart1.hdmarx->State != HAL_DMA_STATE_BUSY) {
 			if (start_light_pow_meas) {
 				uart1_received_cnt = 0;
 				uart1_received_cnt_global = 0;
@@ -2056,9 +2037,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			}
 
 			test_counter_adc_data2++;
-		} else {
-			busy_cnt++;
-		}
+	//	} else {
+	//		busy_cnt++;
+	//	}
 
 
 
