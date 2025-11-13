@@ -86,10 +86,10 @@ uint16_t test_counter_adc_data2 = 0;
 uint16_t busy_cnt = 0;
 uint8_t ampl_buf[2];
 uint8_t start_ending_angle_items[2][8] = {{1,2,3,4,5,6,7,8},{180,150,120,90,60,30,10,5}};
-uint16_t measurement_res_items[2][8] = {{1,2,3,4,5,6,7,8},{365,182,61,30,6,3,1}}; // The values are set in arc seconds.
-uint32_t light_pow_period_items[9] = {36000000,18000000,6000000,600000,300000,115000,10000,5000,1000}; // values for TIMER_5 ARR
+uint16_t measurement_res_items[2][8] = {{1,2,3,4,5,6,7,8},{365,182,60,29,6,3,1}}; // The values are set in arc seconds.
+uint32_t light_pow_period_items[9] = {36000000,18000000,6000000,600000,300000,110000,10000,5000,1000}; // values for TIMER_5 ARR
 uint16_t light_pow_res_items[12] = {50000,25000,10000,5000,2500,1000,500,250,100,50,25,10}; // values for TIMER ARR
-uint16_t crc = 0;
+uint16_t crc, packet_cnt = 0;
 uint8_t current_pos = 0;
 uint8_t i = 0;
 char str[64] = {0,};
@@ -208,6 +208,7 @@ void ReadFlash_();
 void usDelay(uint16_t useconds);
 void checkCRCPhotodetectorData();
 void createErrorResponse();
+uint32_t calculateTimeIntervalError(uint32_t meas_interval, uint32_t meas_resolution);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -312,6 +313,7 @@ int main(void)
         			  data_buf_counter = 0;
         			  data_elem_cnt = 1;
         			  data_status = _READY_;
+        			  packet_cnt++;
 
         		  }
         	  }
@@ -389,7 +391,7 @@ int main(void)
 	 if (end_meas_flag) {
 
 		 //if (data_buf_counter > 0 && data_status == NONE_) {
-		 if (data_buf_counter > 0) {
+		 if (data_buf_counter > 0 && data_status == NONE_) {
 			 wait_adc_data_flag = 0;
 			// clearing the part of the buffer that does not contain useful data
 			clearSpecifiedElemOfBuffer(adc_data_buf,33,data_buf_counter*3+1);
@@ -1306,7 +1308,8 @@ void parser() {
 
 		// Init of timers
 		HAL_TIM_Base_Stop(&htim5);
-		htim5.Instance->ARR = light_pow_period_items[uart3_rx_safe_buffer[1]-1];
+		//htim5.Instance->ARR = light_pow_period_items[uart3_rx_safe_buffer[1]-1];
+		htim5.Instance->ARR = calculateTimeIntervalError(light_pow_period_items[uart3_rx_safe_buffer[1]-1],light_pow_res_items[uart3_rx_safe_buffer[2]-1]);
 		__HAL_TIM_SET_COUNTER(&htim5, 0);
 
 		HAL_TIM_Base_Stop(&htim14);
@@ -2869,6 +2872,23 @@ void reverseHorizontalMeasurement() {
 			  }
 		  }
 	  }
+}
+
+uint32_t calculateTimeIntervalError(uint32_t meas_interval, uint32_t meas_resolution) {
+	uint32_t meas_interval_ms, meas_resolution_ms, result = 0;
+	uint16_t error_cnt, data_num;
+
+	meas_interval_ms = meas_interval / 10;
+	meas_resolution_ms = (meas_resolution * 2)/10;
+	data_num = (meas_interval_ms / meas_resolution_ms)+1;
+
+
+	if (((meas_interval_ms / meas_resolution_ms)+1) >= 49) {
+		error_cnt = data_num / 49;
+	}
+
+	result = (error_cnt * 21)*10;
+	return meas_interval + result;
 }
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
