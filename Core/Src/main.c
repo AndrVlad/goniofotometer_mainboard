@@ -2433,7 +2433,7 @@ void handleHorizontalMeasurement() {
 
 				  // if reached end position
 				 //if ((encoder1_data >= end_position_drv1)) {
-				  if ((encoder1_data >= end_position_drv1 - 8) && (encoder1_data <= end_position_drv1 + 8)) {
+				  if ((encoder1_data >= end_position_drv1) && (encoder1_data <= end_position_drv1 + ENCODER_TOLERANCE)) {
 
 					  HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
 					  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
