@@ -63,6 +63,7 @@ TIM_HandleTypeDef htim5;
 TIM_HandleTypeDef htim6;
 TIM_HandleTypeDef htim7;
 TIM_HandleTypeDef htim10;
+TIM_HandleTypeDef htim13;
 TIM_HandleTypeDef htim14;
 
 UART_HandleTypeDef huart1;
@@ -81,13 +82,14 @@ uint8_t response_buf[33] = {0};
 uint8_t adc_data_buf[33] = {0};
 uint8_t data_buf_counter = 0;
 uint8_t data_elem_cnt = 1;
+uint16_t tim14_arr_val = 0;
 uint16_t test_counter_adc_data, test_cnt_uart1_rx, uart1_received_cnt, uart1_received_cnt_global, take_data_cnt = 0;
 uint16_t test_counter_adc_data2 = 0;
 uint16_t busy_cnt = 0;
 uint8_t ampl_buf[2];
 uint8_t start_ending_angle_items[2][8] = {{1,2,3,4,5,6,7,8},{180,150,120,90,60,30,10,5}};
 uint16_t measurement_res_items[2][8] = {{1,2,3,4,5,6,7,8},{365,182,60,29,6,3,1}}; // The values are set in arc seconds.
-uint32_t light_pow_period_items[9] = {36000000,18000000,6000000,600000,300000,110000,10000,5000,1000}; // values for TIMER_5 ARR
+uint32_t light_pow_period_items[9] = {36000000,18000000,6000000,600000,300000,100000,10000,5000,1000}; // values for TIMER_5 ARR
 uint16_t light_pow_res_items[12] = {50000,25000,10000,5000,2500,1000,500,250,100,50,25,10}; // values for TIMER ARR
 uint16_t crc, packet_cnt = 0;
 uint8_t current_pos = 0;
@@ -177,6 +179,7 @@ static void MX_TIM7_Init(void);
 static void MX_TIM10_Init(void);
 static void MX_TIM5_Init(void);
 static void MX_TIM14_Init(void);
+static void MX_TIM13_Init(void);
 /* USER CODE BEGIN PFP */
 void parser();
 void stepDriver(uint8_t step_num);
@@ -256,6 +259,7 @@ int main(void)
   MX_TIM10_Init();
   MX_TIM5_Init();
   MX_TIM14_Init();
+  MX_TIM13_Init();
   /* USER CODE BEGIN 2 */
 
   HAL_TIM_Base_Stop_IT(&htim2);
@@ -419,6 +423,7 @@ int main(void)
 		start_light_pow_meas = 1;
 		//HAL_TIM_Base_Start_IT(&htim5);
 		HAL_TIM_Base_Start_IT(&htim14);
+
 	 }
 
 	 if (tim14_cnt) {
@@ -426,21 +431,33 @@ int main(void)
 		 if (start_light_pow_meas) {
 			uart1_received_cnt = 0;
 			uart1_received_cnt_global = 0;
+			HAL_TIM_Base_Start(&htim13);
 			HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
 			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
 			wait_adc_data_flag = 1;
 			usDelay(10);
 			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
+			HAL_TIM_Base_Stop(&htim13);
 			__HAL_TIM_SET_COUNTER(&htim14, 0);
 			HAL_TIM_Base_Start_IT(&htim5);
 			start_light_pow_meas = 0;
 
 		} else {
+			HAL_TIM_Base_Start(&htim13);
 			HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
 			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
 			wait_adc_data_flag = 1;
 			usDelay(10);
 			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
+			HAL_TIM_Base_Stop(&htim13);
+
+			if (htim13.Instance->CNT >= 200) {
+				htim14.Instance->ARR = tim14_arr_val - 10;
+				htim13.Instance->CNT = 0;
+			} else {
+				htim14.Instance->ARR = tim14_arr_val;
+			}
+
 			__HAL_TIM_SET_COUNTER(&htim14, 0);
 		}
 
@@ -828,6 +845,37 @@ static void MX_TIM10_Init(void)
   /* USER CODE BEGIN TIM10_Init 2 */
 
   /* USER CODE END TIM10_Init 2 */
+
+}
+
+/**
+  * @brief TIM13 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM13_Init(void)
+{
+
+  /* USER CODE BEGIN TIM13_Init 0 */
+
+  /* USER CODE END TIM13_Init 0 */
+
+  /* USER CODE BEGIN TIM13_Init 1 */
+
+  /* USER CODE END TIM13_Init 1 */
+  htim13.Instance = TIM13;
+  htim13.Init.Prescaler = 107;
+  htim13.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim13.Init.Period = 65535;
+  htim13.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim13.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim13) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM13_Init 2 */
+
+  /* USER CODE END TIM13_Init 2 */
 
 }
 
@@ -1296,7 +1344,7 @@ void parser() {
 	case 0x05:
 
 		memcpy(uart3_rx_safe_buffer, uart3_rx_buffer, 6);
-
+		htim13.Instance->CNT = 0;
 		// check of setting adc coefficient command
 		if (adc_coeff_command_set) {
 			next_command = 0x05;
@@ -1308,12 +1356,14 @@ void parser() {
 
 		// Init of timers
 		HAL_TIM_Base_Stop(&htim5);
-		//htim5.Instance->ARR = light_pow_period_items[uart3_rx_safe_buffer[1]-1];
-		htim5.Instance->ARR = calculateTimeIntervalError(light_pow_period_items[uart3_rx_safe_buffer[1]-1],light_pow_res_items[uart3_rx_safe_buffer[2]-1]);
+		htim5.Instance->ARR = light_pow_period_items[uart3_rx_safe_buffer[1]-1];
+		//htim5.Instance->ARR = calculateTimeIntervalError(light_pow_period_items[uart3_rx_safe_buffer[1]-1],light_pow_res_items[uart3_rx_safe_buffer[2]-1]);
 		__HAL_TIM_SET_COUNTER(&htim5, 0);
 
 		HAL_TIM_Base_Stop(&htim14);
-		htim14.Instance->ARR = light_pow_res_items[uart3_rx_safe_buffer[2]-1];
+		tim14_arr_val = light_pow_res_items[uart3_rx_safe_buffer[2]-1];
+		htim14.Instance->ARR = tim14_arr_val;
+		//htim14.Instance->ARR = light_pow_res_items[uart3_rx_safe_buffer[2]-1];
 		__HAL_TIM_SET_COUNTER(&htim14, 0);
 
 		createResponsePacket(0x05,ACCEPTED__);
