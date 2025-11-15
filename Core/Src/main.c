@@ -69,9 +69,7 @@ TIM_HandleTypeDef htim14;
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart3;
 DMA_HandleTypeDef hdma_usart1_rx;
-DMA_HandleTypeDef hdma_usart1_tx;
 DMA_HandleTypeDef hdma_usart3_rx;
-DMA_HandleTypeDef hdma_usart3_tx;
 
 /* USER CODE BEGIN PV */
 uint8_t buf[5] = {0x0A,0x0A,0x0A,0x0A,0x0A};
@@ -213,6 +211,8 @@ void usDelay(uint16_t useconds);
 void checkCRCPhotodetectorData();
 void createErrorResponse();
 uint32_t calculateTimeIntervalError(uint32_t meas_interval, uint32_t meas_resolution);
+void setNVICPriority(uint8_t cur_action);
+void resetNVICPriority();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -410,6 +410,7 @@ int main(void)
 			ready_status = READY_;
 			end_meas_flag = 0;
 			wait_adc_data_flag = 0;
+			resetNVICPriority();
 		}
 
 	 }
@@ -423,6 +424,7 @@ int main(void)
 		ready_status = BUSY_;
 		start_light_pow_meas = 1;
 		//HAL_TIM_Base_Start_IT(&htim5);
+		setNVICPriority(LIGHT_POWER);
 		HAL_TIM_Base_Start_IT(&htim14);
 
 	 }
@@ -1005,29 +1007,23 @@ static void MX_DMA_Init(void)
 
   /* DMA interrupt init */
   /* DMA1_Stream0_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 1, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
   /* DMA1_Stream1_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Stream1_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(DMA1_Stream1_IRQn, 1, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream1_IRQn);
-  /* DMA1_Stream3_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Stream3_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Stream3_IRQn);
   /* DMA1_Stream5_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 1, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
   /* DMA2_Stream0_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 1, 1);
   HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
   /* DMA2_Stream1_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA2_Stream1_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(DMA2_Stream1_IRQn, 1, 1);
   HAL_NVIC_EnableIRQ(DMA2_Stream1_IRQn);
   /* DMA2_Stream2_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA2_Stream2_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(DMA2_Stream2_IRQn, 1, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream2_IRQn);
-  /* DMA2_Stream7_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA2_Stream7_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(DMA2_Stream7_IRQn);
 
 }
 
@@ -2024,6 +2020,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	if (htim->Instance == TIM13) {
 		tim13_ovflw++;
 		tim13cnt += htim->Instance->CNT;
+		HAL_TIM_Base_Stop(&htim13);
 	}
 
 }
@@ -2856,6 +2853,51 @@ uint32_t calculateTimeIntervalError(uint32_t meas_interval, uint32_t meas_resolu
 
 	result = (error_cnt * 21)*10;
 	return meas_interval + result;
+}
+
+void setNVICPriority(uint8_t cur_action) {
+	switch(cur_action) {
+	case LIGHT_POWER:
+	  /* DMA1_Stream0_IRQn interrupt configuration */
+	  HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 3, 0);
+	  HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
+	  /* DMA1_Stream1_IRQn interrupt configuration */
+	  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 3, 1);
+	  HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
+	  /* DMA2_Stream0_IRQn interrupt configuration */
+	  HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 3, 0);
+	  HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
+	  /* DMA2_Stream1_IRQn interrupt configuration */
+	  HAL_NVIC_SetPriority(DMA2_Stream1_IRQn, 3, 1);
+	  HAL_NVIC_EnableIRQ(DMA2_Stream1_IRQn);
+
+		break;
+	case HORIZONTAL:
+		break;
+	default:
+		break;
+	}
+}
+
+void resetNVICPriority() {
+	  /* DMA1_Stream0_IRQn interrupt configuration */
+	  HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 1, 0);
+	  HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
+	  /* DMA1_Stream1_IRQn interrupt configuration */
+	  HAL_NVIC_SetPriority(DMA1_Stream1_IRQn, 1, 0);
+	  HAL_NVIC_EnableIRQ(DMA1_Stream1_IRQn);
+	  /* DMA1_Stream5_IRQn interrupt configuration */
+	  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 1, 0);
+	  HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
+	  /* DMA2_Stream0_IRQn interrupt configuration */
+	  HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 1, 1);
+	  HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
+	  /* DMA2_Stream1_IRQn interrupt configuration */
+	  HAL_NVIC_SetPriority(DMA2_Stream1_IRQn, 1, 1);
+	  HAL_NVIC_EnableIRQ(DMA2_Stream1_IRQn);
+	  /* DMA2_Stream2_IRQn interrupt configuration */
+	  HAL_NVIC_SetPriority(DMA2_Stream2_IRQn, 1, 0);
+	  HAL_NVIC_EnableIRQ(DMA2_Stream2_IRQn);
 }
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
