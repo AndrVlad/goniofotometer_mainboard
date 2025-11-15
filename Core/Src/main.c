@@ -85,7 +85,7 @@ uint8_t data_elem_cnt = 1;
 uint16_t tim14_arr_val = 0;
 uint16_t test_counter_adc_data, test_cnt_uart1_rx, uart1_received_cnt, uart1_received_cnt_global, take_data_cnt = 0;
 uint16_t test_counter_adc_data2 = 0;
-uint16_t busy_cnt = 0;
+uint16_t busy_cnt, tim13_ovflw = 0;
 uint8_t ampl_buf[2];
 uint8_t start_ending_angle_items[2][8] = {{1,2,3,4,5,6,7,8},{180,150,120,90,60,30,10,5}};
 uint16_t measurement_res_items[2][8] = {{1,2,3,4,5,6,7,8},{365,182,60,29,6,3,1}}; // The values are set in arc seconds.
@@ -96,7 +96,7 @@ uint8_t current_pos = 0;
 uint8_t i = 0;
 char str[64] = {0,};
 uint32_t idata[] = {0x1941, 0x1945};
-uint32_t CRC_Photodetector = 0;
+uint32_t CRC_Photodetector, tim13cnt = 0;
 
 uint32_t encoder_offset[2] = {0};
 uint32_t address = ADDR_FLASH_SECTOR_2;
@@ -120,6 +120,7 @@ bool start_light_pow_meas = 0;
 bool adc_coeff_command_set = 0;
 bool adc_coeff_set_complete = 0;
 bool tim14_cnt = 0;
+bool allow = 0;
 
 
 uint32_t start_position_drv1, start_position_drv2, end_position_drv1, end_position_drv2, accel_position_drv1, accel_position_drv2 = 0;
@@ -431,34 +432,46 @@ int main(void)
 		 if (start_light_pow_meas) {
 			uart1_received_cnt = 0;
 			uart1_received_cnt_global = 0;
-			HAL_TIM_Base_Start(&htim13);
+			//HAL_TIM_Base_Start(&htim13);
 			HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
 			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
 			wait_adc_data_flag = 1;
 			usDelay(10);
 			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
-			HAL_TIM_Base_Stop(&htim13);
+			//HAL_TIM_Base_Stop(&htim13);
 			__HAL_TIM_SET_COUNTER(&htim14, 0);
 			HAL_TIM_Base_Start_IT(&htim5);
 			start_light_pow_meas = 0;
+			//HAL_TIM_Base_Start(&htim13);
 
 		} else {
-			HAL_TIM_Base_Start(&htim13);
+			//HAL_TIM_Base_Start(&htim13);
 			HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
 			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
 			wait_adc_data_flag = 1;
 			usDelay(10);
 			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
 			HAL_TIM_Base_Stop(&htim13);
+			if (allow == 0) {
+				allow = 1;
+				HAL_TIM_Base_Start_IT(&htim13);
+				tim13cnt = htim13.Instance->CNT;
+			} else {
+				tim13cnt = htim13.Instance->CNT;
+			}
+
+
+			/*
 
 			if (htim13.Instance->CNT >= 200) {
 				htim14.Instance->ARR = tim14_arr_val - 10;
 				htim13.Instance->CNT = 0;
 			} else {
 				htim14.Instance->ARR = tim14_arr_val;
-			}
+			} */
 
 			__HAL_TIM_SET_COUNTER(&htim14, 0);
+
 		}
 
 		test_counter_adc_data2++;
@@ -864,7 +877,7 @@ static void MX_TIM13_Init(void)
 
   /* USER CODE END TIM13_Init 1 */
   htim13.Instance = TIM13;
-  htim13.Init.Prescaler = 107;
+  htim13.Init.Prescaler = 1079;
   htim13.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim13.Init.Period = 65535;
   htim13.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -2094,21 +2107,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 	// resolution of light power measurement timer
 	if (htim->Instance == TIM14) {
-
 		tim14_cnt = 1;
-
-		if (huart1.hdmarx->State == HAL_DMA_STATE_BUSY) {
-			//HAL_UART_DMAStop(&huart1);
-		}
-
-
-	//	} else {
-	//		busy_cnt++;
-	//	}
-
-
-
 	}
+
+	if (htim->Instance == TIM13) {
+		tim13_ovflw++;
+		tim13cnt += htim->Instance->CNT;
+	}
+
 }
 
 void createResponsePacket(uint8_t command_code, uint8_t status_code) {
