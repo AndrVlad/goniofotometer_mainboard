@@ -640,7 +640,7 @@ static void MX_TIM2_Init(void)
   htim2.Instance = TIM2;
   htim2.Init.Prescaler = 107;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 15999;
+  htim2.Init.Period = 24999;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
@@ -1970,59 +1970,10 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 {
 	// first encoder
 	if (hspi->Instance == SPI4) {
-
 		encoder1_data  =  (dma_spi4_buf[2] >> 5) & 0x07;
 		encoder1_data |=  ((uint32_t)dma_spi4_buf[1] << 3);
 		encoder1_data |=  (((uint32_t)dma_spi4_buf[0] & 0x3F) << 11);
-
-
-
 		spi4_rx_complete = 1;
-
-		/*
-
-		if (cur_action == HORIZONTAL || cur_action == VERTICAL) {
-
-			if (reach_start_pos == 1) {
-				if (encoder1_data >= end_position_drv1) {
-
-					HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
-					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
-					usDelay(10);
-					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
-					reach_start_pos = 0;
-					end_meas_flag = 1;
-					// stop measurement
-					HAL_TIM_Base_Stop_IT(&htim2); // stop motor
-					HAL_TIM_Base_Stop_IT(&htim7); // stop SPI timer
-				} else {
-					HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
-					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
-					usDelay(10);
-					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
-				}
-			} else {
-
-				if (encoder1_data >= start_position_drv1) {
-					reach_start_pos = 1;
-					// start poll photodetector
-					HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
-					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
-					usDelay(10);
-					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
-				}
-			}
-
-		} else {
-
-			if ((encoder1_data >= start_position_drv1 - 1) && (encoder1_data <= start_position_drv1 + 1)) {
-				HAL_TIM_Base_Stop_IT(&htim2); // stop motor
-				HAL_TIM_Base_Stop_IT(&htim7);
-				//HAL_SPI_DMAStop(&hspi4);
-				//HAL_UART_Transmit(&huart3,dma_spi4_buf,5,100);
-			}
-		}
-		*/
 	}
 
 	// second encoder
@@ -2030,17 +1981,8 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 		encoder2_data  =  (dma_spi3_buf[2] >> 5) & 0x07;
 		encoder2_data |=  ((uint32_t)dma_spi3_buf[1] << 3);
 		encoder2_data |=  (((uint32_t)dma_spi3_buf[0] & 0x3F) << 11);
-
-		/*
-			if ((encoder2_data >= start_position_drv2 - 1) && (encoder2_data <= start_position_drv2 + 1)) {
-				HAL_TIM_Base_Stop_IT(&htim3);
-				HAL_TIM_Base_Stop_IT(&htim7);
-			}
-		} */
-
 		spi3_rx_complete = 1;
 	}
-
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
@@ -2078,37 +2020,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			HAL_TIM_Base_Stop(&htim10);
 			__HAL_TIM_SET_COUNTER(&htim10, 0);
 		}
-
-	// interval of light power measurement timer
-	if (htim->Instance == TIM5) {
-
-		// stop polling of photodetector
-		HAL_TIM_Base_Stop(&htim14);
-		/*
-		// checking for remaining data packets
-		 if (data_buf_counter > 0 && data_status == NONE_) {
-			// clearing the part of the buffer that does not include useful data
-			clearSpecifiedElemOfBuffer(adc_data_buf,33,data_buf_counter*3+1);
-			data_status = _READY_;
-		}
-
-		// reset flags and state
-		data_buf_counter = 0;
-		data_elem_cnt = 1;
-		cur_action = NONE;
-		wait_flag = 0;
-		ready_status = READY_;
-		wait_adc_data_flag = 0;
-		*/
-
-		HAL_TIM_Base_Stop(&htim5);
-		end_meas_flag = 1;
-	}
-
-	// resolution of light power measurement timer
-	if (htim->Instance == TIM14) {
-		tim14_cnt = 1;
-	}
 
 	if (htim->Instance == TIM13) {
 		tim13_ovflw++;
@@ -2164,16 +2075,16 @@ void createDataPacket() {
 	adc_data_buf[31] = 0;
 	adc_data_buf[32] = 0;
 
-		// CRC calculation
-		for (int i = 0; i < 30; i+=2) {
-			crc += (uint16_t)adc_data_buf[i] + ((uint16_t)(adc_data_buf[i+1])<<8);
-		}
-		crc += adc_data_buf[30];
-		*(uint16_t*)(adc_data_buf+31) = crc;
-		HAL_UART_DMAStop(&huart3);
-		HAL_UART_Transmit(&huart3, adc_data_buf,33,100);
-		HAL_UART_Receive_DMA(&huart3, uart3_rx_buffer,6);
-		//clearBuffer(adc_data_buf,33);
+	// CRC calculation
+	for (int i = 0; i < 30; i+=2) {
+		crc += (uint16_t)adc_data_buf[i] + ((uint16_t)(adc_data_buf[i+1])<<8);
+	}
+	crc += adc_data_buf[30];
+	*(uint16_t*)(adc_data_buf+31) = crc;
+	HAL_UART_DMAStop(&huart3);
+	HAL_UART_Transmit(&huart3, adc_data_buf,33,100);
+	HAL_UART_Receive_DMA(&huart3, uart3_rx_buffer,6);
+	//clearBuffer(adc_data_buf,33);
 
 }
 
