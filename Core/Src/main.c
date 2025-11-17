@@ -87,7 +87,7 @@ uint16_t busy_cnt, tim13_ovflw = 0;
 uint8_t ampl_buf[2];
 uint8_t start_ending_angle_items[2][8] = {{1,2,3,4,5,6,7,8},{180,150,120,90,60,30,10,5}};
 uint16_t measurement_res_items[2][8] = {{1,2,3,4,5,6,7,8},{365,182,60,29,6,3,1}}; // The values are set in arc seconds.
-uint32_t light_pow_period_items[9] = {36000000,18000000,6000000,600000,300000,100000,10000,5000,1000}; // values for TIMER_5 ARR
+uint32_t light_pow_period_items[9] = {36001000,18001000,6001000,601000,301000,101000,10000,5000,1000}; // values for TIMER_5 ARR
 uint16_t light_pow_res_items[12] = {50000,25000,10000,5000,2500,1000,500,250,100,50,25,10}; // values for TIMER ARR
 uint16_t crc, packet_cnt, error_val = 0;
 uint8_t current_pos = 0;
@@ -95,7 +95,7 @@ uint8_t i = 0;
 char str[64] = {0,};
 uint32_t idata[] = {0x1941, 0x1945};
 uint32_t CRC_Photodetector, tim13cnt, tim14_arr_val_converted, new_tim_arr_val, new_arr_val = 0;
-
+uint32_t adc_data_cnt, required_data_num = 0;
 
 uint32_t encoder_offset[2] = {0};
 uint32_t address = ADDR_FLASH_SECTOR_2;
@@ -211,7 +211,7 @@ void ReadFlash_();
 void usDelay(uint16_t useconds);
 void checkCRCPhotodetectorData();
 void createErrorResponse();
-uint32_t calculateTimeIntervalError(uint32_t meas_interval, uint32_t meas_resolution);
+uint32_t calculateRequiredDataNum(uint32_t meas_interval, uint32_t meas_resolution);
 void setNVICPriority(uint8_t cur_action);
 void resetNVICPriority();
 uint32_t getTimeOffset();
@@ -320,6 +320,7 @@ int main(void)
 
         		  data_buf_counter++;
         		  test_data_buf_cnt = data_buf_counter;
+        		  adc_data_cnt++;
         		  test_counter_adc_data++;
 
         		  if (data_buf_counter == 10) {
@@ -419,6 +420,7 @@ int main(void)
 			ready_status = READY_;
 			end_meas_flag = 0;
 			wait_adc_data_flag = 0;
+			adc_data_cnt = 0;
 			resetNVICPriority();
 			HAL_TIM_Base_Stop_IT(&htim13);
 		}
@@ -1382,6 +1384,8 @@ void parser() {
 
 		end_meas_flag = 0;
 
+		required_data_num = calculateRequiredDataNum(light_pow_period_items[uart3_rx_safe_buffer[1]-1],light_pow_res_items[uart3_rx_safe_buffer[2]-1]);
+
 		// Init of timers
 		HAL_TIM_Base_Stop(&htim5);
 		htim5.Instance->ARR = light_pow_period_items[uart3_rx_safe_buffer[1]-1];
@@ -1455,6 +1459,7 @@ void parser() {
 
 			HAL_TIM_Base_Stop(&htim14);
 			HAL_TIM_Base_Stop(&htim5);
+			HAL_TIM_Base_Stop(&htim13);
 
 			// checking for remaining data packets
 			if (data_buf_counter > 0 && data_status == NONE_) {
@@ -1468,6 +1473,7 @@ void parser() {
 			data_elem_cnt = 1;
 			wait_flag = 0;
 			wait_adc_data_flag = 0;
+			error_val = 0;
 
 			break;
 		default:
@@ -2859,21 +2865,14 @@ void reverseHorizontalMeasurement() {
 	  }
 }
 
-uint32_t calculateTimeIntervalError(uint32_t meas_interval, uint32_t meas_resolution) {
-	uint32_t meas_interval_ms, meas_resolution_ms, result = 0;
-	uint16_t error_cnt, data_num;
+uint32_t calculateRequiredDataNum(uint32_t meas_interval, uint32_t meas_resolution) {
+	uint32_t meas_interval_ms, meas_resolution_ms;
+	uint16_t data_num;
 
 	meas_interval_ms = meas_interval / 10;
 	meas_resolution_ms = (meas_resolution * 2)/10;
 	data_num = (meas_interval_ms / meas_resolution_ms)+1;
-
-
-	if (((meas_interval_ms / meas_resolution_ms)+1) >= 49) {
-		error_cnt = data_num / 49;
-	}
-
-	result = (error_cnt * 21)*10;
-	return meas_interval + result;
+	return data_num;
 }
 
 void setNVICPriority(uint8_t cur_action) {

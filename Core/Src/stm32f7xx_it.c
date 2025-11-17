@@ -72,11 +72,14 @@ extern DMA_HandleTypeDef hdma_usart3_rx;
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart3;
 /* USER CODE BEGIN EV */
-extern tim14_cnt;
+extern bool tim14_cnt;
 extern end_meas_flag;
 extern allow;
 extern tim13_ovflw;
-extern tim13cnt;
+extern uint32_t tim13cnt;
+extern uint16_t tim14_arr_val;
+extern uint32_t adc_data_cnt;
+extern uint32_t required_data_num;
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -367,10 +370,18 @@ void TIM8_TRG_COM_TIM14_IRQHandler(void)
 void TIM5_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM5_IRQn 0 */
-	// stop light_power management
-	HAL_TIM_Base_Stop(&htim14);
-	HAL_TIM_Base_Stop(&htim5);
-	end_meas_flag = 1;
+	// stop light_power measurement
+
+	if (adc_data_cnt < required_data_num) {
+		htim5.Instance->ARR = (tim14_arr_val * (required_data_num - adc_data_cnt))*2;
+		__HAL_TIM_SET_COUNTER(&htim5,0);
+	} else {
+		HAL_TIM_Base_Stop(&htim14);
+		HAL_TIM_Base_Stop(&htim5);
+		end_meas_flag = 1;
+	}
+
+
   /* USER CODE END TIM5_IRQn 0 */
   HAL_TIM_IRQHandler(&htim5);
   /* USER CODE BEGIN TIM5_IRQn 1 */
