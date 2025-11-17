@@ -80,7 +80,7 @@ uint8_t response_buf[33] = {0};
 uint8_t adc_data_buf[33] = {0};
 uint8_t data_buf_counter = 0;
 uint8_t data_elem_cnt = 1;
-uint16_t tim14_arr_val = 0;
+uint16_t tim14_arr_val, tim10_cnt = 0;
 uint16_t test_counter_adc_data, test_cnt_uart1_rx, uart1_received_cnt, uart1_received_cnt_global, take_data_cnt = 0;
 uint16_t test_counter_adc_data2 = 0;
 uint16_t busy_cnt, tim13_ovflw = 0;
@@ -476,13 +476,17 @@ int main(void)
 				htim14.Instance->ARR = tim14_arr_val;
 			} */
 			HAL_TIM_Base_Stop_IT(&htim13);
-			new_tim_arr_val = getTimeOffset();
+			tim13cnt = 65535 * tim13_ovflw;
+			tim13cnt += htim13.Instance->CNT;
+			tim13_ovflw = 0;
 			__HAL_TIM_SET_COUNTER(&htim13, 0);
+			HAL_TIM_Base_Start_IT(&htim13);
+			new_tim_arr_val = getTimeOffset();
 			HAL_TIM_Base_Stop(&htim14);
 			htim14.Instance->ARR = new_tim_arr_val;
 			__HAL_TIM_SET_COUNTER(&htim14, 0);
 			HAL_TIM_Base_Start_IT(&htim14);
-			HAL_TIM_Base_Start_IT(&htim13);
+
 
 		}
 
@@ -860,7 +864,7 @@ static void MX_TIM10_Init(void)
   htim10.Instance = TIM10;
   htim10.Init.Prescaler = 10799;
   htim10.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim10.Init.Period = 7999;
+  htim10.Init.Period = 65535;
   htim10.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim10.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim10) != HAL_OK)
@@ -1114,7 +1118,11 @@ void parser() {
 		}
 
 		//clearBuffer(response_buf,33);
+		HAL_TIM_Base_Start(&htim10);
 		createResponsePacket(0x01,0);
+		HAL_TIM_Base_Stop(&htim10);
+		__HAL_TIM_SET_COUNTER(&htim10, 0);
+
 		break;
 	case 0x03:
 
@@ -1576,10 +1584,14 @@ void parser() {
 		break;
 
 	case 0x0B:
+		HAL_TIM_Base_Start(&htim10);
+
 			createDataPacket();
 			data_status = NONE_;
 			take_data_cnt++;
-
+			HAL_TIM_Base_Stop(&htim10);
+			tim10_cnt += htim10.Instance->CNT;
+			__HAL_TIM_SET_COUNTER(&htim10, 0);
 		break;
 
 	case 0x0C:
@@ -2880,8 +2892,8 @@ void setNVICPriority(uint8_t cur_action) {
 	  HAL_NVIC_SetPriority(DMA2_Stream1_IRQn, 3, 1);
 	  HAL_NVIC_EnableIRQ(DMA2_Stream1_IRQn);
 
-	  HAL_NVIC_SetPriority(TIM8_UP_TIM13_IRQn, 0, 1);
-	  HAL_NVIC_EnableIRQ(TIM8_UP_TIM13_IRQn);
+	  //HAL_NVIC_SetPriority(TIM8_UP_TIM13_IRQn, 0, 1);
+	  //HAL_NVIC_EnableIRQ(TIM8_UP_TIM13_IRQn);
 
 		break;
 	case HORIZONTAL:
@@ -2913,18 +2925,16 @@ void resetNVICPriority() {
 }
 
 uint32_t getTimeOffset() {
-	tim13cnt = 65535 * tim13_ovflw;
-	tim13cnt += htim13.Instance->CNT;
+
 	if (tim13cnt >= tim14_arr_val_converted) {
 		error_val += tim13cnt - tim14_arr_val_converted;
 		error_val_sum += error_val;
 		if (error_val >= 200) {
-			new_arr_val = tim14_arr_val - (error_val / 200);
+			new_arr_val = tim14_arr_val - (error_val / 200)*2;
 			error_val = error_val % 200;
-			return new_arr_val - 10;
+			return new_arr_val;
 		}
 	}
-	tim13_ovflw = 0;
 	return tim14_arr_val;
 }
 
