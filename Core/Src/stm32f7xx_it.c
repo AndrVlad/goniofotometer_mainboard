@@ -74,6 +74,9 @@ extern UART_HandleTypeDef huart3;
 /* USER CODE BEGIN EV */
 extern tim14_cnt;
 extern end_meas_flag;
+extern allow;
+extern tim13_ovflw;
+extern tim13cnt;
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -332,6 +335,10 @@ void USART3_IRQHandler(void)
 void TIM8_UP_TIM13_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM8_UP_TIM13_IRQn 0 */
+
+		tim13_ovflw++;
+		allow = 0;
+		tim13cnt += htim13.Instance->CNT;
 
   /* USER CODE END TIM8_UP_TIM13_IRQn 0 */
   HAL_TIM_IRQHandler(&htim13);

@@ -89,12 +89,13 @@ uint8_t start_ending_angle_items[2][8] = {{1,2,3,4,5,6,7,8},{180,150,120,90,60,3
 uint16_t measurement_res_items[2][8] = {{1,2,3,4,5,6,7,8},{365,182,60,29,6,3,1}}; // The values are set in arc seconds.
 uint32_t light_pow_period_items[9] = {36000000,18000000,6000000,600000,300000,100000,10000,5000,1000}; // values for TIMER_5 ARR
 uint16_t light_pow_res_items[12] = {50000,25000,10000,5000,2500,1000,500,250,100,50,25,10}; // values for TIMER ARR
-uint16_t crc, packet_cnt = 0;
+uint16_t crc, packet_cnt, error_val = 0;
 uint8_t current_pos = 0;
 uint8_t i = 0;
 char str[64] = {0,};
 uint32_t idata[] = {0x1941, 0x1945};
-uint32_t CRC_Photodetector, tim13cnt = 0;
+uint32_t CRC_Photodetector, tim13cnt, tim14_arr_val_converted, new_tim_arr_val, new_arr_val = 0;
+
 
 uint32_t encoder_offset[2] = {0};
 uint32_t address = ADDR_FLASH_SECTOR_2;
@@ -156,7 +157,7 @@ enum data { NONE_, _READY_, SOME_PACKETS} data_status;
 enum horiz_platform { HORIZONTAL_, VERTICAL_} current_horiz_platform = HORIZONTAL_;
 uint8_t operation_progress = 0;
 uint32_t SSI_data, SSI_data_safe, encoder1_data, encoder2_data, encoder1_increment_res, encoder2_increment_res, encoder2_data_last = 0;
-uint32_t adc_value = 0;
+uint32_t adc_value, error_val_sum = 0;
 uint8_t motor_frequency_1, motor_frequency_2 = 0;
 
 // flash values
@@ -213,6 +214,7 @@ void createErrorResponse();
 uint32_t calculateTimeIntervalError(uint32_t meas_interval, uint32_t meas_resolution);
 void setNVICPriority(uint8_t cur_action);
 void resetNVICPriority();
+uint32_t getTimeOffset();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -266,8 +268,8 @@ int main(void)
   HAL_TIM_Base_Stop_IT(&htim2);
   HAL_TIM_Base_Start(&htim6);
 
-  // start receiving of messages from PC
   HAL_Delay(1000);
+  // start receiving of messages from PC
   HAL_UART_Receive_DMA(&huart3, uart3_rx_buffer, 6);
   //HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
 
@@ -282,6 +284,7 @@ int main(void)
   ENCODER_1_OFFSET = encoder_offset[0];
   ENCODER_2_OFFSET = encoder_offset[1];
 
+  // set status of device
   ready_status = READY_;
 
   /* USER CODE END 2 */
@@ -297,13 +300,18 @@ int main(void)
 	  }
 	  // handle of message from Photodetector
 	  if (uart1_rx_complete) {
+		  // counter of received messages
 		  uart1_received_cnt_global++;
+
           checkCRCPhotodetectorData();
 
+          // processing of received messages in measurement state of device
           if (cur_action == HORIZONTAL || cur_action == VERTICAL || cur_action == HEMISPHERE || cur_action == LIGHT_POWER) {
 
+        	  // checking that the measurement data has been received
         	  if (wait_adc_data_flag) {
 
+        		  // filling the buffer of measurement data
         		  for (uint8_t i = 0; i < 3; i++, data_elem_cnt++) {
         			  adc_data_buf[data_elem_cnt] = uart1_rx_safe_buffer_meas[i];
         		  }
@@ -319,15 +327,15 @@ int main(void)
         			  data_elem_cnt = 1;
         			  data_status = _READY_;
         			  packet_cnt++;
-
         		  }
         	  }
-        }
+          }
 
           uart1_rx_complete = 0;
 
 	  }
 
+	  // the handler of the received message from the encoder 1
 	  if (spi4_rx_complete) {
 
 		  switch(cur_action) {
@@ -361,6 +369,7 @@ int main(void)
 		  spi4_rx_complete = 0;
 	  }
 
+	  // the handler of the received message from the encoder 2
 	  if (spi3_rx_complete) {
 
 		  switch(cur_action) {
@@ -411,6 +420,7 @@ int main(void)
 			end_meas_flag = 0;
 			wait_adc_data_flag = 0;
 			resetNVICPriority();
+			HAL_TIM_Base_Stop_IT(&htim13);
 		}
 
 	 }
@@ -429,6 +439,7 @@ int main(void)
 
 	 }
 
+	 // the handler of resolution timer overflow (active only at the light power measurement)
 	 if (tim14_cnt) {
 		 tim14_cnt = 0;
 		 if (start_light_pow_meas) {
@@ -445,23 +456,16 @@ int main(void)
 			HAL_TIM_Base_Start_IT(&htim5);
 			start_light_pow_meas = 0;
 			//HAL_TIM_Base_Start(&htim13);
+			HAL_TIM_Base_Start_IT(&htim13);
 
 		} else {
-			//HAL_TIM_Base_Start(&htim13);
+
 			HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
 			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
 			wait_adc_data_flag = 1;
 			usDelay(10);
 			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
-			HAL_TIM_Base_Stop(&htim13);
-			if (allow == 0) {
-				allow = 1;
-				HAL_TIM_Base_Start_IT(&htim13);
-				tim13cnt = htim13.Instance->CNT;
-			} else {
-				tim13cnt = htim13.Instance->CNT;
-			}
-
+			//HAL_TIM_Base_Stop(&htim13);
 
 			/*
 
@@ -471,8 +475,14 @@ int main(void)
 			} else {
 				htim14.Instance->ARR = tim14_arr_val;
 			} */
-
+			HAL_TIM_Base_Stop_IT(&htim13);
+			new_tim_arr_val = getTimeOffset();
+			__HAL_TIM_SET_COUNTER(&htim13, 0);
+			HAL_TIM_Base_Stop(&htim14);
+			htim14.Instance->ARR = new_tim_arr_val;
 			__HAL_TIM_SET_COUNTER(&htim14, 0);
+			HAL_TIM_Base_Start_IT(&htim14);
+			HAL_TIM_Base_Start_IT(&htim13);
 
 		}
 
@@ -1353,7 +1363,8 @@ void parser() {
 	case 0x05:
 
 		memcpy(uart3_rx_safe_buffer, uart3_rx_buffer, 6);
-		htim13.Instance->CNT = 0;
+		__HAL_TIM_SET_COUNTER(&htim13, 0);
+		allow = 1;
 		// check of setting adc coefficient command
 		if (adc_coeff_command_set) {
 			next_command = 0x05;
@@ -1372,6 +1383,7 @@ void parser() {
 		HAL_TIM_Base_Stop(&htim14);
 		tim14_arr_val = light_pow_res_items[uart3_rx_safe_buffer[2]-1];
 		htim14.Instance->ARR = tim14_arr_val;
+		tim14_arr_val_converted = tim14_arr_val * 20;
 		//htim14.Instance->ARR = light_pow_res_items[uart3_rx_safe_buffer[2]-1];
 		__HAL_TIM_SET_COUNTER(&htim14, 0);
 
@@ -1428,8 +1440,9 @@ void parser() {
 			data_elem_cnt = 1;
 			wait_flag = 0;
 			wait_adc_data_flag = 0;
-
+			trans_states = 0;
 			break;
+
 		case LIGHT_POWER:
 
 			HAL_TIM_Base_Stop(&htim14);
@@ -2017,11 +2030,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			__HAL_TIM_SET_COUNTER(&htim10, 0);
 		}
 
-	if (htim->Instance == TIM13) {
-		tim13_ovflw++;
-		tim13cnt += htim->Instance->CNT;
-		HAL_TIM_Base_Stop(&htim13);
-	}
+
 
 }
 
@@ -2871,6 +2880,9 @@ void setNVICPriority(uint8_t cur_action) {
 	  HAL_NVIC_SetPriority(DMA2_Stream1_IRQn, 3, 1);
 	  HAL_NVIC_EnableIRQ(DMA2_Stream1_IRQn);
 
+	  HAL_NVIC_SetPriority(TIM8_UP_TIM13_IRQn, 0, 1);
+	  HAL_NVIC_EnableIRQ(TIM8_UP_TIM13_IRQn);
+
 		break;
 	case HORIZONTAL:
 		break;
@@ -2898,6 +2910,22 @@ void resetNVICPriority() {
 	  /* DMA2_Stream2_IRQn interrupt configuration */
 	  HAL_NVIC_SetPriority(DMA2_Stream2_IRQn, 1, 0);
 	  HAL_NVIC_EnableIRQ(DMA2_Stream2_IRQn);
+}
+
+uint32_t getTimeOffset() {
+	tim13cnt = 65535 * tim13_ovflw;
+	tim13cnt += htim13.Instance->CNT;
+	if (tim13cnt >= tim14_arr_val_converted) {
+		error_val += tim13cnt - tim14_arr_val_converted;
+		error_val_sum += error_val;
+		if (error_val >= 200) {
+			new_arr_val = tim14_arr_val - (error_val / 200);
+			error_val = error_val % 200;
+			return new_arr_val - 10;
+		}
+	}
+	tim13_ovflw = 0;
+	return tim14_arr_val;
 }
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
