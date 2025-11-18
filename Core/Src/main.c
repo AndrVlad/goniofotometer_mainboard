@@ -41,6 +41,7 @@ static FLASH_EraseInitTypeDef EraseInitStruct;
 #define POSITION_ERROR 92
 #define VERTICAL_ROTATION_ANGLE 180
 #define ENCODER_TOLERANCE 46
+#define AHB1_TIMER_CLOCK_MHz 108
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -159,7 +160,7 @@ enum horiz_platform { HORIZONTAL_, VERTICAL_} current_horiz_platform = HORIZONTA
 uint8_t operation_progress = 0;
 uint32_t SSI_data, SSI_data_safe, encoder1_data, encoder2_data, encoder1_increment_res, encoder2_increment_res, encoder2_data_last = 0;
 uint32_t adc_value, error_val_sum = 0;
-uint8_t motor_frequency_1, motor_frequency_2 = 0;
+uint8_t motor_frequency_1 = 40, motor_frequency_2 = 1;
 
 // flash values
 uint32_t page_error = 0;
@@ -216,6 +217,7 @@ uint32_t calculateRequiredDataNum(uint32_t meas_interval, uint32_t meas_resoluti
 void setNVICPriority(uint8_t cur_action);
 void resetNVICPriority();
 uint32_t getTimeOffset();
+void setMotorFrequency(bool chosen_drv, uint16_t motor_frequency);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -310,7 +312,7 @@ int main(void)
           if (cur_action == HORIZONTAL || cur_action == VERTICAL || cur_action == HEMISPHERE || cur_action == LIGHT_POWER) {
 
         	  // checking that the measurement data has been received
-        	  if (wait_adc_data_flag) {
+        	if (wait_adc_data_flag) {
 
         		  // filling the buffer of measurement data
         		  for (uint8_t i = 0; i < 3; i++, data_elem_cnt++) {
@@ -330,7 +332,7 @@ int main(void)
         			  data_status = _READY_;
         			  packet_cnt++;
         		  }
-        	  }
+        	 }
           }
 
           uart1_rx_complete = 0;
@@ -1252,6 +1254,8 @@ void parser() {
 		// set data availability status
 		data_status = NONE_;
 
+		setNVICPriority(HORIZONTAL);
+
 		memcpy(uart3_rx_safe_buffer, uart3_rx_buffer, 6);
 
 		// set start angle of measurement
@@ -1293,6 +1297,8 @@ void parser() {
 
 			// choose of measurement resolution
 			meas_res_drv1 = measurement_res_items[1][uart3_rx_safe_buffer[3]-1];
+
+			setMotorFrequency(chosen_drv, motor_frequency_1);
 
 			// set acceleration offset position
 			accel_position_drv1 = (accel_angle * ENCODER_RESOLUTION) / 360; // get absolute encoder position
@@ -2501,6 +2507,8 @@ void handleHorizontalMeasurement() {
 		  reach_end_position = 1;
 		  wait_adc_data_flag = 0;
 
+		  resetNVICPriority();
+
 		  // stop measurement
 		  HAL_TIM_Base_Stop_IT(&htim2); // stop motor
 		  HAL_TIM_Base_Stop_IT(&htim7); // stop SPI timer
@@ -2903,6 +2911,29 @@ void setNVICPriority(uint8_t cur_action) {
 
 		break;
 	case HORIZONTAL:
+	case VERTICAL:
+		/* DMA2_Stream2_IRQn interrupt configuration */
+		HAL_NVIC_SetPriority(DMA2_Stream2_IRQn, 0, 1);
+		HAL_NVIC_EnableIRQ(DMA2_Stream2_IRQn);
+		HAL_NVIC_SetPriority(USART1_IRQn, 0, 1);
+		HAL_NVIC_EnableIRQ(USART1_IRQn);
+
+		HAL_NVIC_SetPriority(TIM7_IRQn, 2, 1);
+		HAL_NVIC_EnableIRQ(TIM7_IRQn);
+
+		/* DMA1_Stream0_IRQn interrupt configuration */
+		HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 3, 0);
+		HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
+		  /* DMA1_Stream1_IRQn interrupt configuration */
+		  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 3, 1);
+		  HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
+		  /* DMA2_Stream0_IRQn interrupt configuration */
+		  HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 3, 0);
+		  HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
+		  /* DMA2_Stream1_IRQn interrupt configuration */
+		  HAL_NVIC_SetPriority(DMA2_Stream1_IRQn, 3, 1);
+		  HAL_NVIC_EnableIRQ(DMA2_Stream1_IRQn);
+
 		break;
 	default:
 		break;
@@ -2928,6 +2959,12 @@ void resetNVICPriority() {
 	  /* DMA2_Stream2_IRQn interrupt configuration */
 	  HAL_NVIC_SetPriority(DMA2_Stream2_IRQn, 1, 0);
 	  HAL_NVIC_EnableIRQ(DMA2_Stream2_IRQn);
+
+	  HAL_NVIC_SetPriority(USART1_IRQn, 1, 0);
+	  HAL_NVIC_EnableIRQ(USART1_IRQn);
+
+		HAL_NVIC_SetPriority(TIM7_IRQn, 2, 0);
+		HAL_NVIC_EnableIRQ(TIM7_IRQn);
 }
 
 uint32_t getTimeOffset() {
@@ -2942,6 +2979,18 @@ uint32_t getTimeOffset() {
 		}
 	}
 	return tim14_arr_val;
+}
+
+void setMotorFrequency(bool chosen_drv, uint16_t motor_frequency) {
+
+	uint32_t tim_clock = 0;
+	tim_clock = (AHB1_TIMER_CLOCK_MHz * 1000000);
+
+	if (chosen_drv) { // chosen second motor
+		htim3.Instance->ARR = ((tim_clock/(htim3.Instance->PSC + 1))/motor_frequency)-1;
+	} else {		// chosen first motor
+		htim2.Instance->ARR = ((tim_clock/(htim3.Instance->PSC + 1))/motor_frequency) - 1;
+	}
 }
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
