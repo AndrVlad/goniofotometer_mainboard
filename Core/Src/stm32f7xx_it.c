@@ -72,7 +72,10 @@ extern DMA_HandleTypeDef hdma_usart3_rx;
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart3;
 /* USER CODE BEGIN EV */
-extern bool tim14_cnt;
+extern SPI_HandleTypeDef hspi3;
+extern SPI_HandleTypeDef hspi4;
+
+extern bool tim14_cnt, chosen_drv;
 extern end_meas_flag;
 extern allow;
 extern tim13_ovflw;
@@ -80,6 +83,9 @@ extern uint32_t tim13cnt;
 extern uint16_t tim14_arr_val;
 extern uint32_t adc_data_cnt;
 extern uint32_t required_data_num;
+extern uint8_t dma_spi4_buf[5];
+extern uint8_t dma_spi3_buf[5];
+
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -283,6 +289,9 @@ void TIM2_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM2_IRQn 0 */
 
+	HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
+	__HAL_TIM_SET_COUNTER(&htim2, 0);
+
   /* USER CODE END TIM2_IRQn 0 */
   HAL_TIM_IRQHandler(&htim2);
   /* USER CODE BEGIN TIM2_IRQn 1 */
@@ -296,6 +305,9 @@ void TIM2_IRQHandler(void)
 void TIM3_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM3_IRQn 0 */
+
+	HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_0);
+	__HAL_TIM_SET_COUNTER(&htim3, 0);
 
   /* USER CODE END TIM3_IRQn 0 */
   HAL_TIM_IRQHandler(&htim3);
@@ -395,6 +407,13 @@ void TIM5_IRQHandler(void)
 void TIM7_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM7_IRQn 0 */
+
+	if (!chosen_drv) {
+		HAL_SPI_Receive_DMA(&hspi4, dma_spi4_buf, 5);
+	} else {
+		HAL_SPI_Receive_DMA(&hspi3, dma_spi3_buf, 5);
+	}
+	__HAL_TIM_SET_COUNTER(&htim7, 0);
 
   /* USER CODE END TIM7_IRQn 0 */
   HAL_TIM_IRQHandler(&htim7);

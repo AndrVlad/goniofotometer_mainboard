@@ -2017,18 +2017,21 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
+
 	// timer for the step
+	/*
 	if(htim->Instance == TIM2) {
 		HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
 		__HAL_TIM_SET_COUNTER(&htim2, 0);
-	}
-
+	} */
+	/*
 	if(htim->Instance == TIM3) {
 		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_0);
 		__HAL_TIM_SET_COUNTER(&htim3, 0);
-	}
+	} */
 
 	// timer for the delay between SPI request to encoder
+	/*
 	if (htim->Instance == TIM7) {
 		if (!chosen_drv) {
 			HAL_SPI_Receive_DMA(&hspi4, dma_spi4_buf, 5);
@@ -2037,9 +2040,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		}
 
 		__HAL_TIM_SET_COUNTER(&htim7, 0);
-	}
+	} */
 
 	// timer for checking response of photodetector
+	/*
 	if (htim->Instance == TIM10) {
 			//wait_flag = 0;
 			//HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
@@ -2049,7 +2053,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			// ! create handle of error
 			HAL_TIM_Base_Stop(&htim10);
 			__HAL_TIM_SET_COUNTER(&htim10, 0);
-		}
+		} */
 
 
 
