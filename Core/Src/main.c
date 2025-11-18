@@ -96,6 +96,7 @@ char str[64] = {0,};
 uint32_t idata[] = {0x1941, 0x1945};
 uint32_t CRC_Photodetector, tim13cnt, tim14_arr_val_converted, new_tim_arr_val, new_arr_val = 0;
 uint32_t adc_data_cnt, required_data_num = 0;
+uint32_t usart3_reg, usart3_error = 0;
 
 uint32_t encoder_offset[2] = {0};
 uint32_t address = ADDR_FLASH_SECTOR_2;
@@ -985,7 +986,7 @@ static void MX_USART3_UART_Init(void)
 {
 
   /* USER CODE BEGIN USART3_Init 0 */
-
+	__HAL_UART_ENABLE_IT(&huart1, UART_IT_ERR);
   /* USER CODE END USART3_Init 0 */
 
   /* USER CODE BEGIN USART3_Init 1 */
@@ -1764,9 +1765,11 @@ void parser() {
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
 		break;
 	case 0x17:
-		ReadFlash(encoder_offset,2,address,FLASH_TYPEPROGRAM_WORD);
-		 HAL_UART_DeInit(&huart1);
-		  MX_USART1_UART_Init();
+		//ReadFlash(encoder_offset,2,address,FLASH_TYPEPROGRAM_WORD);
+		 //HAL_UART_DeInit(&huart1);
+		  //MX_USART1_UART_Init();
+		printf("%lu,\r\n",usart3_reg);
+		printf("error: %lu,\r\n",usart3_error);
 		break;
 	case 0x18: // only for test of mainboard
 
@@ -2939,11 +2942,26 @@ uint32_t getTimeOffset() {
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
     if (huart->ErrorCode & HAL_UART_ERROR_ORE) {
-
         __HAL_UART_CLEAR_FLAG(huart, UART_CLEAR_OREF);
         // clear RXNE flag
         volatile uint8_t data = huart1.Instance->RDR;
 
+    }
+    if (huart == &huart3) {
+
+    	if (huart->ErrorCode & HAL_UART_ERROR_ORE) {
+    		__HAL_UART_CLEAR_FLAG(huart, UART_CLEAR_OREF);
+    		// clear RXNE flag
+    		volatile uint8_t data = huart3.Instance->RDR;
+    		HAL_UART_Receive_DMA(&huart3, uart3_rx_buffer, 6);
+    	} else {
+        	// write status of ISR and error_code for unhandled cases
+        	usart3_reg = huart->Instance->ISR;
+        	usart3_error = huart->ErrorCode;
+        	HAL_UART_DeInit(&huart3);
+        	MX_USART3_UART_Init();
+        	HAL_UART_Receive_DMA(&huart3, uart3_rx_buffer, 6);
+    	}
     }
 }
 
