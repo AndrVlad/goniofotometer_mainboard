@@ -2550,7 +2550,7 @@ void handleHorizontalMeasurementVertPlatf() {
 
 			  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
 			  	wait_adc_data_flag = 1;
-			  	usDelay(2);
+			  	usDelay(10);
 
 			  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
 			  }
@@ -2571,7 +2571,7 @@ void handleHorizontalMeasurementVertPlatf() {
 					  wait_adc_data_flag = 1;
 					  //encoder_data_buf_trg[enc_cnt_trg] = encoder1_data;
 					  //enc_cnt_trg++;
-					  usDelay(2);
+					  usDelay(10);
 					  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
 					  test_counter_adc_data2++;
 					  reach_end_position = 1;
@@ -2608,7 +2608,7 @@ void handleHorizontalMeasurementVertPlatf() {
 						 	wait_adc_data_flag = 1;
 						 	//encoder_data_buf_trg[enc_cnt_trg] = encoder1_data;
 						 	//enc_cnt_trg++;
-						 	usDelay(2);
+						 	usDelay(10);
 
 						 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
 						 	test_counter_adc_data2++;
