@@ -1413,8 +1413,6 @@ void parser() {
 
 	case 0x06:
 		createResponsePacket(0x06,ACCEPTED__);
-		cur_action = TEST_TURN;
-		ready_status = READY_;
 
 		angle_position_drv1 = calculateEncPosition(start_angle_offset_1,chosen_drv);
 
@@ -1433,6 +1431,9 @@ void parser() {
 
 		HAL_TIM_Base_Start_IT(&htim7); // start encoder poll
 		HAL_TIM_Base_Start_IT(&htim2); // start horizontal motor moving
+
+		cur_action = TEST_TURN;
+		ready_status = READY_;
 
 		break;
 
@@ -2346,23 +2347,26 @@ void createErrorResponse() {
 }
 
 void handleTestAngleOffset() {
-  if (chosen_drv) {
-	  if ((encoder2_data >= angle_position_drv2 - 4) && (encoder1_data <= angle_position_drv2 + 4)) {
-		  HAL_TIM_Base_Stop_IT(&htim3); // stop motor
-		  HAL_TIM_Base_Stop_IT(&htim7); // stop encoder poll
-		  cur_action = NONE;
-	  }
-  } else {
-	  if ((encoder1_data >= angle_position_drv1 - 4) && (encoder1_data <= angle_position_drv1 + 4)) {
-		  HAL_TIM_Base_Stop_IT(&htim2); // stop motor
-		  HAL_TIM_Base_Stop_IT(&htim7); // stop encoder poll
-		  cur_action = NONE;
-	  }
-  }
+
+	setMotorFrequency(chosen_drv,75);
+	if (chosen_drv) {
+		if ((encoder2_data >= angle_position_drv2 - 4) && (encoder1_data <= angle_position_drv2 + 4)) {
+			HAL_TIM_Base_Stop_IT(&htim3); // stop motor
+			HAL_TIM_Base_Stop_IT(&htim7); // stop encoder poll
+			cur_action = NONE;
+		}
+	} else {
+		if ((encoder1_data >= angle_position_drv1 - 4) && (encoder1_data <= angle_position_drv1 + 4)) {
+			HAL_TIM_Base_Stop_IT(&htim2); // stop motor
+			HAL_TIM_Base_Stop_IT(&htim7); // stop encoder poll
+			cur_action = NONE;
+		}
+	}
 }
 
 void handleMovingToStartOffset() {
-  if (chosen_drv) {
+  setMotorFrequency(chosen_drv,75);
+	if (chosen_drv) {
 	  if ((encoder2_data >= begin_pos_drv2 - ENCODER_TOLERANCE) && (encoder2_data <= begin_pos_drv2 + ENCODER_TOLERANCE)) {
 		  HAL_TIM_Base_Stop_IT(&htim3); // stop motor
 		  HAL_TIM_Base_Stop_IT(&htim7); // stop encoder poll
@@ -2380,7 +2384,7 @@ void handleMovingToStartOffset() {
 }
 
 void handleTestTurn() {
-
+	setMotorFrequency(chosen_drv,100);
 	if (!reach_test_turn_pos) {
 		if ((encoder1_data >= angle_position_drv1_tmp - ENCODER_TOLERANCE) && (encoder1_data <= angle_position_drv1_tmp + ENCODER_TOLERANCE)) {
 			  reach_test_turn_pos = 1;
