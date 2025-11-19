@@ -1679,7 +1679,7 @@ void parser() {
 
 			if(!(uart3_rx_buffer[3])) { // absolute moving
 				temp_pos = (test_angle * ENCODER_RESOLUTION) / 360; // get absolute encoder position
-				angle_position_drv2 = calculateEncPosition(angle_position_drv2,chosen_drv);
+				angle_position_drv2 = calculateEncPosition(temp_pos,chosen_drv);
 			}
 
 			changeMotorDirection(chosen_drv, angle_position_drv2);
@@ -1711,6 +1711,8 @@ void parser() {
 			HAL_TIM_Base_Stop_IT(&htim2); // stop first motor
 			HAL_TIM_Base_Stop_IT(&htim7);
 		}
+		cur_action = NONE;
+		trans_states = 0;
 
 		break;
 	case 0x12:
