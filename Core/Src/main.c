@@ -161,6 +161,7 @@ uint8_t operation_progress = 0;
 uint32_t SSI_data, SSI_data_safe, encoder1_data, encoder2_data, encoder1_increment_res, encoder2_increment_res, encoder2_data_last = 0;
 uint32_t adc_value, error_val_sum = 0;
 uint8_t motor_frequency_1 = 40, motor_frequency_2 = 1;
+uint32_t flash_data[4];
 
 // flash values
 uint32_t page_error = 0;
@@ -283,7 +284,7 @@ int main(void)
 
   // Read encoder offset values from flash
   FlashInit();
-  ReadFlash(encoder_offset,2,address,FLASH_TYPEPROGRAM_WORD);
+  ReadFlash(encoder_offset,2,ADDR_FLASH_SECTOR_2,FLASH_TYPEPROGRAM_WORD);
   ENCODER_1_OFFSET = encoder_offset[0];
   ENCODER_2_OFFSET = encoder_offset[1];
 
@@ -1742,7 +1743,7 @@ void parser() {
 		encoder_offset[1] = ENCODER_2_OFFSET;
 
 		// Save data to flash
-		WriteToFlash(encoder_offset, 2, address, FLASH_TYPEPROGRAM_WORD);
+		WriteToFlash(encoder_offset, 2, ADDR_FLASH_SECTOR_2, FLASH_TYPEPROGRAM_WORD);
 
 		break;
 	case 0x14:
@@ -1774,11 +1775,23 @@ void parser() {
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
 		break;
 	case 0x17:
-		//ReadFlash(encoder_offset,2,address,FLASH_TYPEPROGRAM_WORD);
+		/*
+		EraseInitStruct.Sector        = FLASH_SECTOR_4;
+
+		HAL_FLASH_Unlock();
+
+			if(HAL_FLASHEx_Erase(&EraseInitStruct, &page_error) != HAL_OK) {
+			      //error handler of erasing flash
+			      return;
+			  }
+			HAL_FLASH_Lock(); */
+
+		ReadFlash(flash_data,4,ADDR_FLASH_SECTOR_2,FLASH_TYPEPROGRAM_WORD);
+		printf("%lu, %lu, %lu, %lu\r\n",flash_data[0],flash_data[1],flash_data[2],flash_data[3]);
 		 //HAL_UART_DeInit(&huart1);
 		  //MX_USART1_UART_Init();
-		printf("%lu,\r\n",usart3_reg);
-		printf("error: %lu,\r\n",usart3_error);
+		//printf("%lu,\r\n",usart3_reg);
+		//printf("error: %lu,\r\n",usart3_error);
 		break;
 	case 0x18: // only for test of mainboard
 
@@ -2173,7 +2186,7 @@ uint32_t processSSIData(uint8_t *SSI_buffer) {
 void FlashInit() {
 	EraseInitStruct.TypeErase     = FLASH_TYPEERASE_SECTORS;
 	EraseInitStruct.VoltageRange  = FLASH_VOLTAGE_RANGE_3;
-	EraseInitStruct.Sector        = FLASH_SECTOR_3;
+	EraseInitStruct.Sector        = FLASH_SECTOR_4;
 	EraseInitStruct.NbSectors     = 1;
 }
 
