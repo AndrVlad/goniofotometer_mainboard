@@ -124,7 +124,7 @@ bool tim14_cnt = 0;
 bool allow = 0;
 
 
-uint32_t start_position_drv1, start_position_drv2, end_position_drv1, end_position_drv2, accel_position_drv1, accel_position_drv2 = 0;
+uint32_t start_position_drv1, start_position_drv2, end_position_drv1, end_position_drv2, end_position_drv_tmp, accel_position_drv1, accel_position_drv2 = 0;
 uint32_t ENCODER_1_OFFSET = 0;
 uint32_t ENCODER_2_OFFSET = 0;
 uint32_t angle_position_drv1, angle_position_drv2, begin_pos_drv1, begin_pos_drv2, angle_position_drv1_tmp = 0;
@@ -1207,7 +1207,9 @@ void parser() {
 		}
 
 		// set end position of measurement
-		end_position_drv1 = (end_angle * ENCODER_RESOLUTION) / 360; // get absolute encoder position
+		end_position_drv_tmp = (end_angle * ENCODER_RESOLUTION) / 360;
+		end_position_drv_tmp = calculateEncPosition(end_position_drv_tmp,chosen_drv);
+		end_position_drv1 = ((end_angle-4) * ENCODER_RESOLUTION) / 360; // get absolute encoder position
 		end_position_drv1 = calculateEncPosition(end_position_drv1,chosen_drv);
 
 		/* might be useful
@@ -1318,7 +1320,9 @@ void parser() {
 			}
 
 			// set end position of measurement
-			end_position_drv1 = (end_angle * ENCODER_RESOLUTION) / 360; // get absolute encoder position
+			end_position_drv_tmp = (end_angle * ENCODER_RESOLUTION) / 360;
+			end_position_drv_tmp = calculateEncPosition(end_position_drv_tmp,chosen_drv);
+			end_position_drv1 = ((end_angle-4) * ENCODER_RESOLUTION) / 360; // get absolute encoder position
 			end_position_drv1 = calculateEncPosition(end_position_drv1,chosen_drv);
 
 			/* not used
@@ -1358,7 +1362,9 @@ void parser() {
 			}
 
 			// set end position of measurement
-			end_position_drv2 = (end_angle * ENCODER_RESOLUTION) / 360; // get absolute encoder position
+			end_position_drv_tmp = (end_angle * ENCODER_RESOLUTION) / 360;
+			end_position_drv_tmp = calculateEncPosition(end_position_drv_tmp,chosen_drv);
+			end_position_drv2 = ((end_angle - 4) * ENCODER_RESOLUTION) / 360; // get absolute encoder position
 			end_position_drv2 = calculateEncPosition(end_position_drv2,chosen_drv);
 
 			if (end_position_drv2 < start_position_drv2) {
@@ -2494,16 +2500,20 @@ void handleHorizontalMeasurement() {
 					  // while not reached end_position
 					  if ((encoder1_data >= (encoder1_increment_res - 4)) && (encoder1_data <= (encoder1_increment_res + 4))) {
 					 		encoder1_increment_res += meas_res_drv1;
-							HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
+						  if (encoder1_increment_res >= ENCODER_RESOLUTION) {
+							  encoder1_increment_res -= ENCODER_RESOLUTION;
+						  }
+						HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
 
-						 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
-						 	wait_adc_data_flag = 1;
-						 	//encoder_data_buf_trg[enc_cnt_trg] = encoder1_data;
-						 	//enc_cnt_trg++;
-						 	usDelay(10);
+						HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
+						wait_adc_data_flag = 1;
+						//encoder_data_buf_trg[enc_cnt_trg] = encoder1_data;
+						//enc_cnt_trg++;
+						usDelay(10);
 
-						 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
-						 	test_counter_adc_data2++;
+						HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
+						test_counter_adc_data2++;
+						end_position_drv1 = end_position_drv_tmp;
 					  }
 				  }
 			  }
@@ -2614,7 +2624,11 @@ void handleHorizontalMeasurementVertPlatf() {
 				  } else {
 					  // while not reached end_position
 					  if ((encoder2_data >= (encoder2_increment_res - 4)) && (encoder2_data <= (encoder2_increment_res + 4))) {
-					 		encoder2_increment_res += meas_res_drv2;
+						  encoder2_increment_res += meas_res_drv2;
+						  if (encoder2_increment_res >= ENCODER_RESOLUTION) {
+							  encoder2_increment_res -= ENCODER_RESOLUTION;
+						  }
+
 							HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
 
 						 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
@@ -2625,6 +2639,7 @@ void handleHorizontalMeasurementVertPlatf() {
 
 						 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
 						 	test_counter_adc_data2++;
+						 	end_position_drv2 = end_position_drv_tmp;
 					  }
 				  }
 			  }
