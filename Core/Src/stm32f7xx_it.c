@@ -75,7 +75,7 @@ extern UART_HandleTypeDef huart3;
 extern SPI_HandleTypeDef hspi3;
 extern SPI_HandleTypeDef hspi4;
 
-extern bool tim14_cnt, chosen_drv;
+extern bool tim14_cnt, tim10_cnt, chosen_drv;
 extern end_meas_flag;
 extern allow;
 extern tim13_ovflw;
@@ -274,7 +274,7 @@ void DMA1_Stream5_IRQHandler(void)
 void TIM1_UP_TIM10_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM1_UP_TIM10_IRQn 0 */
-
+	tim10_cnt = 1;
   /* USER CODE END TIM1_UP_TIM10_IRQn 0 */
   HAL_TIM_IRQHandler(&htim10);
   /* USER CODE BEGIN TIM1_UP_TIM10_IRQn 1 */

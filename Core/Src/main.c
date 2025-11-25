@@ -81,7 +81,7 @@ uint8_t response_buf[33] = {0};
 uint8_t adc_data_buf[33] = {0};
 uint8_t data_buf_counter = 0;
 uint8_t data_elem_cnt = 1;
-uint16_t tim14_arr_val, tim10_cnt = 0;
+uint16_t tim14_arr_val = 0; 
 uint16_t test_counter_adc_data, test_cnt_uart1_rx, uart1_received_cnt, uart1_received_cnt_global, take_data_cnt = 0;
 uint16_t test_counter_adc_data2 = 0;
 uint16_t busy_cnt, tim13_ovflw = 0;
@@ -98,6 +98,7 @@ uint32_t idata[] = {0x1941, 0x1945};
 uint32_t CRC_Photodetector, tim13cnt, tim14_arr_val_converted, new_tim_arr_val, new_arr_val = 0;
 uint32_t adc_data_cnt, required_data_num = 0;
 uint32_t usart3_reg, usart3_error = 0;
+uint32_t photodetector_offset_val = 0;
 
 uint32_t encoder_offset[2] = {0};
 uint32_t address = ADDR_FLASH_SECTOR_2;
@@ -120,7 +121,7 @@ bool reach_test_turn_pos = 0;
 bool start_light_pow_meas = 0;
 bool adc_coeff_command_set = 0;
 bool adc_coeff_set_complete = 0;
-bool tim14_cnt = 0;
+bool tim14_cnt, tim10_cnt = 0;
 bool allow = 0;
 
 
@@ -138,6 +139,8 @@ uint8_t uart3_rx_safe_buffer[6] = {0};
 uint8_t uart1_rx_buffer[5] = {0};
 uint8_t uart1_rx_safe_buffer[5] = {0};
 uint8_t uart1_rx_safe_buffer_meas[5] = {0};
+uint8_t uart1_rx_calibration_buffer[150] = {0};
+uint32_t adc_values_buf[50] = {0};
 //uint32_t encoder_data_buf_trg[800] = {0};
 //uint16_t enc_cnt_trg, enc_cnt_setdata = 0;
 //uint32_t encoder_data_buf_setdata[800] = {0};
@@ -219,6 +222,9 @@ void setNVICPriority(uint8_t cur_action);
 void resetNVICPriority();
 uint32_t getTimeOffset();
 void setMotorFrequency(bool chosen_drv, uint16_t motor_frequency);
+void convertAdcValues(uint8_t *buf, uint16_t size);
+void bubbleSort(uint32_t* buf, uint16_t size);
+uint32_t calculateMedianVal(uint32_t *adc_values_buf, uint16_t size, uint8_t limit);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -315,26 +321,60 @@ int main(void)
         	  // checking that the measurement data has been received
         	if (wait_adc_data_flag) {
 
-        		  // filling the buffer of measurement data
-        		  for (uint8_t i = 0; i < 3; i++, data_elem_cnt++) {
-        			  adc_data_buf[data_elem_cnt] = uart1_rx_safe_buffer_meas[i];
-        		  }
+        		// filling the buffer of measurement data
+        		for (uint8_t i = 0; i < 3; i++, data_elem_cnt++) {
+        			adc_data_buf[data_elem_cnt] = uart1_rx_safe_buffer_meas[i];
+        		}
 
-        		  wait_adc_data_flag = 0;
+        		wait_adc_data_flag = 0;
 
-        		  data_buf_counter++;
-        		  test_data_buf_cnt = data_buf_counter;
-        		  adc_data_cnt++;
-        		  test_counter_adc_data++;
+        		data_buf_counter++;
+        		test_data_buf_cnt = data_buf_counter;
+        		adc_data_cnt++;
+        		test_counter_adc_data++;
 
-        		  if (data_buf_counter == 10) {
-        			  data_buf_counter = 0;
-        			  data_elem_cnt = 1;
-        			  data_status = _READY_;
-        			  packet_cnt++;
-        		  }
-        	 }
+        		if (data_buf_counter == 10) {
+        			data_buf_counter = 0;
+        			data_elem_cnt = 1;
+        			data_status = _READY_;
+        			packet_cnt++;
+        		}
+        	}
           }
+
+		  if (cur_action == CALIBRATION) {
+			  if (wait_adc_data_flag) {
+
+				  // filling the buffer of measurement data
+				  for (uint8_t i = 0; i < 3; i++, data_elem_cnt++) {
+					  uart1_rx_calibration_buffer[data_elem_cnt] = uart1_rx_safe_buffer_meas[i];
+				  }
+
+				  wait_adc_data_flag = 0;
+
+				  data_buf_counter++;
+				  test_data_buf_cnt = data_buf_counter;
+				  adc_data_cnt++;
+				  test_counter_adc_data++;
+
+				  // the buffer is filled
+				  if (data_buf_counter == 50) {
+					  HAL_TIM_BaseStop_IT(&htim10);
+
+					  convertAdcValues(uart1_rx_calibration_buffer, data_buf_counter * 3);
+					  bubbleSort(adc_values_buf, data_buf_counter);
+					  photodetector_offset_val = calculateMedianVal(adc_values_buf, data_buf_counter, 12);
+
+					  
+
+					  data_buf_counter = 0;
+					  data_elem_cnt = 1;
+
+					  //data_status = _READY_;
+					  //packet_cnt++;
+				  }
+			  }
+		  }
 
           uart1_rx_complete = 0;
 
@@ -443,6 +483,30 @@ int main(void)
 		setNVICPriority(LIGHT_POWER);
 		HAL_TIM_Base_Start_IT(&htim14);
 
+	 }
+
+	 if (cur_action == CALIBRATION) {
+		 // check status of setting adc frequency and start polling of photodetector
+		 if (adc_coeff_command_set && adc_coeff_set_complete) {
+			 adc_coeff_command_set = 0;
+			 adc_coeff_set_complete = 0;
+
+			 setNVICPriority(LIGHT_POWER);
+			 // need to choose timer
+			 __HAL_TIM_SET_COUNTER(&htim10, 0);
+			 HAL_TIM_Base_Start_IT(&htim10);
+			 return;
+		 }
+
+		 if (tim10_cnt) {
+			 tim10_cnt = 0;
+			 HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
+			 HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
+			 wait_adc_data_flag = 1;
+			 usDelay(10);
+			 HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
+			 __HAL_TIM_SET_COUNTER(&htim10, 0);
+		 }
 	 }
 
 	 // the handler of resolution timer overflow (active only at the light power measurement)
@@ -1124,10 +1188,10 @@ void parser() {
 		}
 
 		//clearBuffer(response_buf,33);
-		HAL_TIM_Base_Start(&htim10);
+		//HAL_TIM_Base_Start(&htim10);
 		createResponsePacket(0x01,0);
-		HAL_TIM_Base_Stop(&htim10);
-		__HAL_TIM_SET_COUNTER(&htim10, 0);
+		//HAL_TIM_Base_Stop(&htim10);
+		//__HAL_TIM_SET_COUNTER(&htim10, 0);
 
 		break;
 	case 0x03:
@@ -1605,14 +1669,14 @@ void parser() {
 		break;
 
 	case 0x0B:
-		HAL_TIM_Base_Start(&htim10);
+		//HAL_TIM_Base_Start(&htim10);
 
 			createDataPacket();
 			data_status = NONE_;
 			take_data_cnt++;
-			HAL_TIM_Base_Stop(&htim10);
-			tim10_cnt += htim10.Instance->CNT;
-			__HAL_TIM_SET_COUNTER(&htim10, 0);
+			//HAL_TIM_Base_Stop(&htim10);
+			//tim10_cnt += htim10.Instance->CNT;
+			//__HAL_TIM_SET_COUNTER(&htim10, 0);
 		break;
 
 	case 0x0C:
@@ -1846,6 +1910,28 @@ void parser() {
 			printf("'\r\n");
 
 			break;
+	case 0x1A:
+		
+		createResponsePacket(0x1A, ACCEPTED__);
+
+		// set status 
+		cur_action == CALIBRATION;
+		ready_status = BUSY_;
+		
+		// set timer for polling photodetector every 100ms
+		htim10.Instance->ARR = 500;
+
+		// set adc frequency = 16Hz
+		wait_flag = 1;
+		adc_coeff_command_set = 1;
+		adc_coeff_set_complete = 0;
+		ampl_buf[0] = getADCAmplifierVal(1);
+
+		//ampl_buf[1] = ampl_buf[0];
+		HAL_UART_DMAStop(&huart1);
+		HAL_UART_Transmit(&huart1, ampl_buf, 1, 100);
+		HAL_UART_Receive_DMA(&huart1, buf, 5);
+		break;
 }
 
 
@@ -2926,6 +3012,7 @@ uint32_t calculateRequiredDataNum(uint32_t meas_interval, uint32_t meas_resoluti
 
 void setNVICPriority(uint8_t cur_action) {
 	switch(cur_action) {
+	case CALIBRATION:
 	case LIGHT_POWER:
 	  /* DMA1_Stream0_IRQn interrupt configuration */
 	  HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 3, 0);
@@ -3025,6 +3112,45 @@ void setMotorFrequency(bool chosen_drv, uint16_t motor_frequency) {
 	} else {		// chosen first motor
 		htim2.Instance->ARR = ((tim_clock/(htim3.Instance->PSC + 1))/motor_frequency) - 1;
 	}
+}
+
+void convertAdcValues(uint8_t* buf, uint16_t size) {
+	for (uint16_t i = 0, j = 0; i < size; i += 3, j++) {
+		adc_values_buf[j] = buf[i];
+		adc_values_buf[j] |= buf[i+1] << 8;
+		adc_values_buf[j] |= buf[i+1] << 16;
+	}
+}
+
+void bubbleSort(uint32_t *buf, uint16_t size)
+{
+	while (size--)
+	{
+		bool swapped = false;
+
+		for (int i = 0; i < size; i++)
+		{
+			if (buf[i] > buf[i + 1])
+			{
+				swap(buf[i], buf[i + 1]);
+				swapped = true;
+			}
+		}
+
+		if (swapped == false)
+			break;
+	}
+}
+
+uint32_t calculateMedianVal(uint32_t* buf, uint16_t size, uint8_t limit) {
+	uint8_t end_limit = size - (limit + 1);
+	uint64_t median_val = 0;
+	uint32_t result;
+	for (uint16_t i = limit; i <= end_limit; i++) {
+		median += buf[i];
+	}
+	result = median / size;
+	return result;
 }
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
