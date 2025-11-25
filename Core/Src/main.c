@@ -365,13 +365,17 @@ int main(void)
 					  bubbleSort(adc_values_buf, data_buf_counter);
 					  photodetector_offset_val = calculateMedianVal(adc_values_buf, data_buf_counter, 12);
 
-					  
-
 					  data_buf_counter = 0;
 					  data_elem_cnt = 1;
+					  wait_flag = 0;
+					  
+					  adc_data_buf[1] = photodetector_offset_val;
+					  adc_data_buf[2] = photodetector_offset_val >> 8;
+					  adc_data_buf[3] = photodetector_offset_val >> 16;
 
-					  //data_status = _READY_;
-					  //packet_cnt++;
+					  data_status = _READY_;
+					  cur_action = NONE;
+					  ready_status = READY_;
 				  }
 			  }
 		  }
@@ -1915,7 +1919,7 @@ void parser() {
 		createResponsePacket(0x1A, ACCEPTED__);
 
 		// set status 
-		cur_action == CALIBRATION;
+		cur_action = CALIBRATION;
 		ready_status = BUSY_;
 		
 		// set timer for polling photodetector every 100ms
