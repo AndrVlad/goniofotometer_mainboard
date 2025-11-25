@@ -359,7 +359,7 @@ int main(void)
 
 				  // the buffer is filled
 				  if (data_buf_counter == 50) {
-					  HAL_TIM_BaseStop_IT(&htim10);
+					  HAL_TIM_Base_Stop_IT(&htim10);
 
 					  convertAdcValues(uart1_rx_calibration_buffer, data_buf_counter * 3);
 					  bubbleSort(adc_values_buf, data_buf_counter);
@@ -1671,9 +1671,9 @@ void parser() {
 	case 0x0B:
 		//HAL_TIM_Base_Start(&htim10);
 
-			createDataPacket();
-			data_status = NONE_;
-			take_data_cnt++;
+		createDataPacket();
+		data_status = NONE_;
+		take_data_cnt++;
 			//HAL_TIM_Base_Stop(&htim10);
 			//tim10_cnt += htim10.Instance->CNT;
 			//__HAL_TIM_SET_COUNTER(&htim10, 0);
@@ -3122,6 +3122,12 @@ void convertAdcValues(uint8_t* buf, uint16_t size) {
 	}
 }
 
+void swap(uint32_t a, uint32_t b) {
+    uint32_t tmp = a;
+    a = b;
+    b = tmp;
+}
+
 void bubbleSort(uint32_t *buf, uint16_t size)
 {
 	while (size--)
@@ -3147,9 +3153,9 @@ uint32_t calculateMedianVal(uint32_t* buf, uint16_t size, uint8_t limit) {
 	uint64_t median_val = 0;
 	uint32_t result;
 	for (uint16_t i = limit; i <= end_limit; i++) {
-		median += buf[i];
+		median_val += buf[i];
 	}
-	result = median / size;
+	result = median_val / size;
 	return result;
 }
 
