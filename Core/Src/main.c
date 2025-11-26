@@ -81,6 +81,7 @@ uint8_t response_buf[33] = {0};
 uint8_t adc_data_buf[33] = {0};
 uint8_t data_buf_counter = 0;
 uint8_t data_elem_cnt = 1;
+uint8_t data_elem_cnt_calib = 0;
 uint16_t tim14_arr_val = 0; 
 uint16_t test_counter_adc_data, test_cnt_uart1_rx, uart1_received_cnt, uart1_received_cnt_global, take_data_cnt = 0;
 uint16_t test_counter_adc_data2 = 0;
@@ -347,8 +348,8 @@ int main(void)
 			  if (wait_adc_data_flag) {
 
 				  // filling the buffer of measurement data
-				  for (uint8_t i = 0; i < 3; i++, data_elem_cnt++) {
-					  uart1_rx_calibration_buffer[data_elem_cnt] = uart1_rx_safe_buffer_meas[i];
+				  for (uint8_t i = 0; i < 3; i++, data_elem_cnt_calib++) {
+					  uart1_rx_calibration_buffer[data_elem_cnt_calib] = uart1_rx_safe_buffer_meas[i];
 				  }
 
 				  wait_adc_data_flag = 0;
@@ -367,7 +368,7 @@ int main(void)
 					  photodetector_offset_val = calculateMedianVal(adc_values_buf, data_buf_counter, 12);
 
 					  data_buf_counter = 0;
-					  data_elem_cnt = 1;
+					  data_elem_cnt_calib = 0;
 					  wait_flag = 0;
 					  
 					  clearBuffer(adc_data_buf,33);
@@ -1928,6 +1929,7 @@ void parser() {
 
 		// set adc frequency = 16Hz
 		wait_flag = 1;
+		data_elem_cnt_calib = 0;
 		adc_coeff_command_set = 1;
 		adc_coeff_set_complete = 0;
 		ampl_buf[0] = getADCAmplifierVal(1);
@@ -3127,14 +3129,14 @@ void convertAdcValues(uint8_t* buf, uint16_t size) {
 	for (uint16_t i = 0, j = 0; i < size; i += 3, j++) {
 		adc_values_buf[j] = buf[i];
 		adc_values_buf[j] |= buf[i+1] << 8;
-		adc_values_buf[j] |= buf[i+1] << 16;
+		adc_values_buf[j] |= buf[i+2] << 16;
 	}
 }
 
-void swap(uint32_t a, uint32_t b) {
-    uint32_t tmp = a;
-    a = b;
-    b = tmp;
+void swap(uint32_t* a, uint32_t* b) {
+    uint32_t tmp = *a;
+    *a = *b;
+    *b = tmp;
 }
 
 void bubbleSort(uint32_t *buf, uint16_t size)
@@ -3147,7 +3149,7 @@ void bubbleSort(uint32_t *buf, uint16_t size)
 		{
 			if (buf[i] > buf[i + 1])
 			{
-				swap(buf[i], buf[i + 1]);
+				swap(&buf[i], &buf[i + 1]);
 				swapped = true;
 			}
 		}
@@ -3164,7 +3166,7 @@ uint32_t calculateMedianVal(uint32_t* buf, uint16_t size, uint8_t limit) {
 	for (uint16_t i = limit; i <= end_limit; i++) {
 		median_val += buf[i];
 	}
-	result = median_val / size;
+	result = median_val / (size - limit*2);
 	return result;
 }
 
