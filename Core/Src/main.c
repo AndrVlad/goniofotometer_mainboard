@@ -149,7 +149,8 @@ bool uart3_rx_complete = 0;
 bool spi4_rx_complete = 0;
 bool spi3_rx_complete = 0;
 bool driver_dir1, driver_dir2, chosen_drv = 1; // 0 - forward, 1 - back
-bool init_state = 1;
+//bool init_state = 1;
+bool init_state = 0;
 uint8_t next_command = 0xFF;
 
 /* Telemetry status values */
@@ -499,7 +500,7 @@ int main(void)
 			 adc_coeff_command_set = 0;
 			 adc_coeff_set_complete = 0;
 
-			 setNVICPriority(LIGHT_POWER);
+			 setNVICPriority(CALIBRATION);
 			 // need to choose timer
 			 __HAL_TIM_SET_COUNTER(&htim10, 0);
 			 HAL_TIM_Base_Start_IT(&htim10);
@@ -1921,10 +1922,6 @@ void parser() {
 	case 0x1A:
 		
 		createResponsePacket(0x1A, ACCEPTED__);
-
-		// set status 
-		cur_action = CALIBRATION;
-		ready_status = BUSY_;
 		
 		// set timer for polling photodetector every 100ms
 		htim10.Instance->ARR = 500;
@@ -1934,6 +1931,10 @@ void parser() {
 		adc_coeff_command_set = 1;
 		adc_coeff_set_complete = 0;
 		ampl_buf[0] = getADCAmplifierVal(1);
+		
+		// set status 
+		cur_action = CALIBRATION;
+		ready_status = BUSY_;
 
 		//ampl_buf[1] = ampl_buf[0];
 		HAL_UART_DMAStop(&huart1);
