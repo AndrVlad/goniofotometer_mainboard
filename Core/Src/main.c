@@ -369,9 +369,13 @@ int main(void)
 					  data_elem_cnt = 1;
 					  wait_flag = 0;
 					  
+					  clearBuffer(adc_data_buf,33);
+
 					  adc_data_buf[1] = photodetector_offset_val;
 					  adc_data_buf[2] = photodetector_offset_val >> 8;
 					  adc_data_buf[3] = photodetector_offset_val >> 16;
+
+					  createDataPacket();
 
 					  data_status = _READY_;
 					  cur_action = NONE;
@@ -499,7 +503,7 @@ int main(void)
 			 // need to choose timer
 			 __HAL_TIM_SET_COUNTER(&htim10, 0);
 			 HAL_TIM_Base_Start_IT(&htim10);
-			 return;
+			 //break;
 		 }
 
 		 if (tim10_cnt) {
@@ -936,7 +940,7 @@ static void MX_TIM10_Init(void)
 
   /* USER CODE END TIM10_Init 1 */
   htim10.Instance = TIM10;
-  htim10.Init.Prescaler = 10799;
+  htim10.Init.Prescaler = 21599;
   htim10.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim10.Init.Period = 65535;
   htim10.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -3031,8 +3035,8 @@ void setNVICPriority(uint8_t cur_action) {
 	  HAL_NVIC_SetPriority(DMA2_Stream1_IRQn, 3, 1);
 	  HAL_NVIC_EnableIRQ(DMA2_Stream1_IRQn);
 
-	  //HAL_NVIC_SetPriority(TIM8_UP_TIM13_IRQn, 0, 1);
-	  //HAL_NVIC_EnableIRQ(TIM8_UP_TIM13_IRQn);
+	  HAL_NVIC_SetPriority( TIM1_UP_TIM10_IRQn, 1, 0);
+	  HAL_NVIC_EnableIRQ( TIM1_UP_TIM10_IRQn);
 
 		break;
 	case HORIZONTAL:
