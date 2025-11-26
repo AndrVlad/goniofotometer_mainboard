@@ -151,7 +151,7 @@ bool spi4_rx_complete = 0;
 bool spi3_rx_complete = 0;
 bool driver_dir1, driver_dir2, chosen_drv = 1; // 0 - forward, 1 - back
 //bool init_state = 1;
-bool init_state = 0;
+bool init_state = 1;
 uint8_t next_command = 0xFF;
 
 /* Telemetry status values */
@@ -377,7 +377,9 @@ int main(void)
 					  adc_data_buf[2] = photodetector_offset_val >> 8;
 					  adc_data_buf[3] = photodetector_offset_val >> 16;
 
-					  createDataPacket();
+					  adc_data_buf[4] = adc_data_buf[1];
+					  adc_data_buf[5] = adc_data_buf[2];
+					  adc_data_buf[6] = adc_data_buf[3];
 
 					  data_status = _READY_;
 					  cur_action = NONE;
@@ -1934,6 +1936,7 @@ void parser() {
 		adc_coeff_set_complete = 0;
 		ampl_buf[0] = getADCAmplifierVal(1);
 		
+
 		// set status 
 		cur_action = CALIBRATION;
 		ready_status = BUSY_;
