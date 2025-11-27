@@ -124,6 +124,7 @@ bool adc_coeff_command_set = 0;
 bool adc_coeff_set_complete = 0;
 bool tim14_cnt, tim10_cnt = 0;
 bool allow = 0;
+bool stop_poll = 0;
 
 
 uint32_t start_position_drv1, start_position_drv2, end_position_drv1, end_position_drv2, end_position_drv_tmp, accel_position_drv1, accel_position_drv2 = 0;
@@ -153,6 +154,7 @@ bool driver_dir1, driver_dir2, chosen_drv = 1; // 0 - forward, 1 - back
 //bool init_state = 1;
 bool init_state = 1;
 uint8_t next_command = 0xFF;
+uint16_t error_cnt = 0;
 
 /* Telemetry status values */
 enum status { ERROR_, READY_, BUSY_ } ready_status;
@@ -1187,7 +1189,7 @@ void parser() {
 		//HAL_UART_DMAStop(&huart1);
 		//HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 3);
 
-		if (wait_flag == 0) {
+		if (wait_flag == 0 && stop_poll == 0) {
 
 			if(huart1.hdmarx->State == HAL_DMA_STATE_READY) {
 				HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
@@ -1266,6 +1268,8 @@ void parser() {
 		step_2_vertical_meas = 0;
 		reach_start_position_vertical = 0;
 
+		setMotorFrequency(chosen_drv, motor_frequency_1);
+
 		// set acceleration offset position
 		accel_position_drv1 = (accel_angle * ENCODER_RESOLUTION) / 360; // get absolute encoder position
 		accel_position_drv1 = calculateEncPosition(accel_position_drv1,chosen_drv);
@@ -1318,6 +1322,7 @@ void parser() {
 		start_angle = 0;
 		end_angle = 0;
 		accel_angle = 0;
+		stop_poll = 1;
 
 		// only for debug
 		test_counter_adc_data = 0;
@@ -1936,7 +1941,6 @@ void parser() {
 		adc_coeff_set_complete = 0;
 		ampl_buf[0] = getADCAmplifierVal(1);
 		
-
 		// set status 
 		cur_action = CALIBRATION;
 		ready_status = BUSY_;
@@ -2141,50 +2145,6 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 		encoder2_data |=  (((uint32_t)dma_spi3_buf[0] & 0x3F) << 11);
 		spi3_rx_complete = 1;
 	}
-}
-
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-
-	// timer for the step
-	/*
-	if(htim->Instance == TIM2) {
-		HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
-		__HAL_TIM_SET_COUNTER(&htim2, 0);
-	} */
-	/*
-	if(htim->Instance == TIM3) {
-		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_0);
-		__HAL_TIM_SET_COUNTER(&htim3, 0);
-	} */
-
-	// timer for the delay between SPI request to encoder
-	/*
-	if (htim->Instance == TIM7) {
-		if (!chosen_drv) {
-			HAL_SPI_Receive_DMA(&hspi4, dma_spi4_buf, 5);
-		} else {
-			HAL_SPI_Receive_DMA(&hspi3, dma_spi3_buf, 5);
-		}
-
-		__HAL_TIM_SET_COUNTER(&htim7, 0);
-	} */
-
-	// timer for checking response of photodetector
-	/*
-	if (htim->Instance == TIM10) {
-			//wait_flag = 0;
-			//HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
-			//HAL_UART_DMAStop(&huart1);
-			//hdma_usart1_rx.Instance->NDTR = 3;
-
-			// ! create handle of error
-			HAL_TIM_Base_Stop(&htim10);
-			__HAL_TIM_SET_COUNTER(&htim10, 0);
-		} */
-
-
-
 }
 
 void createResponsePacket(uint8_t command_code, uint8_t status_code) {
@@ -2407,33 +2367,6 @@ void moveToPosition(uint8_t angle, bool chosen_drv) {
 	}
 }
 
-/*
-void checkCRCPhotodetectorData() {
-  uint32_t CRC_Photodetector = 0;
-  //calculate CRC
-  CRC_Photodetector = uart1_rx_buffer[0] + uart1_rx_buffer[1] + uart1_rx_buffer[2];
-  CRC_Photodetector = CRC_Photodetector & 0xFF;
-  // check CRC
-  if ((CRC_Photodetector == uart1_rx_buffer[3]) && (uart1_rx_buffer[4] == 0xA5)) {
-	  if (wait_adc_data_flag) {
-		  uart1_rx_safe_buffer_meas[0] = uart1_rx_buffer[0];
-		  uart1_rx_safe_buffer_meas[1] = uart1_rx_buffer[1];
-		  uart1_rx_safe_buffer_meas[2] = uart1_rx_buffer[2];
-		  test_cnt_uart1_rx++;
-	  } else {
-		  uart1_rx_safe_buffer[0] = uart1_rx_buffer[0];
-		  uart1_rx_safe_buffer[1] = uart1_rx_buffer[1];
-		  uart1_rx_safe_buffer[2] = uart1_rx_buffer[2];
-	  }
-	  uart1_received_cnt++;
-
-
-  } else {
-    // error handler
-  }
-}
- */
-
 void checkCRCPhotodetectorData() {
   // check CRC
   if ((((uart1_rx_buffer[0] + uart1_rx_buffer[1] + uart1_rx_buffer[2]) & 0xFF) == uart1_rx_buffer[3]) && (uart1_rx_buffer[4] == 0xA5)) {
@@ -2548,7 +2481,7 @@ void handleHorizontalMeasurement() {
 
 			  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
 			  	wait_adc_data_flag = 1;
-			  	usDelay(10);
+			  	usDelay(30);
 
 			  	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
 			  }
@@ -2569,7 +2502,7 @@ void handleHorizontalMeasurement() {
 					  wait_adc_data_flag = 1;
 					  //encoder_data_buf_trg[enc_cnt_trg] = encoder1_data;
 					  //enc_cnt_trg++;
-					  usDelay(10);
+					  usDelay(30);
 					  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
 					  test_counter_adc_data2++;
 					  reach_end_position = 1;
@@ -2609,7 +2542,7 @@ void handleHorizontalMeasurement() {
 						wait_adc_data_flag = 1;
 						//encoder_data_buf_trg[enc_cnt_trg] = encoder1_data;
 						//enc_cnt_trg++;
-						usDelay(10);
+						usDelay(30);
 
 						HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
 						test_counter_adc_data2++;
@@ -2635,6 +2568,8 @@ void handleHorizontalMeasurement() {
 		  ready_status = READY_;
 		  reach_end_position = 1;
 		  wait_adc_data_flag = 0;
+
+		  //stop_poll = 0;
 
 		  resetNVICPriority();
 
@@ -3178,6 +3113,7 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
         __HAL_UART_CLEAR_FLAG(huart, UART_CLEAR_OREF);
         // clear RXNE flag
         volatile uint8_t data = huart1.Instance->RDR;
+        error_cnt++;
 
     }
     if (huart == &huart3) {
