@@ -2553,8 +2553,12 @@ void handleHorizontalMeasurement() {
 
 						HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
 						test_counter_adc_data2++;
-						end_position_drv1 = end_position_drv_tmp;
+
 					  }
+
+						if ((encoder1_data >= end_position_drv_tmp + 730) && (encoder1_data <= end_position_drv_tmp + 1460)) {
+							end_position_drv1 = end_position_drv_tmp;
+						}
 				  }
 			  }
 		  }
@@ -2682,7 +2686,10 @@ void handleHorizontalMeasurementVertPlatf() {
 
 						 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
 						 	test_counter_adc_data2++;
-						 	end_position_drv2 = end_position_drv_tmp;
+					  }
+
+					  if ((encoder1_data >= end_position_drv_tmp + 730) && (encoder1_data <= end_position_drv_tmp + 1460)) {
+						  end_position_drv1 = end_position_drv_tmp;
 					  }
 				  }
 			  }
