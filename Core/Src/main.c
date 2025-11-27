@@ -212,6 +212,8 @@ void handleTestTurn();
 void handleVerticalMeasurement();
 void reverseHorizontalMeasurement();
 void handleHorizontalMeasurementVertPlatf();
+void setPlatformParam(uint16_t meas_res);
+void setEncoderPollFrequency(uint16_t frequency_mcs);
 
 void FlashInit();
 void WriteToFlash_();
@@ -1215,6 +1217,7 @@ void parser() {
 		// only for debug
 		test_counter_adc_data = 0;
 		test_counter_adc_data2 = 0;
+		stop_poll = 1;
 		//enc_cnt_trg = 0;
 
 		// stop sending photodetector data to telemetry packet (if wait_flag == 1)
@@ -1251,6 +1254,8 @@ void parser() {
 
 		meas_res_drv1 = measurement_res_items[1][uart3_rx_safe_buffer[3]-1];
 
+		setPlatformParam(meas_res_drv1);
+
 		// calculate acceleration offset position
 
 		if ((start_angle - ACCEL_OFFSET) < 0) {
@@ -1267,8 +1272,6 @@ void parser() {
 		step_1_vertical_meas = 0;
 		step_2_vertical_meas = 0;
 		reach_start_position_vertical = 0;
-
-		setMotorFrequency(chosen_drv, motor_frequency_1);
 
 		// set acceleration offset position
 		accel_position_drv1 = (accel_angle * ENCODER_RESOLUTION) / 360; // get absolute encoder position
@@ -1382,7 +1385,8 @@ void parser() {
 			// choose of measurement resolution
 			meas_res_drv1 = measurement_res_items[1][uart3_rx_safe_buffer[3]-1];
 
-			setMotorFrequency(chosen_drv, motor_frequency_1);
+			//setMotorFrequency(chosen_drv, motor_frequency_1);
+			setPlatformParam(meas_res_drv1);
 
 			// set acceleration offset position
 			accel_position_drv1 = (accel_angle * ENCODER_RESOLUTION) / 360; // get absolute encoder position
@@ -1425,6 +1429,8 @@ void parser() {
 
 			// choose of measurement resolution
 			meas_res_drv2 = measurement_res_items[1][uart3_rx_safe_buffer[3]-1];
+
+			setPlatformParam(meas_res_drv2);
 
 			// set acceleration offset position
 			accel_position_drv2 = (accel_angle * ENCODER_RESOLUTION) / 360; // get absolute encoder position
@@ -2459,6 +2465,7 @@ void handleHorizontalMeasurement() {
 		  if ((encoder1_data >= accel_position_drv1 - 5) && (encoder1_data <= accel_position_drv1 + 5)) {
 			  HAL_TIM_Base_Stop_IT(&htim2);
 			  changeMotorDirection(chosen_drv, start_position_drv1);
+			  setMotorFrequency(chosen_drv, motor_frequency_1);
 			  reach_accel_position = 1;
 			  HAL_TIM_Base_Start_IT(&htim2);
 		  }
@@ -2569,7 +2576,7 @@ void handleHorizontalMeasurement() {
 		  reach_end_position = 1;
 		  wait_adc_data_flag = 0;
 
-		  //stop_poll = 0;
+		  stop_poll = 0;
 
 		  resetNVICPriority();
 
@@ -2586,6 +2593,7 @@ void handleHorizontalMeasurementVertPlatf() {
 		  if ((encoder2_data >= accel_position_drv2 - 5) && (encoder2_data <= accel_position_drv2 + 5)) {
 			  HAL_TIM_Base_Stop_IT(&htim3);
 			  changeMotorDirection(chosen_drv, start_position_drv2);
+			  setMotorFrequency(chosen_drv, motor_frequency_1);
 			  reach_accel_position = 1;
 			  HAL_TIM_Base_Start_IT(&htim3);
 		  }
@@ -2700,6 +2708,7 @@ void handleHorizontalMeasurementVertPlatf() {
 		  ready_status = READY_;
 		  reach_end_position = 1;
 		  wait_adc_data_flag = 0;
+		  stop_poll = 0;
 
 	  }
 }
@@ -3108,13 +3117,36 @@ uint32_t calculateMedianVal(uint32_t* buf, uint16_t size, uint8_t limit) {
 	return result;
 }
 
+void setPlatformParam(uint16_t meas_res) {
+	switch(meas_res) {
+	case 365:
+		motor_frequency_1 = motor_frequency_2 = 40;
+		setEncoderPollFrequency(200);
+		break;
+	case 182:
+		motor_frequency_1 = motor_frequency_2 = 40;
+		setEncoderPollFrequency(200);
+		break;
+	case 60:
+	case 29:
+	case 6:
+	case 3:
+	case 1:
+		motor_frequency_1 = motor_frequency_2 = 40;
+		setEncoderPollFrequency(1000);
+		break;
+	}
+}
+
+void setEncoderPollFrequency(uint16_t frequency_mcs) {
+	htim7.Instance->ARR = frequency_mcs-1;
+}
+
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
     if (huart->ErrorCode & HAL_UART_ERROR_ORE) {
         __HAL_UART_CLEAR_FLAG(huart, UART_CLEAR_OREF);
         // clear RXNE flag
         volatile uint8_t data = huart1.Instance->RDR;
-        error_cnt++;
-
     }
     if (huart == &huart3) {
 
