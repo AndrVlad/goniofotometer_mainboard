@@ -34,7 +34,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define ADDR_FLASH_SECTOR_2 ((uint32_t)0x08018000) /* Base address of Sector 3, 32 Kbytes */
+
 #define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
 #define ENCODER_RESOLUTION 131072
 #define ACCEL_OFFSET 5 // values in ark degrees
@@ -95,7 +95,7 @@ uint16_t crc, packet_cnt, error_val = 0;
 uint8_t current_pos = 0;
 uint8_t i = 0;
 char str[64] = {0,};
-uint32_t idata[] = {0x1941, 0x1945};
+//uint32_t idata[] = {0x1941, 0x1945};
 uint32_t CRC_Photodetector, tim13cnt, tim14_arr_val_converted, new_tim_arr_val, new_arr_val = 0;
 uint32_t adc_data_cnt, required_data_num = 0;
 uint32_t usart3_reg, usart3_error = 0;
@@ -168,7 +168,7 @@ uint8_t operation_progress = 0;
 uint32_t SSI_data, SSI_data_safe, encoder1_data, encoder2_data, encoder1_increment_res, encoder2_increment_res, encoder2_data_last = 0;
 uint32_t adc_value, error_val_sum = 0;
 uint8_t motor_frequency_1 = 40, motor_frequency_2 = 1;
-uint32_t flash_data[4];
+//uint32_t flash_data[4];
 
 // flash values
 uint32_t page_error = 0;
@@ -216,10 +216,8 @@ void setPlatformParam(uint16_t meas_res);
 void setEncoderPollFrequency(uint16_t frequency_mcs);
 
 void FlashInit();
-void WriteToFlash_();
 void WriteToFlash(uint32_t *data, uint8_t data_size, uint32_t address, uint32_t type_of_program);
 void ReadFlash(uint32_t *data, uint8_t data_size, uint32_t address, uint32_t type_of_read);
-void ReadFlash_();
 void usDelay(uint16_t useconds);
 void checkCRCPhotodetectorData();
 void createErrorResponse();
@@ -1879,8 +1877,8 @@ void parser() {
 			  }
 			HAL_FLASH_Lock(); */
 
-		ReadFlash(flash_data,4,ADDR_FLASH_SECTOR_2,FLASH_TYPEPROGRAM_WORD);
-		printf("%lu, %lu, %lu, %lu\r\n",flash_data[0],flash_data[1],flash_data[2],flash_data[3]);
+		//ReadFlash(flash_data,4,ADDR_FLASH_SECTOR_2,FLASH_TYPEPROGRAM_WORD);
+		//printf("%lu, %lu, %lu, %lu\r\n",flash_data[0],flash_data[1],flash_data[2],flash_data[3]);
 		 //HAL_UART_DeInit(&huart1);
 		  //MX_USART1_UART_Init();
 		//printf("%lu,\r\n",usart3_reg);
