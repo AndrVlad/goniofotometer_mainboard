@@ -29,7 +29,7 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-static FLASH_EraseInitTypeDef EraseInitStruct;
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
