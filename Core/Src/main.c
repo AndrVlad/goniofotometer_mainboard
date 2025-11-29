@@ -125,7 +125,7 @@ bool adc_coeff_set_complete = 0;
 bool tim14_cnt, tim10_cnt = 0;
 bool allow = 0;
 bool stop_poll = 0;
-
+bool end_calibration_flag = 0;
 
 uint32_t start_position_drv1, start_position_drv2, end_position_drv1, end_position_drv2, end_position_drv_tmp, accel_position_drv1, accel_position_drv2 = 0;
 uint32_t ENCODER_1_OFFSET = 0;
@@ -384,8 +384,16 @@ int main(void)
 					  adc_data_buf[6] = adc_data_buf[3];
 
 					  data_status = _READY_;
+					  end_calibration_flag = 1;
+
+				  }
+			  }
+
+			  if (end_calibration_flag) {
+				  if (data_status == NONE_){
 					  cur_action = NONE;
 					  ready_status = READY_;
+					  end_calibration_flag = 0;
 				  }
 			  }
 		  }
