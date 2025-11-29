@@ -102,7 +102,7 @@ uint32_t usart3_reg, usart3_error = 0;
 uint32_t photodetector_offset_val = 0;
 
 uint32_t encoder_offset[2] = {0};
-uint32_t address = ADDR_FLASH_SECTOR_2;
+//uint32_t address = ADDR_FLASH_SECTOR_2;
 uint8_t amplifier_val = 0;
 uint8_t amplifier_val_saved = 0;
 uint8_t save_code = 0;
@@ -170,8 +170,7 @@ uint32_t adc_value, error_val_sum = 0;
 uint8_t motor_frequency_1 = 40, motor_frequency_2 = 1;
 //uint32_t flash_data[4];
 
-// flash values
-uint32_t page_error = 0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -215,9 +214,6 @@ void handleHorizontalMeasurementVertPlatf();
 void setPlatformParam(uint16_t meas_res);
 void setEncoderPollFrequency(uint16_t frequency_mcs);
 
-void FlashInit();
-void WriteToFlash(uint32_t *data, uint8_t data_size, uint32_t address, uint32_t type_of_program);
-void ReadFlash(uint32_t *data, uint8_t data_size, uint32_t address, uint32_t type_of_read);
 void usDelay(uint16_t useconds);
 void checkCRCPhotodetectorData();
 void createErrorResponse();
@@ -2261,59 +2257,7 @@ uint32_t processSSIData(uint8_t *SSI_buffer) {
 	return encoder_data;
 }
 
-void FlashInit() {
-	EraseInitStruct.TypeErase     = FLASH_TYPEERASE_SECTORS;
-	EraseInitStruct.VoltageRange  = FLASH_VOLTAGE_RANGE_3;
-	EraseInitStruct.Sector        = FLASH_SECTOR_4;
-	EraseInitStruct.NbSectors     = 1;
-}
 
-void WriteToFlash(uint32_t *data, uint8_t data_size, uint32_t address, uint32_t type_of_program) {
-
-	HAL_FLASH_Unlock();
-
-	if(HAL_FLASHEx_Erase(&EraseInitStruct, &page_error) != HAL_OK) {
-	      //error handler of erasing flash
-	      return;
-	  }
-
-	  uint8_t address_inc = 0;
-
-	  if (type_of_program == FLASH_TYPEPROGRAM_WORD) {
-		  address_inc = 4;
-	  } else if (type_of_program == FLASH_TYPEPROGRAM_HALFWORD) {
-		  address_inc = 2;
-	  }
-
-	  for(uint8_t i = 0; i < data_size; i++)
-	  {
-		  if(HAL_FLASH_Program(type_of_program, address, data[i]) != HAL_OK) {
-	            // error handler of programming flash
-	            return;
-	      }
-	           address += address_inc;
-	   }
-
-	   HAL_FLASH_Lock();
-}
-
-void ReadFlash(uint32_t *data, uint8_t data_size, uint32_t address, uint32_t type_of_read) {
-
-	uint8_t address_inc = 0;
-	uint32_t dig32 = 0;
-	if (type_of_read == FLASH_TYPEPROGRAM_WORD) {
-	    address_inc = 4;
-	} else if (type_of_read == FLASH_TYPEPROGRAM_HALFWORD) {
-		address_inc = 2;
-	}
-
-	for(uint16_t i = 0; i < data_size; i++) {
-
-		dig32 = *(uint32_t*)address;
-		data[i] = dig32;
-	    address += address_inc;
-	  }
-}
 
 void clearBuffer(uint8_t *buf, uint8_t size){
 	for(uint8_t i = 0; i < size; i++) {
