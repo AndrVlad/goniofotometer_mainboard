@@ -1,5 +1,6 @@
-Core/Src/FlashUtils.o: ../Core/Src/FlashUtils.c ../Core/Inc/FlashUtils.h \
- ../Core/Inc/main.h ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal.h \
+Core/Src/PlatformMeasurements.o: ../Core/Src/PlatformMeasurements.c \
+ ../Core/Inc/PlatformMeasurements.h ../Core/Inc/main.h \
+ ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal.h \
  ../Core/Inc/stm32f7xx_hal_conf.h \
  ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_rcc.h \
  ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_def.h \
@@ -32,7 +33,7 @@ Core/Src/FlashUtils.o: ../Core/Src/FlashUtils.c ../Core/Inc/FlashUtils.h \
  ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_uart.h \
  ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_uart_ex.h \
  ../Core/Inc/FlashUtils.h ../Core/Inc/PlatformMeasurements.h
-../Core/Inc/FlashUtils.h:
+../Core/Inc/PlatformMeasurements.h:
 ../Core/Inc/main.h:
 ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal.h:
 ../Core/Inc/stm32f7xx_hal_conf.h:
