@@ -126,6 +126,7 @@ bool tim14_cnt, tim10_cnt = 0;
 bool allow = 0;
 bool stop_poll = 0;
 bool end_calibration_flag = 0;
+bool full_rotation = 0;
 
 uint32_t start_position_drv1, start_position_drv2, end_position_drv1, end_position_drv2, end_position_drv_tmp, accel_position_drv1, accel_position_drv2 = 0;
 uint32_t ENCODER_1_OFFSET = 0;
@@ -1220,6 +1221,7 @@ void parser() {
 		test_counter_adc_data = 0;
 		test_counter_adc_data2 = 0;
 		stop_poll = 1;
+		full_rotation = 0;
 		//enc_cnt_trg = 0;
 
 		// stop sending photodetector data to telemetry packet (if wait_flag == 1)
@@ -1246,6 +1248,9 @@ void parser() {
 
 		// set end angle of measurement
 		end_angle = start_ending_angle_items[1][uart3_rx_safe_buffer[2]-1] + 180;
+		if (start_angle == 0 && end_angle == 360) {
+			full_rotation = 1;
+		}
 		/*
 		if ((end_angle + start_angle_offset_1) > 360) {
 			end_angle = (end_angle + start_angle_offset_1) - 360;
@@ -1292,10 +1297,18 @@ void parser() {
 		}
 
 		// set end position of measurement
-		end_position_drv_tmp = (end_angle * ENCODER_RESOLUTION) / 360;
-		end_position_drv_tmp = calculateEncPosition(end_position_drv_tmp,chosen_drv);
-		end_position_drv1 = ((end_angle-4) * ENCODER_RESOLUTION) / 360; // get absolute encoder position
-		end_position_drv1 = calculateEncPosition(end_position_drv1,chosen_drv);
+
+		if (full_rotation) {
+			end_position_drv_tmp = (end_angle * ENCODER_RESOLUTION) / 360;
+			end_position_drv_tmp = calculateEncPosition(end_position_drv_tmp,chosen_drv);
+			end_position_drv1 = ((end_angle-4) * ENCODER_RESOLUTION) / 360; // get absolute encoder position
+			end_position_drv1 = calculateEncPosition(end_position_drv1,chosen_drv);
+		} else {
+			end_position_drv1 = (end_angle * ENCODER_RESOLUTION) / 360; // get absolute encoder position
+			end_position_drv1 = calculateEncPosition(end_position_drv1,chosen_drv);
+		}
+
+
 
 		/* might be useful
 		if (end_position_drv1 < start_position_drv1) {
@@ -1328,6 +1341,7 @@ void parser() {
 		end_angle = 0;
 		accel_angle = 0;
 		stop_poll = 1;
+		full_rotation = 0;
 
 		// only for debug
 		test_counter_adc_data = 0;
@@ -1360,6 +1374,11 @@ void parser() {
 
 		// set end angle of measurement
 		end_angle = start_ending_angle_items[1][uart3_rx_safe_buffer[2]-1] + 180;
+
+		if (start_angle == 0 && end_angle == 360) {
+			full_rotation = 1;
+		}
+
 		/*
 		if ((end_angle + start_angle_offset_1) > 360) {
 			end_angle = (end_angle + start_angle_offset_1) - 360;
@@ -1406,11 +1425,16 @@ void parser() {
 				encoder1_increment_res = start_position_drv1 + meas_res_drv1;
 			}
 
-			// set end position of measurement
-			end_position_drv_tmp = (end_angle * ENCODER_RESOLUTION) / 360;
-			end_position_drv_tmp = calculateEncPosition(end_position_drv_tmp,chosen_drv);
-			end_position_drv1 = ((end_angle-4) * ENCODER_RESOLUTION) / 360; // get absolute encoder position
-			end_position_drv1 = calculateEncPosition(end_position_drv1,chosen_drv);
+			if (full_rotation) {
+				// set end position of measurement
+				end_position_drv_tmp = (end_angle * ENCODER_RESOLUTION) / 360;
+				end_position_drv_tmp = calculateEncPosition(end_position_drv_tmp,chosen_drv);
+				end_position_drv1 = ((end_angle-4) * ENCODER_RESOLUTION) / 360; // get absolute encoder position
+				end_position_drv1 = calculateEncPosition(end_position_drv1,chosen_drv);
+			} else {
+				end_position_drv1 = (end_angle * ENCODER_RESOLUTION) / 360; // get absolute encoder position
+				end_position_drv1 = calculateEncPosition(end_position_drv1,chosen_drv);
+			}
 
 			/* not used
 			if (end_position_drv1 < start_position_drv1) {
@@ -1450,11 +1474,16 @@ void parser() {
 				encoder2_increment_res = start_position_drv2 + meas_res_drv2;
 			}
 
-			// set end position of measurement
-			end_position_drv_tmp = (end_angle * ENCODER_RESOLUTION) / 360;
-			end_position_drv_tmp = calculateEncPosition(end_position_drv_tmp,chosen_drv);
-			end_position_drv2 = ((end_angle - 4) * ENCODER_RESOLUTION) / 360; // get absolute encoder position
-			end_position_drv2 = calculateEncPosition(end_position_drv2,chosen_drv);
+			if (full_rotation) {
+				// set end position of measurement
+				end_position_drv_tmp = (end_angle * ENCODER_RESOLUTION) / 360;
+				end_position_drv_tmp = calculateEncPosition(end_position_drv_tmp,chosen_drv);
+				end_position_drv2 = ((end_angle - 4) * ENCODER_RESOLUTION) / 360; // get absolute encoder position
+				end_position_drv2 = calculateEncPosition(end_position_drv2,chosen_drv);
+			} else {
+				end_position_drv2 = (end_angle * ENCODER_RESOLUTION) / 360; // get absolute encoder position
+				end_position_drv2 = calculateEncPosition(end_position_drv2,chosen_drv);
+			}
 
 			if (end_position_drv2 < start_position_drv2) {
 				reducing_pos_calc = 1;
@@ -2506,9 +2535,12 @@ void handleHorizontalMeasurement() {
 
 					  }
 
+					  if (full_rotation) {
 						if ((encoder1_data >= end_position_drv_tmp + 730) && (encoder1_data <= end_position_drv_tmp + 1460)) {
 							end_position_drv1 = end_position_drv_tmp;
 						}
+					  }
+
 				  }
 			  }
 		  }
@@ -2638,8 +2670,10 @@ void handleHorizontalMeasurementVertPlatf() {
 						 	test_counter_adc_data2++;
 					  }
 
-					  if ((encoder1_data >= end_position_drv_tmp + 730) && (encoder1_data <= end_position_drv_tmp + 1460)) {
-						  end_position_drv1 = end_position_drv_tmp;
+					  if (full_rotation) {
+						if ((encoder2_data >= end_position_drv_tmp + 730) && (encoder2_data <= end_position_drv_tmp + 1460)) {
+							end_position_drv2 = end_position_drv_tmp;
+						}
 					  }
 				  }
 			  }
