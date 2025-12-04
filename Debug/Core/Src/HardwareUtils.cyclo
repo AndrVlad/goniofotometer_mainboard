@@ -1,0 +1,3 @@
+HardwareUtils.c:12:6:usDelay	2
+HardwareUtils.c:18:6:setNVICPriority	4
+HardwareUtils.c:69:6:resetNVICPriority	1

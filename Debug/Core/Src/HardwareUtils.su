@@ -1,0 +1,3 @@
+../Core/Src/HardwareUtils.c:12:6:usDelay	16	static
+../Core/Src/HardwareUtils.c:18:6:setNVICPriority	16	static
+../Core/Src/HardwareUtils.c:69:6:resetNVICPriority	8	static

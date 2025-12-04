@@ -26,6 +26,8 @@
 #include "stdlib.h"
 #include "stdio.h"
 #include "FlashUtils.h"
+#include "HardwareUtils.h"
+#include "Common.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -160,8 +162,9 @@ uint16_t error_cnt = 0;
 
 /* Telemetry status values */
 enum status { ERROR_, READY_, BUSY_ } ready_status;
-enum action { NONE, HORIZONTAL, VERTICAL, HEMISPHERE, LIGHT_POWER, CALIBRATION,
-				TEST_TURN, TEST_ROTATION, TEST_ANGLE_OFFSET, MOVING } cur_action = NONE;
+//enum action { NONE, HORIZONTAL, VERTICAL, HEMISPHERE, LIGHT_POWER, CALIBRATION,
+//				TEST_TURN, TEST_ROTATION, TEST_ANGLE_OFFSET, MOVING } cur_action = NONE;
+enum action cur_action = NONE;
 enum response_status { ERROR__, ACCEPTED__, ALREADY_EXEC, EXEC_OTHER};
 bool trans_states = 0; // 0 - no trans_state, 1 - trans_state
 enum data { NONE_, _READY_, SOME_PACKETS} data_status;
@@ -216,12 +219,12 @@ void handleHorizontalMeasurementVertPlatf();
 void setPlatformParam(uint16_t meas_res);
 void setEncoderPollFrequency(uint16_t frequency_mcs);
 
-void usDelay(uint16_t useconds);
+//void usDelay(uint16_t useconds);
 void checkCRCPhotodetectorData();
 void createErrorResponse();
 uint32_t calculateRequiredDataNum(uint32_t meas_interval, uint32_t meas_resolution);
-void setNVICPriority(uint8_t cur_action);
-void resetNVICPriority();
+//void setNVICPriority(uint8_t cur_action);
+//void resetNVICPriority();
 uint32_t getTimeOffset();
 void setMotorFrequency(bool chosen_drv, uint16_t motor_frequency);
 void convertAdcValues(uint8_t *buf, uint16_t size);
@@ -2325,12 +2328,6 @@ uint8_t getADCAmplifierVal(uint8_t value) {
 	}
 }
 
-void usDelay(uint16_t useconds)
-{
-  __HAL_TIM_SET_COUNTER(&htim6, 0);
-  while(__HAL_TIM_GET_COUNTER(&htim6) < useconds);
-}
-
 void moveToPosition(uint8_t angle, bool chosen_drv) {
 	trans_states = 1;
 	if(chosen_drv) {
@@ -2960,83 +2957,7 @@ uint32_t calculateRequiredDataNum(uint32_t meas_interval, uint32_t meas_resoluti
 	return data_num;
 }
 
-void setNVICPriority(uint8_t cur_action) {
-	switch(cur_action) {
-	case CALIBRATION:
-	case LIGHT_POWER:
-	  /* DMA1_Stream0_IRQn interrupt configuration */
-	  HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 3, 0);
-	  HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
-	  /* DMA1_Stream1_IRQn interrupt configuration */
-	  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 3, 1);
-	  HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
-	  /* DMA2_Stream0_IRQn interrupt configuration */
-	  HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 3, 0);
-	  HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
-	  /* DMA2_Stream1_IRQn interrupt configuration */
-	  HAL_NVIC_SetPriority(DMA2_Stream1_IRQn, 3, 1);
-	  HAL_NVIC_EnableIRQ(DMA2_Stream1_IRQn);
 
-	  HAL_NVIC_SetPriority( TIM1_UP_TIM10_IRQn, 1, 0);
-	  HAL_NVIC_EnableIRQ( TIM1_UP_TIM10_IRQn);
-
-		break;
-	case HORIZONTAL:
-	case VERTICAL:
-		/* DMA2_Stream2_IRQn interrupt configuration */
-		HAL_NVIC_SetPriority(DMA2_Stream2_IRQn, 0, 1);
-		HAL_NVIC_EnableIRQ(DMA2_Stream2_IRQn);
-		HAL_NVIC_SetPriority(USART1_IRQn, 0, 1);
-		HAL_NVIC_EnableIRQ(USART1_IRQn);
-
-		HAL_NVIC_SetPriority(TIM7_IRQn, 2, 1);
-		HAL_NVIC_EnableIRQ(TIM7_IRQn);
-
-		/* DMA1_Stream0_IRQn interrupt configuration */
-		HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 3, 0);
-		HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
-		  /* DMA1_Stream1_IRQn interrupt configuration */
-		  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 3, 1);
-		  HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
-		  /* DMA2_Stream0_IRQn interrupt configuration */
-		  HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 3, 0);
-		  HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
-		  /* DMA2_Stream1_IRQn interrupt configuration */
-		  HAL_NVIC_SetPriority(DMA2_Stream1_IRQn, 3, 1);
-		  HAL_NVIC_EnableIRQ(DMA2_Stream1_IRQn);
-
-		break;
-	default:
-		break;
-	}
-}
-
-void resetNVICPriority() {
-	  /* DMA1_Stream0_IRQn interrupt configuration */
-	  HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 1, 0);
-	  HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
-	  /* DMA1_Stream1_IRQn interrupt configuration */
-	  HAL_NVIC_SetPriority(DMA1_Stream1_IRQn, 1, 0);
-	  HAL_NVIC_EnableIRQ(DMA1_Stream1_IRQn);
-	  /* DMA1_Stream5_IRQn interrupt configuration */
-	  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 1, 0);
-	  HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
-	  /* DMA2_Stream0_IRQn interrupt configuration */
-	  HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 1, 1);
-	  HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
-	  /* DMA2_Stream1_IRQn interrupt configuration */
-	  HAL_NVIC_SetPriority(DMA2_Stream1_IRQn, 1, 1);
-	  HAL_NVIC_EnableIRQ(DMA2_Stream1_IRQn);
-	  /* DMA2_Stream2_IRQn interrupt configuration */
-	  HAL_NVIC_SetPriority(DMA2_Stream2_IRQn, 1, 0);
-	  HAL_NVIC_EnableIRQ(DMA2_Stream2_IRQn);
-
-	  HAL_NVIC_SetPriority(USART1_IRQn, 1, 0);
-	  HAL_NVIC_EnableIRQ(USART1_IRQn);
-
-		HAL_NVIC_SetPriority(TIM7_IRQn, 2, 0);
-		HAL_NVIC_EnableIRQ(TIM7_IRQn);
-}
 
 uint32_t getTimeOffset() {
 
