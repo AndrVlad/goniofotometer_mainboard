@@ -27,23 +27,23 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   ALLOC
  11 .ARM.attributes 00000030  00000000  00000000  000200ec  2**0
                   CONTENTS, READONLY
- 12 .debug_info   00016197  00000000  00000000  0002011c  2**0
+ 12 .debug_info   0001619e  00000000  00000000  0002011c  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 13 .debug_abbrev 00002d00  00000000  00000000  000362b3  2**0
+ 13 .debug_abbrev 00002d00  00000000  00000000  000362ba  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 14 .debug_aranges 000013a0  00000000  00000000  00038fb8  2**3
+ 14 .debug_aranges 000013a0  00000000  00000000  00038fc0  2**3
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 15 .debug_ranges 000012a8  00000000  00000000  0003a358  2**3
+ 15 .debug_ranges 000012a8  00000000  00000000  0003a360  2**3
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 16 .debug_macro  00024331  00000000  00000000  0003b600  2**0
+ 16 .debug_macro  00024692  00000000  00000000  0003b608  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 17 .debug_line   0001907e  00000000  00000000  0005f931  2**0
+ 17 .debug_line   0001934f  00000000  00000000  0005fc9a  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 18 .debug_str    000e0b4f  00000000  00000000  000789af  2**0
+ 18 .debug_str    000e0b4f  00000000  00000000  00078fe9  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 19 .comment      00000050  00000000  00000000  001594fe  2**0
+ 19 .comment      00000050  00000000  00000000  00159b38  2**0
                   CONTENTS, READONLY
- 20 .debug_frame  00005880  00000000  00000000  00159550  2**2
+ 20 .debug_frame  00005880  00000000  00000000  00159b88  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS
 
 Disassembly of section .text:
@@ -351,7 +351,7 @@ Disassembly of section .text:
  8000522:	bf00      	nop
 
 08000524 <FlashInit>:
-#include "FlashUtils.h"
+
 
 uint32_t page_error = 0;
 static FLASH_EraseInitTypeDef EraseInitStruct;

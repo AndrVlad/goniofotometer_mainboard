@@ -8,7 +8,10 @@
 #ifndef INC_FLASHUTILS_H_
 #define INC_FLASHUTILS_H_
 
-#include "main.h"
+//#include "main.h"
+#include "stdbool.h"
+#include "stdlib.h"
+#include "stdio.h"
 
 #define ADDR_FLASH_SECTOR_2 ((uint32_t)0x08018000) /* Base address of Sector 3, 32 Kbytes */
 

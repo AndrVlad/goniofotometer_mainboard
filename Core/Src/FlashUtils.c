@@ -6,6 +6,8 @@
  */
 
 #include "FlashUtils.h"
+#include "stm32f7xx_hal.h"
+
 
 uint32_t page_error = 0;
 static FLASH_EraseInitTypeDef EraseInitStruct;
