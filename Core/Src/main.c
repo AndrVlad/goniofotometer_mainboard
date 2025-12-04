@@ -28,6 +28,7 @@
 #include "FlashUtils.h"
 #include "HardwareUtils.h"
 #include "Common.h"
+#include "Platform.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/

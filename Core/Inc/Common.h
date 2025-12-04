@@ -19,5 +19,6 @@ extern TIM_HandleTypeDef htim14;
 
 enum action { NONE, HORIZONTAL, VERTICAL, HEMISPHERE, LIGHT_POWER, CALIBRATION,
 				TEST_TURN, TEST_ROTATION, TEST_ANGLE_OFFSET, MOVING };
+enum platform_type {HORIZ_PL,VERT_PL};
 
 #endif /* INC_COMMON_H_ */
