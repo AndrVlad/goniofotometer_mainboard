@@ -15,6 +15,7 @@
 
 #define DEFAULT_MOTOR_FREQUENCY_HZ 60
 #define ENCODER_RESOLUTION 131072
+#define POSITION_ERROR 92
 
 typedef struct {
 	uint32_t ENCODER_OFFSET;
@@ -40,8 +41,7 @@ typedef struct  {
 
 extern platform horizontal, vertical;
 
+void setEncoderPollFrequency(uint16_t frequency_mcs);
 //void changeMotorDirection()
-
-extern platform horizontal, vertical;
 
 #endif /* INC_PLATFORM_H_ */

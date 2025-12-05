@@ -1,0 +1,4 @@
+Platform.c:13:6:setEncoderPollFrequency	1
+Platform.c:17:6:changeMotorDirection__	8
+Platform.c:50:10:calculateEncPosition__	4
+Platform.c:71:6:setPlatformParam__	9

@@ -1,0 +1,4 @@
+../Core/Src/Platform.c:13:6:setEncoderPollFrequency	16	static
+../Core/Src/Platform.c:17:6:changeMotorDirection__	16	static
+../Core/Src/Platform.c:50:10:calculateEncPosition__	24	static
+../Core/Src/Platform.c:71:6:setPlatformParam__	16	static

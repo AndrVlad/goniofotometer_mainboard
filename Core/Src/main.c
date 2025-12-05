@@ -43,7 +43,7 @@
 #define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
 //#define ENCODER_RESOLUTION 131072
 #define ACCEL_OFFSET 5 // values in ark degrees
-#define POSITION_ERROR 92
+//#define POSITION_ERROR 92
 #define VERTICAL_ROTATION_ANGLE 180
 #define ENCODER_TOLERANCE 46
 #define AHB1_TIMER_CLOCK_MHz 108
@@ -208,9 +208,7 @@ void handleVerticalMeasurement();
 void reverseHorizontalMeasurement();
 void handleHorizontalMeasurementVertPlatf();
 void setPlatformParam(uint16_t meas_res);
-void setEncoderPollFrequency(uint16_t frequency_mcs);
-
-//void usDelay(uint16_t useconds);
+//void setEncoderPollFrequency(uint16_t frequency_mcs);
 void checkCRCPhotodetectorData();
 void createErrorResponse();
 uint32_t calculateRequiredDataNum(uint32_t meas_interval, uint32_t meas_resolution);
@@ -267,29 +265,6 @@ int main(void)
   MX_TIM14_Init();
   MX_TIM13_Init();
   /* USER CODE BEGIN 2 */
-  /*
-  HAL_TIM_Base_Stop_IT(&htim2);
-  HAL_TIM_Base_Start(&htim6);
-
-  HAL_Delay(1000);
-  // start receiving of messages from PC
-  HAL_UART_Receive_DMA(&huart3, uart3_rx_buffer, 6);
-  //HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
-
-
-  // start receiving of encoder values
-  HAL_SPI_Receive_DMA(&hspi4, dma_spi4_buf, 5);
-  HAL_SPI_Receive_DMA(&hspi3, dma_spi3_buf, 5);
-
-  // Read encoder offset values from flash
-  FlashInit();
-  ReadFlash(encoder_offset,2,ADDR_FLASH_SECTOR_2,FLASH_TYPEPROGRAM_WORD);
-  ENCODER_1_OFFSET = encoder_offset[0];
-  ENCODER_2_OFFSET = encoder_offset[1];
-
-  // set status of device
-  ready_status = READY_;
-  */
 
   DeviceInit();
 
@@ -2962,10 +2937,6 @@ void setPlatformParam(uint16_t meas_res) {
 		setEncoderPollFrequency(1000);
 		break;
 	}
-}
-
-void setEncoderPollFrequency(uint16_t frequency_mcs) {
-	htim7.Instance->ARR = frequency_mcs-1;
 }
 
 void DeviceInit() {
