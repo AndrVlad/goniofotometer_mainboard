@@ -68,8 +68,8 @@ uint32_t calculateEncPosition__(platform* cur_platf, uint32_t encoder_position) 
 	return encoder_pos_ret;
 }
 
-void setPlatformParam__(platform* cur_platf, uint16_t meas_res) {
-	switch(meas_res) {
+void setPlatformParam__(platform* cur_platf) {
+	switch(cur_platf->measurement_res) {
 	case 365:
 		cur_platf->motor_freq_Hz = 40;
 		setEncoderPollFrequency(200);

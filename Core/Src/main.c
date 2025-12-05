@@ -209,7 +209,6 @@ void handleVerticalMeasurement();
 void reverseHorizontalMeasurement();
 void handleHorizontalMeasurementVertPlatf();
 void setPlatformParam(uint16_t meas_res);
-//void setEncoderPollFrequency(uint16_t frequency_mcs);
 void checkCRCPhotodetectorData();
 void createErrorResponse();
 uint32_t calculateRequiredDataNum(uint32_t meas_interval, uint32_t meas_resolution);
@@ -1303,6 +1302,14 @@ void parser() {
 		/* work version
 		moveToPosition(0, VERTICAL_); */
 
+		/* new version
+		 *
+		cur_action = HORIZONTAL;
+		// set status
+		ready_status = BUSY_;
+		setNVICPriority(VERTICAL_);
+		//InitPlatformMeasurement(&horizontal, uart3_rx_safe_buffer[1], uart3_rx_safe_buffer[2], uart3_rx_safe_buffer[3]);
+	*/
 		break;
 	case 0x02:
 

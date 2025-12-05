@@ -67,16 +67,16 @@ void InitPlatformMeasurement(platform* chosen_platf, uint8_t start_interval, uin
 	// set the measurement resolution
 	cur_platf->measurement_res = measurement_res_item[resolution_pos - 1];
 
-//	setPlatformParam(cur_platf->measurement_res);
+	setPlatformParam__(cur_platf);
 
 	// set acceleration position
 	accel_position = (accel_angle * ENCODER_RESOLUTION) / 360; // get absolute encoder position
-	//cur_platf->encoder.accel_spec_pos = calculateEncPosition(accel_position,chosen_platform);
-	//changeMotorDirection(cur_platf, cur_platf->encoder.accel_spec_pos);
+	cur_platf->encoder.accel_spec_pos = calculateEncPosition__(cur_platf,accel_position);
+	changeMotorDirection__(cur_platf, cur_platf->encoder.accel_spec_pos);
 
 	// set start position of measurement
 	start_position = (start_angle * ENCODER_RESOLUTION) / 360; // get absolute encoder position
-	//cur_platf->encoder.start_spec_pos = calculateEncPosition(start_position,chosen_platform);
+	cur_platf->encoder.start_spec_pos = calculateEncPosition__(cur_platf,start_position);
 
 	// set encoder position increment
 	if ((start_position + cur_platf->measurement_res) > ENCODER_RESOLUTION) {
@@ -87,9 +87,11 @@ void InitPlatformMeasurement(platform* chosen_platf, uint8_t start_interval, uin
 
 	// set end position of measurement
 	end_position_tmp = (end_angle * ENCODER_RESOLUTION) / 360;
-	//cur_platf->encoder.end_temp_pos = calculateEncPosition(end_position_tmp,chosen_platform);
+	cur_platf->encoder.end_temp_pos = calculateEncPosition__(cur_platf,end_position_tmp);
 	end_position = ((end_angle-4) * ENCODER_RESOLUTION) / 360;
-	//cur_platf->encoder.end_spec_pos = calculateEncPosition(end_position,chosen_platform);
+	cur_platf->encoder.end_spec_pos = calculateEncPosition__(cur_platf,end_position);
+
+	//setNVICPriority()
 
 	// start measurement
 	HAL_TIM_Base_Start_IT(&htim7);					// start poll encoder

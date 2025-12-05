@@ -27,23 +27,23 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   ALLOC
  11 .ARM.attributes 00000030  00000000  00000000  0002011c  2**0
                   CONTENTS, READONLY
- 12 .debug_info   000177dd  00000000  00000000  0002014c  2**0
+ 12 .debug_info   000177ce  00000000  00000000  0002014c  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 13 .debug_abbrev 000031b5  00000000  00000000  00037929  2**0
+ 13 .debug_abbrev 000031b5  00000000  00000000  0003791a  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 14 .debug_aranges 00001400  00000000  00000000  0003aae0  2**3
+ 14 .debug_aranges 00001400  00000000  00000000  0003aad0  2**3
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 15 .debug_ranges 000012d8  00000000  00000000  0003bee0  2**3
+ 15 .debug_ranges 000012d8  00000000  00000000  0003bed0  2**3
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 16 .debug_macro  00025026  00000000  00000000  0003d1b8  2**0
+ 16 .debug_macro  00025026  00000000  00000000  0003d1a8  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 17 .debug_line   0001b220  00000000  00000000  000621de  2**0
+ 17 .debug_line   0001b225  00000000  00000000  000621ce  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 18 .debug_str    000e0d41  00000000  00000000  0007d3fe  2**0
+ 18 .debug_str    000e0d41  00000000  00000000  0007d3f3  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 19 .comment      00000050  00000000  00000000  0015e13f  2**0
+ 19 .comment      00000050  00000000  00000000  0015e134  2**0
                   CONTENTS, READONLY
- 20 .debug_frame  00005918  00000000  00000000  0015e190  2**2
+ 20 .debug_frame  00005918  00000000  00000000  0015e184  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS
 
 Disassembly of section .text:
@@ -4077,9 +4077,11 @@ void parser() {
 		HAL_TIM_Base_Start_IT(&htim2); // start first motor moving
  8001c3a:	4881      	ldr	r0, [pc, #516]	; (8001e40 <parser+0x600>)
  8001c3c:	f006 fd46 	bl	80086cc <HAL_TIM_Base_Start_IT>
-		/* work version
-		moveToPosition(0, VERTICAL_); */
-
+		// set status
+		ready_status = BUSY_;
+		setNVICPriority(VERTICAL_);
+		//InitPlatformMeasurement(&horizontal, uart3_rx_safe_buffer[1], uart3_rx_safe_buffer[2], uart3_rx_safe_buffer[3]);
+	*/
 		break;
  8001c40:	f000 bebd 	b.w	80029be <parser+0x117e>
 	case 0x02:

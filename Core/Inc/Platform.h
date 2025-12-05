@@ -42,6 +42,9 @@ typedef struct  {
 extern platform horizontal, vertical;
 
 void setEncoderPollFrequency(uint16_t frequency_mcs);
+void changeMotorDirection__(platform *cur_platf, uint32_t target_position);
+uint32_t calculateEncPosition__(platform* cur_platf, uint32_t encoder_position);
+void setPlatformParam__(platform* cur_platf);
 //void changeMotorDirection()
 
 #endif /* INC_PLATFORM_H_ */
