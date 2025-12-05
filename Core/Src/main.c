@@ -30,6 +30,7 @@
 #include "Common.h"
 #include "Platform.h"
 #include "Utils.h"
+#include "PlatformMeasurements.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -42,7 +43,7 @@
 
 #define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
 //#define ENCODER_RESOLUTION 131072
-#define ACCEL_OFFSET 5 // values in ark degrees
+//#define ACCEL_OFFSET 5 // values in ark degrees
 //#define POSITION_ERROR 92
 #define VERTICAL_ROTATION_ANGLE 180
 #define ENCODER_TOLERANCE 46

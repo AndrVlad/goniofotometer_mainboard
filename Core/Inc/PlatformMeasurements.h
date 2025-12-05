@@ -14,15 +14,9 @@
 #include "stdlib.h"
 #include "stdio.h"
 
+#define ACCEL_OFFSET 5 // values in ark degrees
+
 extern uint8_t start_end_angle_item[8];
 extern uint16_t measurement_res_item[8];
-
-typedef struct {
-	bool reach_accel_pos;
-	bool reach_start_pos;
-	bool reach_end_pos;
-} platf_meas_state;
-
-platf_meas_state platf_state;
 
 #endif /* INC_PLATFORMMEASUREMENTS_H_ */

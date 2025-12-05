@@ -32,7 +32,8 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_uart.h \
  ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal_uart_ex.h \
  ../Core/Inc/FlashUtils.h ../Core/Inc/HardwareUtils.h \
- ../Core/Inc/Common.h ../Core/Inc/Platform.h ../Core/Inc/Utils.h
+ ../Core/Inc/Common.h ../Core/Inc/Platform.h ../Core/Inc/Utils.h \
+ ../Core/Inc/PlatformMeasurements.h ../Core/Inc/Platform.h
 ../Core/Inc/main.h:
 ../Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_hal.h:
 ../Core/Inc/stm32f7xx_hal_conf.h:
@@ -71,3 +72,5 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../Core/Inc/Common.h:
 ../Core/Inc/Platform.h:
 ../Core/Inc/Utils.h:
+../Core/Inc/PlatformMeasurements.h:
+../Core/Inc/Platform.h:
