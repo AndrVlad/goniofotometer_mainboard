@@ -19,6 +19,6 @@
 extern uint8_t start_end_angle_item[8];
 extern uint16_t measurement_res_item[8];
 
-void InitPlatformMeasurement(platform* chosen_platf, uint8_t start_interval, uint8_t end_interval, uint8_t resolution_pos);
+void InitPlatformMeasurement(platform* chosen_platf, uint8_t measurement_type, uint8_t start_interval, uint8_t end_interval, uint8_t resolution_pos);
 
 #endif /* INC_PLATFORMMEASUREMENTS_H_ */

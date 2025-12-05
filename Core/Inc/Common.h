@@ -24,6 +24,7 @@ enum action { NONE, HORIZONTAL, VERTICAL, HEMISPHERE, LIGHT_POWER, CALIBRATION,
 enum platform_type {HORIZ_PL,VERT_PL};
 enum status { ERROR_, READY_, BUSY_ };
 
+extern bool trans_states;
 extern enum action cur_action;
 extern enum status ready_status;
 

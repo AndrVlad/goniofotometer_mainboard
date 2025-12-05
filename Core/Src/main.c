@@ -47,7 +47,7 @@
 //#define POSITION_ERROR 92
 #define VERTICAL_ROTATION_ANGLE 180
 #define ENCODER_TOLERANCE 46
-#define AHB1_TIMER_CLOCK_MHz 108
+//#define AHB1_TIMER_CLOCK_MHz 108
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -1304,11 +1304,13 @@ void parser() {
 
 		/* new version
 		 *
-		cur_action = HORIZONTAL;
-		// set status
-		ready_status = BUSY_;
-		setNVICPriority(VERTICAL_);
-		//InitPlatformMeasurement(&horizontal, uart3_rx_safe_buffer[1], uart3_rx_safe_buffer[2], uart3_rx_safe_buffer[3]);
+		memcpy(uart3_rx_safe_buffer, uart3_rx_buffer, 6);
+		createResponsePacket(0x03,ACCEPTED__);
+		data_status = NONE_;
+		stop_poll = 1;
+		createResponsePacket(0x03,ACCEPTED__);
+
+		//InitPlatformMeasurement(&horizontal, VERTICAL, uart3_rx_safe_buffer[1], uart3_rx_safe_buffer[2], uart3_rx_safe_buffer[3]);
 	*/
 		break;
 	case 0x02:
@@ -2976,8 +2978,8 @@ void DeviceInit() {
 	horizontal.motor_freq_def_Hz = DEFAULT_MOTOR_FREQUENCY_HZ;
 	vertical.motor_freq_def_Hz = DEFAULT_MOTOR_FREQUENCY_HZ;
 
-	//setMotorFrequency(&horizontal, horizontal.motor_freq_def_Hz);
-	//setMotorFrequency(&vertical, vertical.motor_freq_def_Hz);
+	setMotorFrequency__(&horizontal, horizontal.motor_freq_def_Hz);
+	setMotorFrequency__(&vertical, vertical.motor_freq_def_Hz);
 
 	// set status of device
 	ready_status = READY_;

@@ -11,6 +11,7 @@
 #include "stdbool.h"
 #include "stdlib.h"
 #include "stdio.h"
+#include <stdint.h>
 
 void clearBuffer(uint8_t *buf, uint8_t size);
 void clearSpecifiedElemOfBuffer(uint8_t *buf, uint8_t size, uint8_t start_clear_pos);

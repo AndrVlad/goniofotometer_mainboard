@@ -16,6 +16,7 @@
 #define DEFAULT_MOTOR_FREQUENCY_HZ 60
 #define ENCODER_RESOLUTION 131072
 #define POSITION_ERROR 92
+#define AHB1_TIMER_CLOCK_MHz 108
 
 typedef struct {
 	uint32_t ENCODER_OFFSET;
@@ -45,6 +46,7 @@ void setEncoderPollFrequency(uint16_t frequency_mcs);
 void changeMotorDirection__(platform *cur_platf, uint32_t target_position);
 uint32_t calculateEncPosition__(platform* cur_platf, uint32_t encoder_position);
 void setPlatformParam__(platform* cur_platf);
+void setMotorFrequency__(platform* cur_platf, uint16_t motor_frequency);
 //void changeMotorDirection()
 
 #endif /* INC_PLATFORM_H_ */

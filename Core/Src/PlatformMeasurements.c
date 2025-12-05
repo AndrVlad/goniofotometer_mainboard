@@ -7,6 +7,7 @@
 
 #include "PlatformMeasurements.h"
 #include "Common.h"
+#include "HardwareUtils.h"
 
 platform* cur_platf;
 
@@ -20,8 +21,9 @@ platf_meas_state platf_state;
 
 uint8_t start_end_angle_item[8] = {180,150,120,90,60,30,10,5};
 uint16_t measurement_res_item[8] = {365,182,60,29,6,3,1};
+static bool full_rotation = 0;
 
-void InitPlatformMeasurement(platform* chosen_platf, uint8_t start_interval, uint8_t end_interval, uint8_t resolution_pos) {
+void InitPlatformMeasurement(platform* chosen_platf, uint8_t measurement_type, uint8_t start_interval, uint8_t end_interval, uint8_t resolution_pos) {
 
 	uint16_t start_angle, end_angle, accel_angle;
 	uint32_t start_position, end_position, end_position_tmp, accel_position;
@@ -55,6 +57,10 @@ void InitPlatformMeasurement(platform* chosen_platf, uint8_t start_interval, uin
 	}
 	*/
 
+	if (start_angle == 0 && end_angle == 360) {
+		full_rotation = 1;
+	}
+
 	// calculate acceleration offset position
 
 	if ((start_angle - ACCEL_OFFSET) < 0) {
@@ -86,12 +92,23 @@ void InitPlatformMeasurement(platform* chosen_platf, uint8_t start_interval, uin
 	}
 
 	// set end position of measurement
-	end_position_tmp = (end_angle * ENCODER_RESOLUTION) / 360;
-	cur_platf->encoder.end_temp_pos = calculateEncPosition__(cur_platf,end_position_tmp);
-	end_position = ((end_angle-4) * ENCODER_RESOLUTION) / 360;
-	cur_platf->encoder.end_spec_pos = calculateEncPosition__(cur_platf,end_position);
+	if (full_rotation) {
+		end_position_tmp = (end_angle * ENCODER_RESOLUTION) / 360;
+		cur_platf->encoder.end_temp_pos = calculateEncPosition__(cur_platf,end_position_tmp);
+		end_position = ((end_angle-4) * ENCODER_RESOLUTION) / 360;
+		cur_platf->encoder.end_spec_pos = calculateEncPosition__(cur_platf,end_position);
+	} else {
+		end_position = (end_angle * ENCODER_RESOLUTION) / 360;
+		cur_platf->encoder.end_spec_pos = calculateEncPosition__(cur_platf,end_position);
+	}
 
-	//setNVICPriority()
+	setNVICPriority(cur_action);
+
+	trans_states = 1;
+
+	cur_action = measurement_type;
+
+	ready_status = BUSY_;
 
 	// start measurement
 	HAL_TIM_Base_Start_IT(&htim7);					// start poll encoder

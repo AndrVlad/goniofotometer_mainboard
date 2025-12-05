@@ -89,3 +89,15 @@ void setPlatformParam__(platform* cur_platf) {
 	}
 }
 
+void setMotorFrequency__(platform* cur_platf, uint16_t motor_frequency) {
+
+	uint32_t tim_clock = 0;
+	tim_clock = (AHB1_TIMER_CLOCK_MHz * 1000000);
+
+	if (cur_platf->platform_id == VERT_PL) {
+		htim3.Instance->ARR = ((tim_clock/(htim3.Instance->PSC + 1))/motor_frequency) - 1;
+	} else {
+		htim2.Instance->ARR = ((tim_clock/(htim2.Instance->PSC + 1))/motor_frequency) - 1;
+	}
+}
+

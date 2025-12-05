@@ -11,6 +11,7 @@
 #include "stdbool.h"
 #include "stdlib.h"
 #include "stdio.h"
+#include <stdint.h>
 
 void usDelay(uint16_t useconds);
 void setNVICPriority(uint8_t cur_action);
