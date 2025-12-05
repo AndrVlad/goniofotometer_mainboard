@@ -149,23 +149,17 @@ uint8_t uart1_rx_safe_buffer[5] = {0};
 uint8_t uart1_rx_safe_buffer_meas[5] = {0};
 uint8_t uart1_rx_calibration_buffer[150] = {0};
 uint32_t adc_values_buf[50] = {0};
-//uint32_t encoder_data_buf_trg[800] = {0};
-//uint16_t enc_cnt_trg, enc_cnt_setdata = 0;
-//uint32_t encoder_data_buf_setdata[800] = {0};
 bool uart1_rx_complete = 0;
 bool uart3_rx_complete = 0;
 bool spi4_rx_complete = 0;
 bool spi3_rx_complete = 0;
 bool driver_dir1, driver_dir2, chosen_drv = 1; // 0 - forward, 1 - back
-//bool init_state = 1;
 bool init_state = 1;
 uint8_t next_command = 0xFF;
 uint16_t error_cnt = 0;
 
 /* Telemetry status values */
-enum status { ERROR_, READY_, BUSY_ } ready_status;
-//enum action { NONE, HORIZONTAL, VERTICAL, HEMISPHERE, LIGHT_POWER, CALIBRATION,
-//				TEST_TURN, TEST_ROTATION, TEST_ANGLE_OFFSET, MOVING } cur_action = NONE;
+enum status ready_status;
 enum action cur_action = NONE;
 enum response_status { ERROR__, ACCEPTED__, ALREADY_EXEC, EXEC_OTHER};
 bool trans_states = 0; // 0 - no trans_state, 1 - trans_state
@@ -175,8 +169,6 @@ uint8_t operation_progress = 0;
 uint32_t SSI_data, SSI_data_safe, encoder1_data, encoder2_data, encoder1_increment_res, encoder2_increment_res, encoder2_data_last = 0;
 uint32_t adc_value, error_val_sum = 0;
 uint8_t motor_frequency_1 = 40, motor_frequency_2 = 1;
-//uint32_t flash_data[4];
-
 
 /* USER CODE END PV */
 
@@ -202,11 +194,8 @@ void stepDriver(uint8_t step_num);
 void createResponsePacket(uint8_t command_code, uint8_t status_code);
 void moveToPosition(uint8_t angle, bool chosen_drv);
 void changeMotorDirection(bool chosen_drv, uint32_t target_position);
-//void changeMotorDirection_(bool chosen_drv, uint32_t target_position);
 uint32_t processSSIData(uint8_t *SSI_buffer);
 uint32_t calculateEncPosition(uint32_t encoder_position, bool chosen_encoder);
-//void clearBuffer(uint8_t *buf, uint8_t size);
-//void clearSpecifiedElemOfBuffer(uint8_t *buf, uint8_t size, uint8_t start_clear_pos);
 uint8_t getADCAmplifierVal(uint8_t value);
 void createDataPacket();
 
@@ -225,13 +214,10 @@ void setEncoderPollFrequency(uint16_t frequency_mcs);
 void checkCRCPhotodetectorData();
 void createErrorResponse();
 uint32_t calculateRequiredDataNum(uint32_t meas_interval, uint32_t meas_resolution);
-//void setNVICPriority(uint8_t cur_action);
-//void resetNVICPriority();
 uint32_t getTimeOffset();
 void setMotorFrequency(bool chosen_drv, uint16_t motor_frequency);
 void convertAdcValues(uint8_t *buf, uint16_t size);
-//void bubbleSort(uint32_t* buf, uint16_t size);
-//uint32_t calculateMedianVal(uint32_t *adc_values_buf, uint16_t size, uint8_t limit);
+void DeviceInit();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -281,7 +267,7 @@ int main(void)
   MX_TIM14_Init();
   MX_TIM13_Init();
   /* USER CODE BEGIN 2 */
-
+  /*
   HAL_TIM_Base_Stop_IT(&htim2);
   HAL_TIM_Base_Start(&htim6);
 
@@ -303,6 +289,9 @@ int main(void)
 
   // set status of device
   ready_status = READY_;
+  */
+
+  DeviceInit();
 
   /* USER CODE END 2 */
 
@@ -2035,37 +2024,6 @@ void stepDriver(uint8_t step_num) {
 
 }
 
-/*
-
-void changeMotorDirection_(bool chosen_drv, uint32_t target_position) {
-
-	if (!chosen_drv) { // first motor
-		if (target_position < encoder1_data) {
-			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET); // moving back
-			driver_dir1 = 1;
-		} else {
-			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET); // moving forward
-			driver_dir1 = 0;
-		}
-	} else { // second motor
-		if (target_position < encoder2_data) {
-			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_5, GPIO_PIN_RESET); // moving back
-			driver_dir2 = 1;
-		} else {
-			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_5, GPIO_PIN_SET); // moving forward
-			driver_dir2 = 0;
-		}
-	}
-*/	/*
-	if (start_position_drv1 < SSI_data_safe) {
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET); // движение назад
-		driver_dir1 = 1;
-	} else {
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET); // движение вперед
-		driver_dir1 = 0;
-	} */
-//}
-
 void changeMotorDirection(bool chosen_drv, uint32_t target_position) {
 
 	if (!chosen_drv) { // first motor
@@ -2180,6 +2138,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 		encoder1_data  =  (dma_spi4_buf[2] >> 5) & 0x07;
 		encoder1_data |=  ((uint32_t)dma_spi4_buf[1] << 3);
 		encoder1_data |=  (((uint32_t)dma_spi4_buf[0] & 0x3F) << 11);
+		horizontal.encoder.current_pos = encoder1_data;
 		spi4_rx_complete = 1;
 	}
 
@@ -2188,6 +2147,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 		encoder2_data  =  (dma_spi3_buf[2] >> 5) & 0x07;
 		encoder2_data |=  ((uint32_t)dma_spi3_buf[1] << 3);
 		encoder2_data |=  (((uint32_t)dma_spi3_buf[0] & 0x3F) << 11);
+		vertical.encoder.current_pos = encoder2_data;
 		spi3_rx_complete = 1;
 	}
 }
@@ -2293,20 +2253,6 @@ uint32_t processSSIData(uint8_t *SSI_buffer) {
 	encoder_data |=  (((uint32_t)SSI_buffer[0] & 0x3F) << 11);
 	return encoder_data;
 }
-
-
-/*
-void clearBuffer(uint8_t *buf, uint8_t size){
-	for(uint8_t i = 0; i < size; i++) {
-		buf[i] = 0;
-	}
-} */
-/*
-void clearSpecifiedElemOfBuffer(uint8_t *buf, uint8_t size, uint8_t start_clear_pos){
-	for(uint8_t i = start_clear_pos; i < size; i++) {
-		buf[i] = 0;
-	}
-} */
 
 uint8_t getADCAmplifierVal(uint8_t value) {
 
@@ -2997,48 +2943,6 @@ void convertAdcValues(uint8_t* buf, uint16_t size) {
 	}
 }
 
-/*
-void swap(uint32_t* a, uint32_t* b) {
-    uint32_t tmp = *a;
-    *a = *b;
-    *b = tmp;
-}
-*/
-/*
-void bubbleSort(uint32_t *buf, uint16_t size)
-{
-	while (size--)
-	{
-		bool swapped = false;
-
-		for (int i = 0; i < size; i++)
-		{
-			if (buf[i] > buf[i + 1])
-			{
-				swap(&buf[i], &buf[i + 1]);
-				swapped = true;
-			}
-		}
-
-		if (swapped == false)
-			break;
-	}
-}
-*/
-
-/*
-uint32_t calculateMedianVal(uint32_t* buf, uint16_t size, uint8_t limit) {
-	uint8_t end_limit = size - (limit + 1);
-	uint64_t median_val = 0;
-	uint32_t result;
-	for (uint16_t i = limit; i <= end_limit; i++) {
-		median_val += buf[i];
-	}
-	result = median_val / (size - limit*2);
-	return result;
-}
-*/
-
 void setPlatformParam(uint16_t meas_res) {
 	switch(meas_res) {
 	case 365:
@@ -3062,6 +2966,42 @@ void setPlatformParam(uint16_t meas_res) {
 
 void setEncoderPollFrequency(uint16_t frequency_mcs) {
 	htim7.Instance->ARR = frequency_mcs-1;
+}
+
+void DeviceInit() {
+
+	HAL_TIM_Base_Stop_IT(&htim2);
+	HAL_TIM_Base_Start(&htim6);
+
+	HAL_Delay(1000);
+	// start receiving of messages from PC
+	HAL_UART_Receive_DMA(&huart3, uart3_rx_buffer, 6);
+
+	// start receiving of encoder values
+	HAL_SPI_Receive_DMA(&hspi4, dma_spi4_buf, 5);
+	HAL_SPI_Receive_DMA(&hspi3, dma_spi3_buf, 5);
+
+	// Motor init
+
+	// Read encoder offset values from flash
+	FlashInit();
+	ReadFlash(encoder_offset,2,ADDR_FLASH_SECTOR_2,FLASH_TYPEPROGRAM_WORD);
+	horizontal.encoder.ENCODER_OFFSET = encoder_offset[0];
+	vertical.encoder.ENCODER_OFFSET = encoder_offset[1];
+
+	// set motor timers for pull
+	horizontal.motor_tim = &htim2;
+	vertical.motor_tim = &htim3;
+
+	// set default motor frequency
+	horizontal.motor_freq_def_Hz = DEFAULT_MOTOR_FREQUENCY_HZ;
+	vertical.motor_freq_def_Hz = DEFAULT_MOTOR_FREQUENCY_HZ;
+
+	//setMotorFrequency(&horizontal, horizontal.motor_freq_def_Hz);
+	//setMotorFrequency(&vertical, vertical.motor_freq_def_Hz);
+
+	// set status of device
+	ready_status = READY_;
 }
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
