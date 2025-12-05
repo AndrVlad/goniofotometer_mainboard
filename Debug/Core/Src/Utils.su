@@ -1,0 +1,5 @@
+../Core/Src/Utils.c:10:6:clearBuffer	24	static
+../Core/Src/Utils.c:16:6:clearSpecifiedElemOfBuffer	24	static
+../Core/Src/Utils.c:22:10:calculateMedianVal	56	static
+../Core/Src/Utils.c:33:6:swap	24	static
+../Core/Src/Utils.c:39:6:bubbleSort	24	static

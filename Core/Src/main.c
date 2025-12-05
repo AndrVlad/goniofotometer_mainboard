@@ -29,6 +29,7 @@
 #include "HardwareUtils.h"
 #include "Common.h"
 #include "Platform.h"
+#include "Utils.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -40,7 +41,7 @@
 /* USER CODE BEGIN PD */
 
 #define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
-#define ENCODER_RESOLUTION 131072
+//#define ENCODER_RESOLUTION 131072
 #define ACCEL_OFFSET 5 // values in ark degrees
 #define POSITION_ERROR 92
 #define VERTICAL_ROTATION_ANGLE 180
@@ -201,11 +202,11 @@ void stepDriver(uint8_t step_num);
 void createResponsePacket(uint8_t command_code, uint8_t status_code);
 void moveToPosition(uint8_t angle, bool chosen_drv);
 void changeMotorDirection(bool chosen_drv, uint32_t target_position);
-void changeMotorDirection_(bool chosen_drv, uint32_t target_position);
+//void changeMotorDirection_(bool chosen_drv, uint32_t target_position);
 uint32_t processSSIData(uint8_t *SSI_buffer);
 uint32_t calculateEncPosition(uint32_t encoder_position, bool chosen_encoder);
-void clearBuffer(uint8_t *buf, uint8_t size);
-void clearSpecifiedElemOfBuffer(uint8_t *buf, uint8_t size, uint8_t start_clear_pos);
+//void clearBuffer(uint8_t *buf, uint8_t size);
+//void clearSpecifiedElemOfBuffer(uint8_t *buf, uint8_t size, uint8_t start_clear_pos);
 uint8_t getADCAmplifierVal(uint8_t value);
 void createDataPacket();
 
@@ -229,8 +230,8 @@ uint32_t calculateRequiredDataNum(uint32_t meas_interval, uint32_t meas_resoluti
 uint32_t getTimeOffset();
 void setMotorFrequency(bool chosen_drv, uint16_t motor_frequency);
 void convertAdcValues(uint8_t *buf, uint16_t size);
-void bubbleSort(uint32_t* buf, uint16_t size);
-uint32_t calculateMedianVal(uint32_t *adc_values_buf, uint16_t size, uint8_t limit);
+//void bubbleSort(uint32_t* buf, uint16_t size);
+//uint32_t calculateMedianVal(uint32_t *adc_values_buf, uint16_t size, uint8_t limit);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -2034,6 +2035,8 @@ void stepDriver(uint8_t step_num) {
 
 }
 
+/*
+
 void changeMotorDirection_(bool chosen_drv, uint32_t target_position) {
 
 	if (!chosen_drv) { // first motor
@@ -2053,7 +2056,7 @@ void changeMotorDirection_(bool chosen_drv, uint32_t target_position) {
 			driver_dir2 = 0;
 		}
 	}
-	/*
+*/	/*
 	if (start_position_drv1 < SSI_data_safe) {
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET); // движение назад
 		driver_dir1 = 1;
@@ -2061,7 +2064,7 @@ void changeMotorDirection_(bool chosen_drv, uint32_t target_position) {
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET); // движение вперед
 		driver_dir1 = 0;
 	} */
-}
+//}
 
 void changeMotorDirection(bool chosen_drv, uint32_t target_position) {
 
@@ -2292,18 +2295,18 @@ uint32_t processSSIData(uint8_t *SSI_buffer) {
 }
 
 
-
+/*
 void clearBuffer(uint8_t *buf, uint8_t size){
 	for(uint8_t i = 0; i < size; i++) {
 		buf[i] = 0;
 	}
-}
-
+} */
+/*
 void clearSpecifiedElemOfBuffer(uint8_t *buf, uint8_t size, uint8_t start_clear_pos){
 	for(uint8_t i = start_clear_pos; i < size; i++) {
 		buf[i] = 0;
 	}
-}
+} */
 
 uint8_t getADCAmplifierVal(uint8_t value) {
 
@@ -2994,12 +2997,14 @@ void convertAdcValues(uint8_t* buf, uint16_t size) {
 	}
 }
 
+/*
 void swap(uint32_t* a, uint32_t* b) {
     uint32_t tmp = *a;
     *a = *b;
     *b = tmp;
 }
-
+*/
+/*
 void bubbleSort(uint32_t *buf, uint16_t size)
 {
 	while (size--)
@@ -3019,7 +3024,9 @@ void bubbleSort(uint32_t *buf, uint16_t size)
 			break;
 	}
 }
+*/
 
+/*
 uint32_t calculateMedianVal(uint32_t* buf, uint16_t size, uint8_t limit) {
 	uint8_t end_limit = size - (limit + 1);
 	uint64_t median_val = 0;
@@ -3030,6 +3037,7 @@ uint32_t calculateMedianVal(uint32_t* buf, uint16_t size, uint8_t limit) {
 	result = median_val / (size - limit*2);
 	return result;
 }
+*/
 
 void setPlatformParam(uint16_t meas_res) {
 	switch(meas_res) {

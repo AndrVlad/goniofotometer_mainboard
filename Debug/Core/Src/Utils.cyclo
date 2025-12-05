@@ -1,0 +1,5 @@
+Utils.c:10:6:clearBuffer	2
+Utils.c:16:6:clearSpecifiedElemOfBuffer	2
+Utils.c:22:10:calculateMedianVal	2
+Utils.c:33:6:swap	1
+Utils.c:39:6:bubbleSort	5

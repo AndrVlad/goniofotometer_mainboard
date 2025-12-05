@@ -38,6 +38,8 @@ typedef struct  {
 	encoder encoder;
 } platform;
 
+//void changeMotorDirection()
+
 extern platform horizontal, vertical;
 
 #endif /* INC_PLATFORM_H_ */

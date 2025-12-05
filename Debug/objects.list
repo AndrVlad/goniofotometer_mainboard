@@ -1,6 +1,7 @@
 "./Core/Src/FlashUtils.o"
 "./Core/Src/HardwareUtils.o"
 "./Core/Src/Platform.o"
+"./Core/Src/Utils.o"
 "./Core/Src/main.o"
 "./Core/Src/stm32f7xx_hal_msp.o"
 "./Core/Src/stm32f7xx_it.o"
