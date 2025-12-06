@@ -31,6 +31,8 @@
 #include "Platform.h"
 #include "Utils.h"
 #include "PlatformMeasurements.h"
+#include "PD_Communication.h"
+#include "PC_Communication.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -46,7 +48,7 @@
 //#define ACCEL_OFFSET 5 // values in ark degrees
 //#define POSITION_ERROR 92
 #define VERTICAL_ROTATION_ANGLE 180
-#define ENCODER_TOLERANCE 46
+//#define ENCODER_TOLERANCE 46
 //#define AHB1_TIMER_CLOCK_MHz 108
 /* USER CODE END PD */
 
@@ -84,9 +86,9 @@ uint8_t buf[5] = {0x0A,0x0A,0x0A,0x0A,0x0A};
 uint8_t dma_spi4_buf[5] = {0};
 uint8_t dma_spi3_buf[5] = {0};
 uint8_t response_buf[33] = {0};
-uint8_t adc_data_buf[33] = {0};
-uint8_t data_buf_counter = 0;
-uint8_t data_elem_cnt = 1;
+//uint8_t adc_data_buf[33] = {0};
+//uint8_t data_buf_counter = 0;
+//uint8_t data_elem_cnt = 1;
 uint8_t data_elem_cnt_calib = 0;
 uint16_t tim14_arr_val = 0; 
 uint16_t test_counter_adc_data, test_cnt_uart1_rx, uart1_received_cnt, uart1_received_cnt_global, take_data_cnt = 0;
@@ -112,7 +114,7 @@ uint32_t encoder_offset[2] = {0};
 uint8_t amplifier_val = 0;
 uint8_t amplifier_val_saved = 0;
 uint8_t save_code = 0;
-bool wait_flag = 0;
+//bool wait_flag = 0;
 uint8_t error_code = 0;
 bool reach_start_position = 0;
 bool reach_end_position = 0;
@@ -121,7 +123,7 @@ bool step_1_vertical_meas = 0;
 bool step_2_vertical_meas = 0;
 bool reach_start_position_vertical = 0;
 bool end_meas_flag = 0;
-bool wait_adc_data_flag = 0;
+//bool wait_adc_data_flag = 0;
 uint16_t start_angle_offset_1 = 0, start_angle_offset_2 = 0;
 bool reducing_pos_calc = 0;
 bool reach_test_turn_pos = 0;
@@ -130,7 +132,7 @@ bool adc_coeff_command_set = 0;
 bool adc_coeff_set_complete = 0;
 bool tim14_cnt, tim10_cnt = 0;
 bool allow = 0;
-bool stop_poll = 0;
+//bool stop_poll = 0;
 bool end_calibration_flag = 0;
 bool full_rotation = 0;
 
@@ -145,7 +147,7 @@ uint16_t accel_angle = 0;
 uint16_t test_data_buf_cnt = 0;
 uint8_t uart3_rx_buffer[6] = {0};
 uint8_t uart3_rx_safe_buffer[6] = {0};
-uint8_t uart1_rx_buffer[5] = {0};
+//uint8_t uart1_rx_buffer[5] = {0};
 uint8_t uart1_rx_safe_buffer[5] = {0};
 uint8_t uart1_rx_safe_buffer_meas[5] = {0};
 uint8_t uart1_rx_calibration_buffer[150] = {0};
@@ -164,7 +166,7 @@ enum status ready_status;
 enum action cur_action = NONE;
 enum response_status { ERROR__, ACCEPTED__, ALREADY_EXEC, EXEC_OTHER};
 bool trans_states = 0; // 0 - no trans_state, 1 - trans_state
-enum data { NONE_, _READY_, SOME_PACKETS} data_status;
+//enum data { NONE_, _READY_, SOME_PACKETS} data_status;
 enum horiz_platform { HORIZONTAL_, VERTICAL_} current_horiz_platform = HORIZONTAL_;
 uint8_t operation_progress = 0;
 uint32_t SSI_data, SSI_data_safe, encoder1_data, encoder2_data, encoder1_increment_res, encoder2_increment_res, encoder2_data_last = 0;
@@ -1305,12 +1307,10 @@ void parser() {
 		/* new version
 		 *
 		memcpy(uart3_rx_safe_buffer, uart3_rx_buffer, 6);
-		createResponsePacket(0x03,ACCEPTED__);
 		data_status = NONE_;
 		stop_poll = 1;
 		createResponsePacket(0x03,ACCEPTED__);
-
-		//InitPlatformMeasurement(&horizontal, VERTICAL, uart3_rx_safe_buffer[1], uart3_rx_safe_buffer[2], uart3_rx_safe_buffer[3]);
+		InitPlatformMeasurement(&horizontal, VERTICAL, uart3_rx_safe_buffer[1], uart3_rx_safe_buffer[2], uart3_rx_safe_buffer[3]);
 	*/
 		break;
 	case 0x02:

@@ -7,6 +7,8 @@
 C_SRCS += \
 ../Core/Src/FlashUtils.c \
 ../Core/Src/HardwareUtils.c \
+../Core/Src/PC_Communication.c \
+../Core/Src/PD_Communication.c \
 ../Core/Src/Platform.c \
 ../Core/Src/PlatformMeasurements.c \
 ../Core/Src/Utils.c \
@@ -20,6 +22,8 @@ C_SRCS += \
 OBJS += \
 ./Core/Src/FlashUtils.o \
 ./Core/Src/HardwareUtils.o \
+./Core/Src/PC_Communication.o \
+./Core/Src/PD_Communication.o \
 ./Core/Src/Platform.o \
 ./Core/Src/PlatformMeasurements.o \
 ./Core/Src/Utils.o \
@@ -33,6 +37,8 @@ OBJS += \
 C_DEPS += \
 ./Core/Src/FlashUtils.d \
 ./Core/Src/HardwareUtils.d \
+./Core/Src/PC_Communication.d \
+./Core/Src/PD_Communication.d \
 ./Core/Src/Platform.d \
 ./Core/Src/PlatformMeasurements.d \
 ./Core/Src/Utils.d \
@@ -51,7 +57,7 @@ Core/Src/%.o Core/Src/%.su Core/Src/%.cyclo: ../Core/Src/%.c Core/Src/subdir.mk
 clean: clean-Core-2f-Src
 
 clean-Core-2f-Src:
-	-$(RM) ./Core/Src/FlashUtils.cyclo ./Core/Src/FlashUtils.d ./Core/Src/FlashUtils.o ./Core/Src/FlashUtils.su ./Core/Src/HardwareUtils.cyclo ./Core/Src/HardwareUtils.d ./Core/Src/HardwareUtils.o ./Core/Src/HardwareUtils.su ./Core/Src/Platform.cyclo ./Core/Src/Platform.d ./Core/Src/Platform.o ./Core/Src/Platform.su ./Core/Src/PlatformMeasurements.cyclo ./Core/Src/PlatformMeasurements.d ./Core/Src/PlatformMeasurements.o ./Core/Src/PlatformMeasurements.su ./Core/Src/Utils.cyclo ./Core/Src/Utils.d ./Core/Src/Utils.o ./Core/Src/Utils.su ./Core/Src/main.cyclo ./Core/Src/main.d ./Core/Src/main.o ./Core/Src/main.su ./Core/Src/stm32f7xx_hal_msp.cyclo ./Core/Src/stm32f7xx_hal_msp.d ./Core/Src/stm32f7xx_hal_msp.o ./Core/Src/stm32f7xx_hal_msp.su ./Core/Src/stm32f7xx_it.cyclo ./Core/Src/stm32f7xx_it.d ./Core/Src/stm32f7xx_it.o ./Core/Src/stm32f7xx_it.su ./Core/Src/syscalls.cyclo ./Core/Src/syscalls.d ./Core/Src/syscalls.o ./Core/Src/syscalls.su ./Core/Src/sysmem.cyclo ./Core/Src/sysmem.d ./Core/Src/sysmem.o ./Core/Src/sysmem.su ./Core/Src/system_stm32f7xx.cyclo ./Core/Src/system_stm32f7xx.d ./Core/Src/system_stm32f7xx.o ./Core/Src/system_stm32f7xx.su
+	-$(RM) ./Core/Src/FlashUtils.cyclo ./Core/Src/FlashUtils.d ./Core/Src/FlashUtils.o ./Core/Src/FlashUtils.su ./Core/Src/HardwareUtils.cyclo ./Core/Src/HardwareUtils.d ./Core/Src/HardwareUtils.o ./Core/Src/HardwareUtils.su ./Core/Src/PC_Communication.cyclo ./Core/Src/PC_Communication.d ./Core/Src/PC_Communication.o ./Core/Src/PC_Communication.su ./Core/Src/PD_Communication.cyclo ./Core/Src/PD_Communication.d ./Core/Src/PD_Communication.o ./Core/Src/PD_Communication.su ./Core/Src/Platform.cyclo ./Core/Src/Platform.d ./Core/Src/Platform.o ./Core/Src/Platform.su ./Core/Src/PlatformMeasurements.cyclo ./Core/Src/PlatformMeasurements.d ./Core/Src/PlatformMeasurements.o ./Core/Src/PlatformMeasurements.su ./Core/Src/Utils.cyclo ./Core/Src/Utils.d ./Core/Src/Utils.o ./Core/Src/Utils.su ./Core/Src/main.cyclo ./Core/Src/main.d ./Core/Src/main.o ./Core/Src/main.su ./Core/Src/stm32f7xx_hal_msp.cyclo ./Core/Src/stm32f7xx_hal_msp.d ./Core/Src/stm32f7xx_hal_msp.o ./Core/Src/stm32f7xx_hal_msp.su ./Core/Src/stm32f7xx_it.cyclo ./Core/Src/stm32f7xx_it.d ./Core/Src/stm32f7xx_it.o ./Core/Src/stm32f7xx_it.su ./Core/Src/syscalls.cyclo ./Core/Src/syscalls.d ./Core/Src/syscalls.o ./Core/Src/syscalls.su ./Core/Src/sysmem.cyclo ./Core/Src/sysmem.d ./Core/Src/sysmem.o ./Core/Src/sysmem.su ./Core/Src/system_stm32f7xx.cyclo ./Core/Src/system_stm32f7xx.d ./Core/Src/system_stm32f7xx.o ./Core/Src/system_stm32f7xx.su
 
 .PHONY: clean-Core-2f-Src
 

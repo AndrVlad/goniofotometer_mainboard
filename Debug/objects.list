@@ -1,5 +1,7 @@
 "./Core/Src/FlashUtils.o"
 "./Core/Src/HardwareUtils.o"
+"./Core/Src/PC_Communication.o"
+"./Core/Src/PD_Communication.o"
 "./Core/Src/Platform.o"
 "./Core/Src/PlatformMeasurements.o"
 "./Core/Src/Utils.o"

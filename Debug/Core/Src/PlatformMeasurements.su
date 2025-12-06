@@ -1,1 +1,2 @@
-../Core/Src/PlatformMeasurements.c:26:6:InitPlatformMeasurement	48	static
+../Core/Src/PlatformMeasurements.c:28:6:InitPlatformMeasurement	48	static
+../Core/Src/PlatformMeasurements.c:121:6:handleHorizVerticMeasurement	8	static

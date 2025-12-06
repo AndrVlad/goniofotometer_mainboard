@@ -1,1 +1,2 @@
-PlatformMeasurements.c:26:6:InitPlatformMeasurement	6
+PlatformMeasurements.c:28:6:InitPlatformMeasurement	6
+PlatformMeasurements.c:121:6:handleHorizVerticMeasurement	21

@@ -8,6 +8,8 @@
 #include "PlatformMeasurements.h"
 #include "Common.h"
 #include "HardwareUtils.h"
+#include "PD_Communication.h"
+#include "PC_Communication.h"
 
 platform* cur_platf;
 
@@ -114,4 +116,100 @@ void InitPlatformMeasurement(platform* chosen_platf, uint8_t measurement_type, u
 	HAL_TIM_Base_Start_IT(&htim7);					// start poll encoder
 	HAL_TIM_Base_Start_IT(cur_platf->motor_tim); 	// start motor moving
 
+}
+
+void handleHorizVerticMeasurement() {
+	  // State - move to acceleration position
+	  if (!platf_state.reach_accel_pos) {
+		  trans_states = 1;
+		  if ((cur_platf->encoder.current_pos >= cur_platf->encoder.accel_spec_pos - 5)
+				  && (cur_platf->encoder.current_pos <= cur_platf->encoder.accel_spec_pos + 5)) {
+			  HAL_TIM_Base_Stop_IT(cur_platf->motor_tim);
+			  changeMotorDirection__(cur_platf, cur_platf->encoder.start_spec_pos);
+			  setMotorFrequency__(cur_platf, cur_platf->motor_freq_Hz);
+			  platf_state.reach_accel_pos = 1;
+			  HAL_TIM_Base_Start_IT(cur_platf->motor_tim);
+		  }
+	  }
+
+	  // State - move to start position
+	  if (platf_state.reach_accel_pos) {
+
+		  if (!platf_state.reach_start_pos) {
+			  trans_states = 0;
+
+			  if ((cur_platf->encoder.current_pos >= cur_platf->encoder.start_spec_pos - 5)
+					  && (cur_platf->encoder.current_pos <= cur_platf->encoder.start_spec_pos + 5)) {
+
+				platf_state.reach_start_pos = 1;
+			  	// start photodetector polling
+			  	pollPhotodetector();
+			  }
+		  }
+
+		  // State - move to end position
+
+		  if (platf_state.reach_start_pos) {
+
+			  if (!platf_state.reach_end_pos) {
+
+				  if ((cur_platf->encoder.current_pos >= cur_platf->encoder.end_spec_pos)
+						  && (cur_platf->encoder.current_pos <= cur_platf->encoder.end_spec_pos + ENCODER_TOLERANCE)) {
+
+					  pollPhotodetector();
+					  //test_counter_adc_data2++;
+					  platf_state.reach_end_pos = 1;
+					  return;
+
+				  } else {
+					  // while not reached end_position
+					  if ((cur_platf->encoder.current_pos >= (cur_platf->encoder.inc_pos - 4))
+							  && (cur_platf->encoder.current_pos <= (cur_platf->encoder.inc_pos + 4))) {
+
+					 	cur_platf->encoder.inc_pos += cur_platf->measurement_res;
+						if (cur_platf->encoder.inc_pos >= ENCODER_RESOLUTION) {
+							cur_platf->encoder.inc_pos -= ENCODER_RESOLUTION;
+						}
+
+						pollPhotodetector();
+						//test_counter_adc_data2++;
+
+					  }
+
+						if ((cur_platf->encoder.current_pos >= cur_platf->encoder.end_temp_pos + 730)
+								&& (cur_platf->encoder.current_pos <= cur_platf->encoder.end_temp_pos + 1460)) {
+							cur_platf->encoder.end_spec_pos = cur_platf->encoder.end_temp_pos;
+						}
+				  }
+			  }
+		  }
+	  }
+
+	  if (platf_state.reach_end_pos && !wait_adc_data_flag && data_status == NONE_) {
+		  if (data_buf_counter > 0) {
+			  // clearing the part of the buffer that does not include useful data
+			  clearSpecifiedElemOfBuffer(adc_data_buf,33,data_buf_counter*3+1);
+			  data_status = _READY_;
+		  }
+
+		  // reset flags and state
+		  data_buf_counter = 0;
+		  data_elem_cnt = 1;
+		  cur_action = NONE;
+		  wait_flag = 0;
+		  ready_status = READY_;
+		  platf_state.reach_end_pos = 1;
+		  wait_adc_data_flag = 0;
+
+		  stop_poll = 0;
+
+		  resetNVICPriority();
+
+		  // stop measurement
+		  HAL_TIM_Base_Stop_IT(cur_platf->motor_tim); // stop motor
+		  HAL_TIM_Base_Stop_IT(&htim7); // stop SPI timer
+
+		  //reset motor frequency
+		  setMotorFrequency__(cur_platf,cur_platf->motor_freq_def_Hz);
+	  }
 }
