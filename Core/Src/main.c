@@ -108,6 +108,7 @@ uint32_t CRC_Photodetector, tim13cnt, tim14_arr_val_converted, new_tim_arr_val, 
 uint32_t adc_data_cnt, required_data_num = 0;
 uint32_t usart3_reg, usart3_error = 0;
 uint32_t photodetector_offset_val = 0;
+uint32_t control_pos = 0;
 
 uint32_t encoder_offset[2] = {0};
 //uint32_t address = ADDR_FLASH_SECTOR_2;
@@ -1273,6 +1274,13 @@ void parser() {
 		if (full_rotation) {
 			end_position_drv_tmp = (end_angle * ENCODER_RESOLUTION) / 360;
 			end_position_drv_tmp = calculateEncPosition(end_position_drv_tmp,chosen_drv);
+
+			if ((end_position_drv_tmp + 720) >= ENCODER_RESOLUTION) {
+				control_pos = (end_position_drv_tmp + 720) - ENCODER_RESOLUTION;
+			} else {
+				control_pos = end_position_drv_tmp + 720;
+			}
+
 			end_position_drv1 = ((end_angle-4) * ENCODER_RESOLUTION) / 360; // get absolute encoder position
 			end_position_drv1 = calculateEncPosition(end_position_drv1,chosen_drv);
 		} else {
@@ -1409,6 +1417,13 @@ void parser() {
 				// set end position of measurement
 				end_position_drv_tmp = (end_angle * ENCODER_RESOLUTION) / 360;
 				end_position_drv_tmp = calculateEncPosition(end_position_drv_tmp,chosen_drv);
+
+				if ((end_position_drv_tmp + 720) >= ENCODER_RESOLUTION) {
+					control_pos = (end_position_drv_tmp + 720) - ENCODER_RESOLUTION;
+				} else {
+					control_pos = end_position_drv_tmp + 720;
+				}
+
 				end_position_drv1 = ((end_angle-4) * ENCODER_RESOLUTION) / 360; // get absolute encoder position
 				end_position_drv1 = calculateEncPosition(end_position_drv1,chosen_drv);
 			} else {
@@ -1458,6 +1473,13 @@ void parser() {
 				// set end position of measurement
 				end_position_drv_tmp = (end_angle * ENCODER_RESOLUTION) / 360;
 				end_position_drv_tmp = calculateEncPosition(end_position_drv_tmp,chosen_drv);
+
+				if ((end_position_drv_tmp + 720) >= ENCODER_RESOLUTION) {
+					control_pos = (end_position_drv_tmp + 720) - ENCODER_RESOLUTION;
+				} else {
+					control_pos = end_position_drv_tmp + 720;
+				}
+
 				end_position_drv2 = ((end_angle - 4) * ENCODER_RESOLUTION) / 360; // get absolute encoder position
 				end_position_drv2 = calculateEncPosition(end_position_drv2,chosen_drv);
 			} else {
@@ -2469,8 +2491,8 @@ void handleHorizontalMeasurement() {
 					  }
 
 					  if (full_rotation) {
-						if ((encoder1_data >= end_position_drv_tmp + 730) && (encoder1_data <= end_position_drv_tmp + 1460)) {
-							end_position_drv1 = end_position_drv_tmp;
+						if ((encoder1_data >= control_pos - 60) && (encoder1_data <= control_pos + 60)) {
+							end_position_drv1 = start_position_drv1;
 						}
 					  }
 
@@ -2604,8 +2626,8 @@ void handleHorizontalMeasurementVertPlatf() {
 					  }
 
 					  if (full_rotation) {
-						if ((encoder2_data >= end_position_drv_tmp + 730) && (encoder2_data <= end_position_drv_tmp + 1460)) {
-							end_position_drv2 = end_position_drv_tmp;
+						if ((encoder2_data >= control_pos - 60) && (encoder2_data <= control_pos + 60)) {
+							end_position_drv2 = start_position_drv2;
 						}
 					  }
 				  }
@@ -2969,6 +2991,9 @@ void DeviceInit() {
 	ReadFlash(encoder_offset,2,ADDR_FLASH_SECTOR_2,FLASH_TYPEPROGRAM_WORD);
 	horizontal.encoder.ENCODER_OFFSET = encoder_offset[0];
 	vertical.encoder.ENCODER_OFFSET = encoder_offset[1];
+
+	ENCODER_1_OFFSET = encoder_offset[0];
+	ENCODER_2_OFFSET = encoder_offset[1];
 
 	// set motor timers for pull
 	horizontal.motor_tim = &htim2;
