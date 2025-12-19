@@ -407,6 +407,7 @@ int main(void)
 	  }
 
 	  // the handler of the received message from the encoder 2
+
 	  if (spi3_rx_complete) {
 
 		  switch(cur_action) {
@@ -1350,7 +1351,9 @@ void parser() {
 		memcpy(uart3_rx_safe_buffer, uart3_rx_buffer, 6);
 
 		// set start angle of measurement
-		start_angle = abs(start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1] - 180);
+
+		//start_angle = abs(start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1] - 180);
+		start_angle = 360 - start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1];
 		//start_angle = start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1];
 		// calculate offset of the measurement from specified start position
 		/*
@@ -1361,11 +1364,16 @@ void parser() {
 		} */
 
 		// set end angle of measurement
-		end_angle = start_ending_angle_items[1][uart3_rx_safe_buffer[2]-1] + 180;
-
+		//end_angle = start_ending_angle_items[1][uart3_rx_safe_buffer[2]-1] + 180;
+		end_angle = (start_ending_angle_items[1][uart3_rx_safe_buffer[2]-1]);
+		/*
 		if (start_angle == 0 && end_angle == 360) {
 			full_rotation = 1;
-		}
+		} */
+
+		if (start_angle == 180 && end_angle == 180) {
+					full_rotation = 1;
+				}
 
 		/*
 		if ((end_angle + start_angle_offset_1) > 360) {
@@ -1442,9 +1450,12 @@ void parser() {
 			// set status
 			ready_status = BUSY_;
 
+			setMotorFrequency(0,400);
+
 			// start measurement
 			HAL_TIM_Base_Start_IT(&htim7);	// start poll encoder
 			HAL_TIM_Base_Start_IT(&htim2); // start first motor moving
+
 
 		} else if (chosen_drv == VERTICAL_) {
 
@@ -1497,6 +1508,8 @@ void parser() {
 			// set status
 			ready_status = BUSY_;
 
+			setMotorFrequency(1,400);
+
 			// start measurement
 			HAL_TIM_Base_Start_IT(&htim7);	// start poll encoder
 			HAL_TIM_Base_Start_IT(&htim3); // start first motor moving
@@ -1541,20 +1554,26 @@ void parser() {
 	case 0x06:
 		createResponsePacket(0x06,ACCEPTED__);
 
+		angle_position_drv1 = encoder1_data;
+
+		/*
+
 		angle_position_drv1 = calculateEncPosition(start_angle_offset_1,chosen_drv);
 
-		angle_position_drv1_tmp = angle_position_drv1;
+		angle_position_drv1_tmp = angle_position_drv1 +;
 		if (angle_position_drv1_tmp + 300 > ENCODER_RESOLUTION) {
 			angle_position_drv1_tmp = (angle_position_drv1_tmp + 300) - ENCODER_RESOLUTION;
 		} else {
 			angle_position_drv1_tmp += 300;
 		};
+		*/
 
 		reach_test_turn_pos = 0;
 
 		// set direction
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
 		changeMotorDirection(HORIZONTAL_,angle_position_drv1_tmp);
+		setMotorFrequency(0,400);
 
 		HAL_TIM_Base_Start_IT(&htim7); // start encoder poll
 		HAL_TIM_Base_Start_IT(&htim2); // start horizontal motor moving
@@ -1609,6 +1628,13 @@ void parser() {
 			wait_flag = 0;
 			wait_adc_data_flag = 0;
 			error_val = 0;
+
+			break;
+		case TEST_TURN:
+
+			HAL_TIM_Base_Stop_IT(&htim2); // stop motor
+			HAL_TIM_Base_Stop_IT(&htim3);
+			HAL_TIM_Base_Stop_IT(&htim7); // stop SPI timer
 
 			break;
 		default:
@@ -1706,11 +1732,15 @@ void parser() {
 		trans_states = 1;
 
 		if (uart3_rx_buffer[1] == 0) {
+			setMotorFrequency(0,400);
 			HAL_TIM_Base_Start_IT(&htim7);
 			HAL_TIM_Base_Start_IT(&htim2); // start horizontal motor moving
+
 		} else {
+			setMotorFrequency(1,400);
 			HAL_TIM_Base_Start_IT(&htim7);
 			HAL_TIM_Base_Start_IT(&htim3); // start vertical motor moving
+
 		}
 
 		break;
@@ -1789,6 +1819,8 @@ void parser() {
 			HAL_TIM_Base_Start_IT(&htim2); // start first motor
 		}
 
+
+
 		//HAL_TIM_Base_Start_IT(&htim2);
 		break;
 
@@ -1801,7 +1833,7 @@ void parser() {
 		test_angle |= uart3_rx_buffer[1];
 
 		if(chosen_drv) { // second motor
-
+			setMotorFrequency(1,400);
 			angle_position_drv2 = 0;
 
 			if(!(uart3_rx_buffer[3])) { // absolute moving
@@ -1810,10 +1842,12 @@ void parser() {
 			}
 
 			changeMotorDirection(chosen_drv, angle_position_drv2);
+
 			HAL_TIM_Base_Start_IT(&htim7);
 			HAL_TIM_Base_Start_IT(&htim3); // start second motor moving
       
 		} else { // first motor
+			setMotorFrequency(0,400);
 
 			angle_position_drv1 = 0;
 
@@ -2342,7 +2376,7 @@ void createErrorResponse() {
 
 void handleTestAngleOffset() {
 
-	setMotorFrequency(chosen_drv,75);
+	//setMotorFrequency(chosen_drv,75);
 	if (chosen_drv) {
 		if ((encoder2_data >= angle_position_drv2 - 4) && (encoder1_data <= angle_position_drv2 + 4)) {
 			HAL_TIM_Base_Stop_IT(&htim3); // stop motor
@@ -2378,7 +2412,7 @@ void handleMovingToStartOffset() {
 }
 
 void handleTestTurn() {
-	setMotorFrequency(chosen_drv,100);
+
 	if (!reach_test_turn_pos) {
 		if ((encoder1_data >= angle_position_drv1_tmp - ENCODER_TOLERANCE) && (encoder1_data <= angle_position_drv1_tmp + ENCODER_TOLERANCE)) {
 			  reach_test_turn_pos = 1;
@@ -2935,11 +2969,16 @@ void setMotorFrequency(bool chosen_drv, uint16_t motor_frequency) {
 	uint32_t tim_clock = 0;
 	tim_clock = (AHB1_TIMER_CLOCK_MHz * 1000000);
 
+	__HAL_TIM_SET_COUNTER(&htim3, 0);
+	__HAL_TIM_SET_COUNTER(&htim2, 0);
+
 	if (chosen_drv) { // chosen second motor
 		htim3.Instance->ARR = ((tim_clock/(htim3.Instance->PSC + 1))/motor_frequency)-1;
 	} else {		// chosen first motor
-		htim2.Instance->ARR = ((tim_clock/(htim3.Instance->PSC + 1))/motor_frequency) - 1;
+		htim2.Instance->ARR = ((tim_clock/(htim2.Instance->PSC + 1))/motor_frequency) - 1;
 	}
+
+
 }
 
 void convertAdcValues(uint8_t* buf, uint16_t size) {
