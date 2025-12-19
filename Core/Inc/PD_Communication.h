@@ -11,6 +11,7 @@
 #include "stdbool.h"
 #include "stdlib.h"
 #include "stdio.h"
+#include <stdint.h>
 
 extern bool wait_adc_data_flag;
 extern uint8_t uart1_rx_buffer[5];

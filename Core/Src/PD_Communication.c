@@ -8,6 +8,7 @@
 #include "stm32f7xx_hal.h"
 #include "Common.h"
 #include "HardwareUtils.h"
+#include <stdint.h>
 
 
 bool wait_adc_data_flag = 0;
