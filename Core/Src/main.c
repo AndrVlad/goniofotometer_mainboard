@@ -1210,7 +1210,8 @@ void parser() {
 		memcpy(uart3_rx_safe_buffer, uart3_rx_buffer, 6);
 
 		// set start angle of measurement
-		start_angle = abs(start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1] - 180);
+		//start_angle = abs(start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1] - 180);
+		start_angle = 360 - start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1];
 		//start_angle = start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1];
 		// calculate offset of the measurement from specified start position
 		/*
@@ -1221,10 +1222,17 @@ void parser() {
 		} */
 
 		// set end angle of measurement
-		end_angle = start_ending_angle_items[1][uart3_rx_safe_buffer[2]-1] + 180;
+		//end_angle = start_ending_angle_items[1][uart3_rx_safe_buffer[2]-1] + 180;
+		end_angle = (start_ending_angle_items[1][uart3_rx_safe_buffer[2]-1]);
+		/*
 		if (start_angle == 0 && end_angle == 360) {
 			full_rotation = 1;
-		}
+		}*/
+
+		if (start_angle == 180 && end_angle == 180) {
+					full_rotation = 1;
+				}
+
 		/*
 		if ((end_angle + start_angle_offset_1) > 360) {
 			end_angle = (end_angle + start_angle_offset_1) - 360;
@@ -1833,13 +1841,13 @@ void parser() {
 		test_angle |= uart3_rx_buffer[1];
 
 		if(chosen_drv) { // second motor
-			setMotorFrequency(1,400);
+			setMotorFrequency(1,150);
 			angle_position_drv2 = 0;
 
-			if(!(uart3_rx_buffer[3])) { // absolute moving
+			//if(!(uart3_rx_buffer[3])) { // absolute moving
 				temp_pos = (test_angle * ENCODER_RESOLUTION) / 360; // get absolute encoder position
 				angle_position_drv2 = calculateEncPosition(temp_pos,chosen_drv);
-			}
+			//}
 
 			changeMotorDirection(chosen_drv, angle_position_drv2);
 
@@ -1851,10 +1859,10 @@ void parser() {
 
 			angle_position_drv1 = 0;
 
-			if(!(uart3_rx_buffer[3])) { // absolute moving
+			//if(!(uart3_rx_buffer[3])) { // absolute moving
 				temp_pos = (test_angle * ENCODER_RESOLUTION) / 360; // get absolute encoder position
 				angle_position_drv1 = calculateEncPosition(temp_pos,chosen_drv);
-			}
+			//}
 
 			changeMotorDirection(chosen_drv, angle_position_drv1);
 			HAL_TIM_Base_Start_IT(&htim7);
@@ -2378,7 +2386,7 @@ void handleTestAngleOffset() {
 
 	//setMotorFrequency(chosen_drv,75);
 	if (chosen_drv) {
-		if ((encoder2_data >= angle_position_drv2 - 4) && (encoder1_data <= angle_position_drv2 + 4)) {
+		if ((encoder2_data >= angle_position_drv2 - 4) && (encoder2_data <= angle_position_drv2 + 4)) {
 			HAL_TIM_Base_Stop_IT(&htim3); // stop motor
 			HAL_TIM_Base_Stop_IT(&htim7); // stop encoder poll
 			cur_action = NONE;
