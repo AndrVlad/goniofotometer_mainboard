@@ -216,7 +216,7 @@ void checkCRCPhotodetectorData();
 void createErrorResponse();
 uint32_t calculateRequiredDataNum(uint32_t meas_interval, uint32_t meas_resolution);
 uint32_t getTimeOffset();
-void setMotorFrequency(bool chosen_drv, uint16_t motor_frequency);
+
 void convertAdcValues(uint8_t *buf, uint16_t size);
 void DeviceInit();
 /* USER CODE END PFP */
@@ -556,6 +556,26 @@ int main(void)
 		test_counter_adc_data2++;
 
 	 }
+
+	 // check backlash of reductor
+
+	 if (is_motor_moving) {
+		 if (!is_backlash_passed) {
+			 checkBacklash();
+		 }
+	 }
+
+	 // increase motor frequency
+
+	 if (tim9_ovflw) {
+		 if (target_motor_freq > (current_motor_freq * 2)) {
+			 setMotorFrequency(chosen_drv,current_motor_freq*2);
+		 } else {
+			 setMotorFrequency(chosen_drv,target_motor_freq);
+			 HAL_TIM_Base_Stop_IT(&htim9);
+		 }
+	 }
+
   }
 
     /* USER CODE END WHILE */
@@ -1458,12 +1478,15 @@ void parser() {
 			// set status
 			ready_status = BUSY_;
 
-			setMotorFrequency(0,400);
+			//setMotorFrequency(0,400);
+			target_motor_freq = DEFAULT_MOTOR_FREQUENCY_HZ;
+			startMotorRotation(chosen_drv,encoder1_data);
 
 			// start measurement
+			/*
 			HAL_TIM_Base_Start_IT(&htim7);	// start poll encoder
 			HAL_TIM_Base_Start_IT(&htim2); // start first motor moving
-
+			*/
 
 		} else if (chosen_drv == VERTICAL_) {
 
@@ -1599,9 +1622,12 @@ void parser() {
 		case VERTICAL:
 
 			  // stop measurement
+			/*
 			HAL_TIM_Base_Stop_IT(&htim2); // stop motor
 			HAL_TIM_Base_Stop_IT(&htim3);
-			HAL_TIM_Base_Stop_IT(&htim7); // stop SPI timer
+			HAL_TIM_Base_Stop_IT(&htim7); // stop SPI timer */
+			stopMotorRotation(VERTICAL_);
+			stopMotorRotation(HORIZONTAL_);
 
 			if (data_buf_counter > 0 && data_status == NONE_) {
 				// clearing the part of the buffer that does not include useful data
@@ -1873,13 +1899,15 @@ void parser() {
 	case 0x11: // stop moving
 		createResponsePacket(0x11,ACCEPTED__);
 		//HAL_UART_Transmit(&huart3, response_buf,33,100);
+		stopMotorRotation(chosen_drv);
+		/*
 		if(chosen_drv) {
 			HAL_TIM_Base_Stop_IT(&htim3); // stop second motor
 			HAL_TIM_Base_Stop_IT(&htim7);
 		} else {
 			HAL_TIM_Base_Stop_IT(&htim2); // stop first motor
 			HAL_TIM_Base_Stop_IT(&htim7);
-		}
+		} */
 		cur_action = NONE;
 		trans_states = 0;
 
@@ -2387,14 +2415,16 @@ void handleTestAngleOffset() {
 	//setMotorFrequency(chosen_drv,75);
 	if (chosen_drv) {
 		if ((encoder2_data >= angle_position_drv2 - 4) && (encoder2_data <= angle_position_drv2 + 4)) {
-			HAL_TIM_Base_Stop_IT(&htim3); // stop motor
-			HAL_TIM_Base_Stop_IT(&htim7); // stop encoder poll
+			stopMotorRotation(chosen_drv);
+			//HAL_TIM_Base_Stop_IT(&htim3); // stop motor
+			//HAL_TIM_Base_Stop_IT(&htim7); // stop encoder poll
 			cur_action = NONE;
 		}
 	} else {
 		if ((encoder1_data >= angle_position_drv1 - 4) && (encoder1_data <= angle_position_drv1 + 4)) {
-			HAL_TIM_Base_Stop_IT(&htim2); // stop motor
-			HAL_TIM_Base_Stop_IT(&htim7); // stop encoder poll
+			stopMotorRotation(chosen_drv);
+			//HAL_TIM_Base_Stop_IT(&htim2); // stop motor
+			//HAL_TIM_Base_Stop_IT(&htim7); // stop encoder poll
 			cur_action = NONE;
 		}
 	}
@@ -2439,11 +2469,18 @@ void handleHorizontalMeasurement() {
 	  if (!reach_accel_position) {
 		  trans_states = 1;
 		  if ((encoder1_data >= accel_position_drv1 - 5) && (encoder1_data <= accel_position_drv1 + 5)) {
+
+			  stopMotorRotation(chosen_drv);
+			  changeMotorDirection(chosen_drv, start_position_drv1);
+			  reach_accel_position = 1;
+			  target_motor_freq = motor_frequency_1; // set measurement motor frequency
+			  startMotorRotation(chosen_drv, encoder1_data);
+			  /*
 			  HAL_TIM_Base_Stop_IT(&htim2);
 			  changeMotorDirection(chosen_drv, start_position_drv1);
 			  setMotorFrequency(chosen_drv, motor_frequency_1);
 			  reach_accel_position = 1;
-			  HAL_TIM_Base_Start_IT(&htim2);
+			  HAL_TIM_Base_Start_IT(&htim2); */
 		  }
 	  }
 
@@ -2564,8 +2601,9 @@ void handleHorizontalMeasurement() {
 		  resetNVICPriority();
 
 		  // stop measurement
-		  HAL_TIM_Base_Stop_IT(&htim2); // stop motor
-		  HAL_TIM_Base_Stop_IT(&htim7); // stop SPI timer
+		  stopMotorRotation(chosen_drv);
+		  //HAL_TIM_Base_Stop_IT(&htim2); // stop motor
+		  //HAL_TIM_Base_Stop_IT(&htim7); // stop SPI timer
 	  }
 }
 
@@ -2972,23 +3010,6 @@ uint32_t getTimeOffset() {
 	return tim14_arr_val;
 }
 
-void setMotorFrequency(bool chosen_drv, uint16_t motor_frequency) {
-
-	uint32_t tim_clock = 0;
-	tim_clock = (AHB1_TIMER_CLOCK_MHz * 1000000);
-
-	__HAL_TIM_SET_COUNTER(&htim3, 0);
-	__HAL_TIM_SET_COUNTER(&htim2, 0);
-
-	if (chosen_drv) { // chosen second motor
-		htim3.Instance->ARR = ((tim_clock/(htim3.Instance->PSC + 1))/motor_frequency)-1;
-	} else {		// chosen first motor
-		htim2.Instance->ARR = ((tim_clock/(htim2.Instance->PSC + 1))/motor_frequency) - 1;
-	}
-
-
-}
-
 void convertAdcValues(uint8_t* buf, uint16_t size) {
 	for (uint16_t i = 0, j = 0; i < size; i += 3, j++) {
 		adc_values_buf[j] = buf[i];
@@ -3052,6 +3073,8 @@ void DeviceInit() {
 
 	setMotorFrequency__(&horizontal, horizontal.motor_freq_def_Hz);
 	setMotorFrequency__(&vertical, vertical.motor_freq_def_Hz);
+
+	target_motor_freq = DEFAULT_MOTOR_FREQUENCY_HZ;
 
 	// set status of device
 	ready_status = READY_;

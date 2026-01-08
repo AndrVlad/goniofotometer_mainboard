@@ -13,7 +13,8 @@
 #include "stdio.h"
 #include "stm32f7xx_hal.h"
 
-#define DEFAULT_MOTOR_FREQUENCY_HZ 60
+#define DEFAULT_MOTOR_FREQUENCY_HZ 200
+#define PICK_UP_MOTOR_FREQUENCY_HZ 6
 #define ENCODER_RESOLUTION 131072
 #define POSITION_ERROR 92
 #define AHB1_TIMER_CLOCK_MHz 108
@@ -41,12 +42,18 @@ typedef struct  {
 } platform;
 
 extern platform horizontal, vertical;
+extern bool is_motor_moving, is_backlash_passed;
+extern uint16_t current_motor_freq, target_motor_freq;
 
 void setEncoderPollFrequency(uint16_t frequency_mcs);
+void startMotorRotation(uint8_t motor_id, uint32_t last_encoder_data);
+void checkBacklash();
 void changeMotorDirection__(platform *cur_platf, uint32_t target_position);
 uint32_t calculateEncPosition__(platform* cur_platf, uint32_t encoder_position);
 void setPlatformParam__(platform* cur_platf);
 void setMotorFrequency__(platform* cur_platf, uint16_t motor_frequency);
+void setMotorFrequency(bool chosen_drv, uint16_t motor_frequency);
+void stopMotorRotation(uint8_t motor_id);
 //void changeMotorDirection()
 
 #endif /* INC_PLATFORM_H_ */
