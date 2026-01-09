@@ -37,13 +37,18 @@ void checkBacklash(uint32_t encoder_data) {
 	if ((encoder_data >= (last_encoder_pos + 25)) || (encoder_data <= (last_encoder_pos - 25))) {
 		is_backlash_passed = true;
 		// start accel_timer
-		HAL_TIM_Base_Start_IT(&htim9);
+		HAL_TIM_Base_Start_IT(&htim4);
 	}
 }
 
 void stopMotorRotation(uint8_t motor_id) {
 
-	HAL_TIM_Base_Stop_IT(&htim2); // stop motor
+	if (motor_id) {
+		HAL_TIM_Base_Stop_IT(&htim3); // stop motor
+	} else {
+		HAL_TIM_Base_Stop_IT(&htim2); // stop motor
+	}
+
 	HAL_TIM_Base_Stop_IT(&htim7); // stop encoder polling
 	is_motor_moving = false;
 	target_motor_freq = DEFAULT_MOTOR_FREQUENCY_HZ;

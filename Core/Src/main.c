@@ -68,9 +68,11 @@ DMA_HandleTypeDef hdma_spi4_tx;
 
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
+TIM_HandleTypeDef htim4;
 TIM_HandleTypeDef htim5;
 TIM_HandleTypeDef htim6;
 TIM_HandleTypeDef htim7;
+TIM_HandleTypeDef htim9;
 TIM_HandleTypeDef htim10;
 TIM_HandleTypeDef htim13;
 TIM_HandleTypeDef htim14;
@@ -161,6 +163,8 @@ bool driver_dir1, driver_dir2, chosen_drv = 1; // 0 - forward, 1 - back
 bool init_state = 1;
 uint8_t next_command = 0xFF;
 uint16_t error_cnt = 0;
+bool tim9_ovflw = false;
+uint32_t encoder_test_data;
 
 /* Telemetry status values */
 enum status ready_status;
@@ -192,6 +196,8 @@ static void MX_TIM10_Init(void);
 static void MX_TIM5_Init(void);
 static void MX_TIM14_Init(void);
 static void MX_TIM13_Init(void);
+static void MX_TIM9_Init(void);
+static void MX_TIM4_Init(void);
 /* USER CODE BEGIN PFP */
 void parser();
 void stepDriver(uint8_t step_num);
@@ -267,6 +273,8 @@ int main(void)
   MX_TIM5_Init();
   MX_TIM14_Init();
   MX_TIM13_Init();
+  MX_TIM9_Init();
+  MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
 
   DeviceInit();
@@ -561,7 +569,12 @@ int main(void)
 
 	 if (is_motor_moving) {
 		 if (!is_backlash_passed) {
-			 checkBacklash();
+			 if (chosen_drv) {
+				 checkBacklash(encoder_test_data);
+			 } else {
+				 checkBacklash(encoder_test_data);
+			 }
+
 		 }
 	 }
 
@@ -570,9 +583,14 @@ int main(void)
 	 if (tim9_ovflw) {
 		 if (target_motor_freq > (current_motor_freq * 2)) {
 			 setMotorFrequency(chosen_drv,current_motor_freq*2);
+			 tim9_ovflw = false;
+			 __HAL_TIM_SET_COUNTER(&htim4, 0);
+			 HAL_TIM_Base_Start_IT(&htim4);
+			 //HAL_TIM_Base_Start_IT(&htim9);
 		 } else {
 			 setMotorFrequency(chosen_drv,target_motor_freq);
-			 HAL_TIM_Base_Stop_IT(&htim9);
+			 HAL_TIM_Base_Stop_IT(&htim4);
+			 tim9_ovflw = false;
 		 }
 	 }
 
@@ -607,7 +625,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 4;
+  RCC_OscInitStruct.PLL.PLLM = 8;
   RCC_OscInitStruct.PLL.PLLN = 216;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 2;
@@ -809,6 +827,51 @@ static void MX_TIM3_Init(void)
 }
 
 /**
+  * @brief TIM4 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM4_Init(void)
+{
+
+  /* USER CODE BEGIN TIM4_Init 0 */
+
+  /* USER CODE END TIM4_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM4_Init 1 */
+
+  /* USER CODE END TIM4_Init 1 */
+  htim4.Instance = TIM4;
+  htim4.Init.Prescaler = 10799;
+  htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim4.Init.Period = 10000;
+  htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim4, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim4, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM4_Init 2 */
+
+  /* USER CODE END TIM4_Init 2 */
+
+}
+
+/**
   * @brief TIM5 Initialization Function
   * @param None
   * @retval None
@@ -926,6 +989,37 @@ static void MX_TIM7_Init(void)
   /* USER CODE BEGIN TIM7_Init 2 */
 
   /* USER CODE END TIM7_Init 2 */
+
+}
+
+/**
+  * @brief TIM9 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM9_Init(void)
+{
+
+  /* USER CODE BEGIN TIM9_Init 0 */
+
+  /* USER CODE END TIM9_Init 0 */
+
+  /* USER CODE BEGIN TIM9_Init 1 */
+
+  /* USER CODE END TIM9_Init 1 */
+  htim9.Instance = TIM9;
+  htim9.Init.Prescaler = 10799;
+  htim9.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim9.Init.Period = 4999;
+  htim9.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim9.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_OnePulse_Init(&htim9, TIM_OPMODE_SINGLE) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM9_Init 2 */
+
+  /* USER CODE END TIM9_Init 2 */
 
 }
 
@@ -2468,7 +2562,7 @@ void handleHorizontalMeasurement() {
 	  // State - move to acceleration position
 	  if (!reach_accel_position) {
 		  trans_states = 1;
-		  if ((encoder1_data >= accel_position_drv1 - 5) && (encoder1_data <= accel_position_drv1 + 5)) {
+		  if ((encoder_test_data >= accel_position_drv1 - 5) && (encoder_test_data <= accel_position_drv1 + 5)) {
 
 			  stopMotorRotation(chosen_drv);
 			  changeMotorDirection(chosen_drv, start_position_drv1);

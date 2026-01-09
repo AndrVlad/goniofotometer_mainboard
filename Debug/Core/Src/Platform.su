@@ -1,5 +1,9 @@
-../Core/Src/Platform.c:13:6:setEncoderPollFrequency	16	static
-../Core/Src/Platform.c:17:6:changeMotorDirection__	16	static
-../Core/Src/Platform.c:50:10:calculateEncPosition__	24	static
-../Core/Src/Platform.c:71:6:setPlatformParam__	16	static
-../Core/Src/Platform.c:92:6:setMotorFrequency__	24	static
+../Core/Src/Platform.c:18:6:startMotorRotation	16	static
+../Core/Src/Platform.c:35:6:checkBacklash	16	static
+../Core/Src/Platform.c:44:6:stopMotorRotation	16	static
+../Core/Src/Platform.c:57:6:setMotorFrequency	24	static
+../Core/Src/Platform.c:74:6:setEncoderPollFrequency	16	static
+../Core/Src/Platform.c:78:6:changeMotorDirection__	16	static
+../Core/Src/Platform.c:111:10:calculateEncPosition__	24	static
+../Core/Src/Platform.c:132:6:setPlatformParam__	16	static
+../Core/Src/Platform.c:153:6:setMotorFrequency__	24	static
