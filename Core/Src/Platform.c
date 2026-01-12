@@ -14,6 +14,7 @@ bool is_motor_moving = false;
 bool is_backlash_passed = false;
 uint32_t last_encoder_pos = 0;
 uint16_t current_motor_freq, target_motor_freq;
+uint16_t motor_freq_inc_hz = 10;
 
 void startMotorRotation(uint8_t motor_id, uint32_t last_encoder_data) {
 
@@ -30,6 +31,7 @@ void startMotorRotation(uint8_t motor_id, uint32_t last_encoder_data) {
 
 	is_motor_moving = true;
 	is_backlash_passed = false;
+
 }
 
 void checkBacklash(uint32_t encoder_data) {

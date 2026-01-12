@@ -581,8 +581,8 @@ int main(void)
 	 // increase motor frequency
 
 	 if (tim9_ovflw) {
-		 if (target_motor_freq > (current_motor_freq * 2)) {
-			 setMotorFrequency(chosen_drv,current_motor_freq*2);
+		 if (target_motor_freq > (current_motor_freq + motor_freq_inc_hz)) {
+			 setMotorFrequency(chosen_drv,current_motor_freq+ motor_freq_inc_hz);
 			 tim9_ovflw = false;
 			 __HAL_TIM_SET_COUNTER(&htim4, 0);
 			 HAL_TIM_Base_Start_IT(&htim4);
@@ -847,7 +847,7 @@ static void MX_TIM4_Init(void)
   htim4.Instance = TIM4;
   htim4.Init.Prescaler = 10799;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim4.Init.Period = 10000;
+  htim4.Init.Period = 4999;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
