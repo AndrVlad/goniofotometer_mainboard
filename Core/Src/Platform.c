@@ -13,13 +13,19 @@ platform vertical = {.platform_id = VERT_PL};
 bool is_motor_moving = false;
 bool is_backlash_passed = false;
 uint32_t last_encoder_pos = 0;
+uint32_t left_bound, right_bound;
 uint16_t current_motor_freq, target_motor_freq;
 uint16_t motor_freq_inc_hz = 10;
+
+uint32_t calcRangeBoundaries(uint32_t position, uint16_t range, bool is_pos_range);
 
 void startMotorRotation(uint8_t motor_id, uint32_t last_encoder_data) {
 
 	setMotorFrequency(motor_id,PICK_UP_MOTOR_FREQUENCY_HZ);
 	last_encoder_pos = last_encoder_data;
+
+	right_bound = calcRangeBoundaries(last_encoder_data, 25, true);
+	left_bound = calcRangeBoundaries(last_encoder_data, 25, false);
 
 	HAL_TIM_Base_Start_IT(&htim7); // start encoder polling
 
@@ -36,10 +42,28 @@ void startMotorRotation(uint8_t motor_id, uint32_t last_encoder_data) {
 
 void checkBacklash(uint32_t encoder_data) {
 
-	if ((encoder_data >= (last_encoder_pos + 25)) || (encoder_data <= (last_encoder_pos - 25))) {
+	if ((encoder_data >= right_bound) || (encoder_data <= left_bound)) {
 		is_backlash_passed = true;
 		// start accel_timer
 		HAL_TIM_Base_Start_IT(&htim4);
+	}
+}
+// вычисляет правую(+)/левую(-) границу диапазона с учетом возможного выхода за диапазон разрешения энкодера
+uint32_t calcRangeBoundaries(uint32_t position, uint16_t range, bool is_pos_range) {
+	uint32_t temp_pos;
+	if (is_pos_range) { // расчет правой границы
+		if ((position + range) >= ENCODER_RESOLUTION) {
+			return (position + range) - ENCODER_RESOLUTION;
+		} else {
+			return position + range;
+		}
+	} else { // расчет левой границы
+		if (position <= range) {
+			temp_pos = range - position;
+			return ENCODER_RESOLUTION - temp_pos;
+		} else {
+			return position - range;
+		}
 	}
 }
 

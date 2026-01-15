@@ -163,8 +163,8 @@ bool driver_dir1, driver_dir2, chosen_drv = 1; // 0 - forward, 1 - back
 bool init_state = 1;
 uint8_t next_command = 0xFF;
 uint16_t error_cnt = 0;
-bool tim9_ovflw = false;
-uint32_t encoder_test_data;
+bool tim4_ovflw = false;
+uint32_t test_enc_data = 130000;
 
 /* Telemetry status values */
 enum status ready_status;
@@ -570,9 +570,9 @@ int main(void)
 	 if (is_motor_moving) {
 		 if (!is_backlash_passed) {
 			 if (chosen_drv) {
-				 checkBacklash(encoder_test_data);
+				 checkBacklash(test_enc_data);
 			 } else {
-				 checkBacklash(encoder_test_data);
+				 checkBacklash(test_enc_data);
 			 }
 
 		 }
@@ -580,17 +580,16 @@ int main(void)
 
 	 // increase motor frequency
 
-	 if (tim9_ovflw) {
+	 if (tim4_ovflw) {
 		 if (target_motor_freq > (current_motor_freq + motor_freq_inc_hz)) {
-			 setMotorFrequency(chosen_drv,current_motor_freq+ motor_freq_inc_hz);
-			 tim9_ovflw = false;
+			 setMotorFrequency(chosen_drv,current_motor_freq + motor_freq_inc_hz);
+			 tim4_ovflw = false;
 			 __HAL_TIM_SET_COUNTER(&htim4, 0);
 			 HAL_TIM_Base_Start_IT(&htim4);
-			 //HAL_TIM_Base_Start_IT(&htim9);
 		 } else {
 			 setMotorFrequency(chosen_drv,target_motor_freq);
 			 HAL_TIM_Base_Stop_IT(&htim4);
-			 tim9_ovflw = false;
+			 tim4_ovflw = false;
 		 }
 	 }
 
@@ -2562,7 +2561,7 @@ void handleHorizontalMeasurement() {
 	  // State - move to acceleration position
 	  if (!reach_accel_position) {
 		  trans_states = 1;
-		  if ((encoder_test_data >= accel_position_drv1 - 5) && (encoder_test_data <= accel_position_drv1 + 5)) {
+		  if ((encoder1_data >= accel_position_drv1 - 5) && (encoder1_data <= accel_position_drv1 + 5)) {
 
 			  stopMotorRotation(chosen_drv);
 			  changeMotorDirection(chosen_drv, start_position_drv1);
