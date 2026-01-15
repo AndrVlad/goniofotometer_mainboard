@@ -1573,7 +1573,7 @@ void parser() {
 
 			//setMotorFrequency(0,400);
 			target_motor_freq = DEFAULT_MOTOR_FREQUENCY_HZ;
-			startMotorRotation(chosen_drv,encoder1_data);
+			startMotorRotation(chosen_drv,test_enc_data);
 
 			// start measurement
 			/*

@@ -5219,7 +5219,7 @@ void parser() {
  80023a6:	4b1c      	ldr	r3, [pc, #112]	; (8002418 <parser+0x7a8>)
  80023a8:	22c8      	movs	r2, #200	; 0xc8
  80023aa:	801a      	strh	r2, [r3, #0]
-			startMotorRotation(chosen_drv,encoder1_data);
+			startMotorRotation(chosen_drv,test_enc_data);
  80023ac:	4b0a      	ldr	r3, [pc, #40]	; (80023d8 <parser+0x768>)
  80023ae:	781b      	ldrb	r3, [r3, #0]
  80023b0:	461a      	mov	r2, r3
@@ -5258,7 +5258,7 @@ void parser() {
  8002410:	20000b40 	.word	0x20000b40
  8002414:	20000b3f 	.word	0x20000b3f
  8002418:	200001ca 	.word	0x200001ca
- 800241c:	20000b44 	.word	0x20000b44
+ 800241c:	200000b0 	.word	0x200000b0
 		} else if (chosen_drv == VERTICAL_) {
  8002420:	4ba5      	ldr	r3, [pc, #660]	; (80026b8 <parser+0xa48>)
  8002422:	781b      	ldrb	r3, [r3, #0]
