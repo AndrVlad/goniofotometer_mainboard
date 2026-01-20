@@ -12,6 +12,7 @@ platform vertical = {.platform_id = VERT_PL};
 
 bool is_motor_moving = false;
 bool is_backlash_passed = false;
+bool use_check_backlash = true;
 uint32_t last_encoder_pos = 0;
 uint32_t left_bound, right_bound;
 uint16_t current_motor_freq, target_motor_freq;
@@ -36,7 +37,7 @@ void startMotorRotation(uint8_t motor_id, uint32_t last_encoder_data) {
 	}
 
 	is_motor_moving = true;
-	is_backlash_passed = false;
+	is_backlash_passed = !use_check_backlash;
 
 }
 
