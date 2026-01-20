@@ -566,6 +566,7 @@ int main(void)
 	 }
 
 	 // check backlash of reductor
+	 // comment this 'if-block' if checking of the backlash is no need
 
 	 if (is_motor_moving) {
 		 if (!is_backlash_passed) {
@@ -577,6 +578,13 @@ int main(void)
 
 		 }
 	 }
+
+	 // uncomment this if checking of the backlash is no need
+	 /*
+	  if (is_motor_moving) {
+	  	  HAL_TIM_Base_Start_IT(&htim4);
+	  }
+	  */
 
 	 // increase motor frequency
 
@@ -1573,7 +1581,7 @@ void parser() {
 
 			//setMotorFrequency(0,400);
 			target_motor_freq = DEFAULT_MOTOR_FREQUENCY_HZ;
-			startMotorRotation(chosen_drv,test_enc_data);
+			startMotorRotation(chosen_drv,test_enc_data); // need to replace test_enc_data on encoder1_data
 
 			// start measurement
 			/*
@@ -1632,7 +1640,10 @@ void parser() {
 			// set status
 			ready_status = BUSY_;
 
-			setMotorFrequency(1,400);
+			target_motor_freq = DEFAULT_MOTOR_FREQUENCY_HZ;
+			startMotorRotation(chosen_drv,test_enc_data); // need to replace test_enc_data on encoder2_data
+
+			//setMotorFrequency(1,400);
 
 			// start measurement
 			HAL_TIM_Base_Start_IT(&htim7);	// start poll encoder
