@@ -1437,8 +1437,13 @@ void parser() {
 		trans_states = 1;
 
 		// start measurement
+
+		target_motor_freq = DEFAULT_MOTOR_FREQUENCY_HZ;
+		startMotorRotation(chosen_drv,encoder1_data); // need to replace test_enc_data on encoder1_data
+		/*
 		HAL_TIM_Base_Start_IT(&htim7);	// start poll encoder
 		HAL_TIM_Base_Start_IT(&htim2); // start first motor moving
+		*/
 		/* work version
 		moveToPosition(0, VERTICAL_); */
 
@@ -1646,8 +1651,10 @@ void parser() {
 			//setMotorFrequency(1,400);
 
 			// start measurement
+			/*
 			HAL_TIM_Base_Start_IT(&htim7);	// start poll encoder
 			HAL_TIM_Base_Start_IT(&htim3); // start first motor moving
+			*/
 		}
 
 	break;
