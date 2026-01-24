@@ -12,7 +12,8 @@ platform vertical = {.platform_id = VERT_PL};
 
 bool is_motor_moving = false;
 bool is_backlash_passed = false;
-bool use_check_backlash = true;
+bool use_check_backlash = false;
+bool is_req_freq_reach = false;
 uint32_t last_encoder_pos = 0;
 uint32_t left_bound, right_bound;
 uint16_t current_motor_freq, target_motor_freq;
@@ -38,6 +39,7 @@ void startMotorRotation(uint8_t motor_id, uint32_t last_encoder_data) {
 
 	is_motor_moving = true;
 	is_backlash_passed = !use_check_backlash;
+	is_req_freq_reach = false;
 
 }
 
@@ -78,6 +80,7 @@ void stopMotorRotation(uint8_t motor_id) {
 
 	HAL_TIM_Base_Stop_IT(&htim7); // stop encoder polling
 	is_motor_moving = false;
+	is_req_freq_reach = false;
 	target_motor_freq = DEFAULT_MOTOR_FREQUENCY_HZ;
 }
 

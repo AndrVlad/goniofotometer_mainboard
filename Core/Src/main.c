@@ -567,24 +567,24 @@ int main(void)
 
 	 // check backlash of reductor
 	 // comment this 'if-block' if checking of the backlash is no need
-
+	 /*
 	 if (is_motor_moving) {
 		 if (!is_backlash_passed) {
 			 if (chosen_drv) {
-				 checkBacklash(test_enc_data);
+				 checkBacklash(encoder2_data);
 			 } else {
-				 checkBacklash(test_enc_data);
+				 checkBacklash(encoder1_data);
 			 }
 
 		 }
 	 }
-
+	 */
 	 // uncomment this if checking of the backlash is no need
-	 /*
-	  if (is_motor_moving) {
+
+	  if (is_motor_moving && !is_req_freq_reach) {
 	  	  HAL_TIM_Base_Start_IT(&htim4);
 	  }
-	  */
+
 
 	 // increase motor frequency
 
@@ -594,10 +594,11 @@ int main(void)
 			 tim4_ovflw = false;
 			 __HAL_TIM_SET_COUNTER(&htim4, 0);
 			 HAL_TIM_Base_Start_IT(&htim4);
-		 } else {
+		 } else { // the required frequency has been reached
 			 setMotorFrequency(chosen_drv,target_motor_freq);
 			 HAL_TIM_Base_Stop_IT(&htim4);
 			 tim4_ovflw = false;
+			 is_req_freq_reach = true;
 		 }
 	 }
 
@@ -1439,7 +1440,7 @@ void parser() {
 		// start measurement
 
 		target_motor_freq = DEFAULT_MOTOR_FREQUENCY_HZ;
-		startMotorRotation(chosen_drv,encoder1_data); // need to replace test_enc_data on encoder1_data
+		startMotorRotation(chosen_drv,encoder1_data);
 		/*
 		HAL_TIM_Base_Start_IT(&htim7);	// start poll encoder
 		HAL_TIM_Base_Start_IT(&htim2); // start first motor moving
@@ -1586,7 +1587,7 @@ void parser() {
 
 			//setMotorFrequency(0,400);
 			target_motor_freq = DEFAULT_MOTOR_FREQUENCY_HZ;
-			startMotorRotation(chosen_drv,test_enc_data); // need to replace test_enc_data on encoder1_data
+			startMotorRotation(chosen_drv,encoder1_data);
 
 			// start measurement
 			/*
@@ -1646,7 +1647,7 @@ void parser() {
 			ready_status = BUSY_;
 
 			target_motor_freq = DEFAULT_MOTOR_FREQUENCY_HZ;
-			startMotorRotation(chosen_drv,test_enc_data); // need to replace test_enc_data on encoder2_data
+			startMotorRotation(chosen_drv,encoder2_data); // need to replace test_enc_data on encoder2_data
 
 			//setMotorFrequency(1,400);
 
@@ -2723,11 +2724,20 @@ void handleHorizontalMeasurementVertPlatf() {
 	  if (!reach_accel_position) {
 		  trans_states = 1;
 		  if ((encoder2_data >= accel_position_drv2 - 5) && (encoder2_data <= accel_position_drv2 + 5)) {
+
+			  stopMotorRotation(chosen_drv);
+			  changeMotorDirection(chosen_drv, start_position_drv2);
+			  reach_accel_position = 1;
+			  target_motor_freq = motor_frequency_2; // set measurement motor frequency
+			  startMotorRotation(chosen_drv, encoder2_data);
+
+			  /*
 			  HAL_TIM_Base_Stop_IT(&htim3);
 			  changeMotorDirection(chosen_drv, start_position_drv2);
 			  setMotorFrequency(chosen_drv, motor_frequency_1);
 			  reach_accel_position = 1;
 			  HAL_TIM_Base_Start_IT(&htim3);
+			  */
 		  }
 	  }
 
@@ -2833,10 +2843,6 @@ void handleHorizontalMeasurementVertPlatf() {
 			  data_status = _READY_;
 		  }
 
-		  // stop measurement
-		  HAL_TIM_Base_Stop_IT(&htim7); // stop SPI timer
-		  HAL_TIM_Base_Stop_IT(&htim3); // stop motor
-
 		  // reset flags and state
 		  data_buf_counter = 0;
 		  data_elem_cnt = 1;
@@ -2846,6 +2852,8 @@ void handleHorizontalMeasurementVertPlatf() {
 		  reach_end_position = 1;
 		  wait_adc_data_flag = 0;
 		  stop_poll = 0;
+
+		  stopMotorRotation(chosen_drv);
 
 	  }
 }
@@ -3104,8 +3112,6 @@ uint32_t calculateRequiredDataNum(uint32_t meas_interval, uint32_t meas_resoluti
 	data_num = (meas_interval_ms / meas_resolution_ms)+1;
 	return data_num;
 }
-
-
 
 uint32_t getTimeOffset() {
 

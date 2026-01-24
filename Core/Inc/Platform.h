@@ -42,7 +42,7 @@ typedef struct  {
 } platform;
 
 extern platform horizontal, vertical;
-extern bool is_motor_moving, is_backlash_passed;
+extern bool is_motor_moving, is_backlash_passed, is_req_freq_reach;;
 extern uint16_t current_motor_freq, target_motor_freq, motor_freq_inc_hz;
 
 void setEncoderPollFrequency(uint16_t frequency_mcs);
