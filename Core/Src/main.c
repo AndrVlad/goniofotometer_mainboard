@@ -139,7 +139,8 @@ bool allow = 0;
 bool end_calibration_flag = 0;
 bool full_rotation = 0;
 
-uint32_t start_position_drv1, start_position_drv2, end_position_drv1, end_position_drv2, end_position_drv_tmp, accel_position_drv1, accel_position_drv2 = 0;
+uint32_t start_position_drv1, start_position_drv2, end_position_drv1, end_position_drv2, accel_position_drv1, accel_position_drv2 = 0;
+int32_t end_position_drv_tmp, encoder1_increment_res, encoder2_increment_res;
 uint32_t ENCODER_1_OFFSET = 0;
 uint32_t ENCODER_2_OFFSET = 0;
 uint32_t angle_position_drv1, angle_position_drv2, begin_pos_drv1, begin_pos_drv2, angle_position_drv1_tmp = 0;
@@ -174,7 +175,7 @@ bool trans_states = 0; // 0 - no trans_state, 1 - trans_state
 //enum data { NONE_, _READY_, SOME_PACKETS} data_status;
 enum horiz_platform { HORIZONTAL_, VERTICAL_} current_horiz_platform = HORIZONTAL_;
 uint8_t operation_progress = 0;
-uint32_t SSI_data, SSI_data_safe, encoder1_data, encoder2_data, encoder1_increment_res, encoder2_increment_res, encoder2_data_last = 0;
+uint32_t SSI_data, SSI_data_safe, encoder1_data, encoder2_data, encoder2_data_last = 0;
 uint32_t adc_value, error_val_sum = 0;
 uint8_t motor_frequency_1 = 40, motor_frequency_2 = 1;
 
@@ -1333,8 +1334,9 @@ void parser() {
 
 		// set start angle of measurement
 		//start_angle = abs(start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1] - 180);
-		start_angle = 360 - start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1];
-		//start_angle = start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1];
+		//start_angle = 360 - start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1];
+		start_angle = (start_ending_angle_items[1][uart3_rx_safe_buffer[2]-1]);
+
 		// calculate offset of the measurement from specified start position
 		/*
 		if ((start_angle + start_angle_offset_1) > 360) {
@@ -1345,15 +1347,12 @@ void parser() {
 
 		// set end angle of measurement
 		//end_angle = start_ending_angle_items[1][uart3_rx_safe_buffer[2]-1] + 180;
-		end_angle = (start_ending_angle_items[1][uart3_rx_safe_buffer[2]-1]);
-		/*
-		if (start_angle == 0 && end_angle == 360) {
-			full_rotation = 1;
-		}*/
+		//end_angle = (start_ending_angle_items[1][uart3_rx_safe_buffer[2]-1]);
+		end_angle = 360 - start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1];
 
 		if (start_angle == 180 && end_angle == 180) {
 					full_rotation = 1;
-				}
+		}
 
 		/*
 		if ((end_angle + start_angle_offset_1) > 360) {
@@ -1369,12 +1368,16 @@ void parser() {
 
 		// calculate acceleration offset position
 
+		/*
 		if ((start_angle - ACCEL_OFFSET) < 0) {
 			accel_angle = abs(start_angle - ACCEL_OFFSET);
 			accel_angle = 360 - accel_angle;
 		} else {
 			accel_angle = start_angle - ACCEL_OFFSET;
 		}
+		*/
+
+		accel_angle = start_angle + ACCEL_OFFSET;
 
 		// reset flag of reaching start position
 		reach_start_position = 0;
@@ -1394,25 +1397,43 @@ void parser() {
 		start_position_drv1 = calculateEncPosition(start_position_drv1,chosen_drv);
 
 		// set encoder1_increment_res
+		/* for normal rotation */
 		if ((start_position_drv1 + meas_res_drv1) > ENCODER_RESOLUTION) {
 			encoder1_increment_res = (start_position_drv1 + meas_res_drv1) - ENCODER_RESOLUTION;
 		} else {
 			encoder1_increment_res = start_position_drv1 + meas_res_drv1;
 		}
+		/* for normal rotation end */
+
+		/* for reverse rotation */
+		if ((start_position_drv1 - meas_res_drv1) < 0) {
+			encoder1_increment_res = ENCODER_RESOLUTION - abs(start_position_drv1 - meas_res_drv1);
+		} else {
+			encoder1_increment_res = start_position_drv1 - meas_res_drv1;
+		}
+		/* for reverse rotation end */
 
 		// set end position of measurement
 
 		if (full_rotation) {
 			end_position_drv_tmp = (end_angle * ENCODER_RESOLUTION) / 360;
 			end_position_drv_tmp = calculateEncPosition(end_position_drv_tmp,chosen_drv);
-
+			/* for normal rotation
 			if ((end_position_drv_tmp + 720) >= ENCODER_RESOLUTION) {
 				control_pos = (end_position_drv_tmp + 720) - ENCODER_RESOLUTION;
 			} else {
 				control_pos = end_position_drv_tmp + 720;
 			}
-
-			end_position_drv1 = ((end_angle-4) * ENCODER_RESOLUTION) / 360; // get absolute encoder position
+			*/
+			/* for normal rotation end */
+			/* for reverse rotation */
+			if ((end_position_drv_tmp - 720) < 0) {
+				control_pos = ENCODER_RESOLUTION - abs(end_position_drv_tmp - 720);
+			} else {
+				control_pos = end_position_drv_tmp - 720;
+			}
+			/* for reverse rotation end */
+			end_position_drv1 = ((end_angle+4) * ENCODER_RESOLUTION) / 360; // get absolute encoder position
 			end_position_drv1 = calculateEncPosition(end_position_drv1,chosen_drv);
 		} else {
 			end_position_drv1 = (end_angle * ENCODER_RESOLUTION) / 360; // get absolute encoder position
@@ -1489,6 +1510,7 @@ void parser() {
 
 		//start_angle = abs(start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1] - 180);
 		start_angle = 360 - start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1];
+		//start_angle = (start_ending_angle_items[1][uart3_rx_safe_buffer[2]-1]);
 		//start_angle = start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1];
 		// calculate offset of the measurement from specified start position
 		/*
@@ -1501,6 +1523,7 @@ void parser() {
 		// set end angle of measurement
 		//end_angle = start_ending_angle_items[1][uart3_rx_safe_buffer[2]-1] + 180;
 		end_angle = (start_ending_angle_items[1][uart3_rx_safe_buffer[2]-1]);
+		//end_angle = 360 - start_ending_angle_items[1][uart3_rx_safe_buffer[1]-1];
 		/*
 		if (start_angle == 0 && end_angle == 360) {
 			full_rotation = 1;
@@ -2663,11 +2686,25 @@ void handleHorizontalMeasurement() {
 
 				  } else {
 					  // while not reached end_position
+					  /* normal rotation */
+					  /*
 					  if ((encoder1_data >= (encoder1_increment_res - 4)) && (encoder1_data <= (encoder1_increment_res + 4))) {
 					 		encoder1_increment_res += meas_res_drv1;
 						  if (encoder1_increment_res >= ENCODER_RESOLUTION) {
 							  encoder1_increment_res -= ENCODER_RESOLUTION;
 						  }
+						  */
+					/* normal rotation end */
+					  /* reverse rotation */
+					  if ((encoder1_data >= (encoder1_increment_res - 4)) && (encoder1_data <= (encoder1_increment_res + 4))) {
+
+						  if ((encoder1_increment_res - meas_res_drv1) < 0) {
+							  encoder1_increment_res = ENCODER_RESOLUTION - abs(encoder1_increment_res - meas_res_drv1);
+						  } else {
+							  encoder1_increment_res -= meas_res_drv1;
+						  }
+						/* reverse rotation end */
+
 						HAL_UART_Receive_DMA(&huart1, uart1_rx_buffer, 5);
 
 						HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
