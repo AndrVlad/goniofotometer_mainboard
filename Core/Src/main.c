@@ -21,6 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <time.h>
 #include "stdbool.h"
 #include "string.h"
 #include "stdlib.h"
@@ -226,6 +227,7 @@ uint32_t getTimeOffset();
 
 void convertAdcValues(uint8_t *buf, uint16_t size);
 void DeviceInit();
+uint32_t rand_32(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -299,7 +301,7 @@ int main(void)
           checkCRCPhotodetectorData();
 
           // processing of received messages in measurement state of device
-          if (cur_action == HORIZONTAL || cur_action == VERTICAL || cur_action == HEMISPHERE || cur_action == LIGHT_POWER) {
+          if (cur_action == HORIZONTAL || cur_action == VERTICAL || cur_action == HEMISPHERE /* || cur_action == LIGHT_POWER*/) {
 
         	  // checking that the measurement data has been received
         	if (wait_adc_data_flag) {
@@ -370,7 +372,7 @@ int main(void)
 
 			  if (end_calibration_flag) {
 				  if (data_status == NONE_){
-					  cur_action = NONE;
+					  //cur_action = NONE;
 					  ready_status = READY_;
 					  end_calibration_flag = 0;
 				  }
@@ -461,7 +463,7 @@ int main(void)
 			data_elem_cnt = 1;
 
 		} else if (data_buf_counter == 0 && data_status == NONE_) {
-			cur_action = NONE;
+			//cur_action = NONE;
 			wait_flag = 0;
 			ready_status = READY_;
 			end_meas_flag = 0;
@@ -1306,6 +1308,7 @@ void parser() {
 		//clearBuffer(response_buf,33);
 		//HAL_TIM_Base_Start(&htim10);
 		createResponsePacket(0x01,0);
+		//data_status = READY_;
 		//HAL_TIM_Base_Stop(&htim10);
 		//__HAL_TIM_SET_COUNTER(&htim10, 0);
 
@@ -1713,6 +1716,9 @@ void parser() {
 		__HAL_TIM_SET_COUNTER(&htim14, 0);
 
 		createResponsePacket(0x05,ACCEPTED__);
+		data_status = NONE_;
+		cur_action = LIGHT_POWER;
+
 
 		// then wait adc_coeff installation in the while ...
 	break;
@@ -1810,7 +1816,7 @@ void parser() {
 			break;
 		}
 
-		cur_action = NONE;
+		//cur_action = NONE;
 		ready_status = READY_;
 
 		break;
@@ -2043,7 +2049,7 @@ void parser() {
 			HAL_TIM_Base_Stop_IT(&htim2); // stop first motor
 			HAL_TIM_Base_Stop_IT(&htim7);
 		} */
-		cur_action = NONE;
+		//cur_action = NONE;
 		trans_states = 0;
 
 		break;
@@ -2366,6 +2372,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 
 void createResponsePacket(uint8_t command_code, uint8_t status_code) {
 	crc=0;
+	uint32_t adc_val1 = rand_32();
 	if (command_code == 0x01) {
 		response_buf[0] = 0x01;
 		response_buf[1] = (uint8_t)ready_status;
@@ -2373,9 +2380,9 @@ void createResponsePacket(uint8_t command_code, uint8_t status_code) {
 		response_buf[3] = trans_states;
 		response_buf[4] = (uint8_t)data_status;
 		response_buf[5] = operation_progress;
-		response_buf[6] = uart1_rx_safe_buffer[0];//(adc_value >> 16) & 0xFF;
-		response_buf[7] = uart1_rx_safe_buffer[1];//(adc_value >> 8) & 0xFF;
-		response_buf[8] = uart1_rx_safe_buffer[2];//adc_value & 0x000000FF;
+		response_buf[6] = adc_val1 >> 16;//uart1_rx_safe_buffer[0];//(adc_value >> 16) & 0xFF;
+		response_buf[7] = adc_val1 >> 8;//uart1_rx_safe_buffer[1];//(adc_value >> 8) & 0xFF;
+		response_buf[8] = adc_val1 & 0x000000FF;//uart1_rx_safe_buffer[2];//adc_value & 0x000000FF;
 		response_buf[9] = encoder1_data & 0xFF;
 		response_buf[10] = encoder1_data >> 8;
 		response_buf[11] = encoder1_data >> 16;
@@ -2405,11 +2412,19 @@ void createResponsePacket(uint8_t command_code, uint8_t status_code) {
 	HAL_UART_Transmit(&huart3, response_buf,33,100);
 }
 
+uint32_t rand_32(void) {
+    return ((uint32_t)rand() << 16) | (uint32_t)rand();
+}
+
 void createDataPacket() {
 	uint16_t crc=0;
 	adc_data_buf[0] = 0x0B;
 	adc_data_buf[31] = 0;
 	adc_data_buf[32] = 0;
+
+	for (int i = 1; i < 30; i++) {
+		adc_data_buf[i] = rand_32();
+	}
 
 	// CRC calculation
 	for (int i = 0; i < 30; i+=2) {
@@ -2739,7 +2754,7 @@ void handleHorizontalMeasurement() {
 		  // reset flags and state
 		  data_buf_counter = 0;
 		  data_elem_cnt = 1;
-		  cur_action = NONE;
+		  //cur_action = NONE;
 		  wait_flag = 0;
 		  ready_status = READY_;
 		  reach_end_position = 1;
