@@ -17,13 +17,17 @@ bool is_req_freq_reach = false;
 uint32_t last_encoder_pos = 0;
 uint32_t left_bound, right_bound;
 uint16_t current_motor_freq, target_motor_freq;
-uint16_t motor_freq_inc_hz = 10;
+uint16_t motor_freq_inc_hz = 30;
+uint8_t accel_time_seconds = 3;
+uint16_t test_freq;
 
 uint32_t calcRangeBoundaries(uint32_t position, uint16_t range, bool is_pos_range);
+void setPeriodAccelTimer(uint16_t target_motor_freq);
 
 void startMotorRotation(uint8_t motor_id, uint32_t last_encoder_data) {
 
 	setMotorFrequency(motor_id,PICK_UP_MOTOR_FREQUENCY_HZ);
+	setPeriodAccelTimer(target_motor_freq);
 	last_encoder_pos = last_encoder_data;
 
 	right_bound = calcRangeBoundaries(last_encoder_data, 25, true);
@@ -84,8 +88,22 @@ void stopMotorRotation(uint8_t motor_id) {
 	target_motor_freq = DEFAULT_MOTOR_FREQUENCY_HZ;
 }
 
-void setMotorFrequency(bool chosen_drv, uint16_t motor_frequency) {
+void setPeriodAccelTimer(uint16_t target_freq) {
+	uint32_t tim_clock, result_freq;
+	target_freq = test_freq;
+	tim_clock = (AHB1_TIMER_CLOCK_MHz * 1000000);
+	//float result_freq = 0;
+	float ovflw_period_seconds = (motor_freq_inc_hz / 2);
+	ovflw_period_seconds *= accel_time_seconds;
+	ovflw_period_seconds /= target_freq;
+	result_freq = 1 / ovflw_period_seconds;
 
+	__HAL_TIM_SET_COUNTER(&htim4, 0);
+
+	htim4.Instance->ARR = ((tim_clock/(htim4.Instance->PSC + 1))/result_freq) - 1;
+}
+
+void setMotorFrequency(bool chosen_drv, uint16_t motor_frequency) {
 	uint32_t tim_clock = 0;
 	tim_clock = (AHB1_TIMER_CLOCK_MHz * 1000000);
 

@@ -177,7 +177,7 @@ enum horiz_platform { HORIZONTAL_, VERTICAL_} current_horiz_platform = HORIZONTA
 uint8_t operation_progress = 0;
 uint32_t SSI_data, SSI_data_safe, encoder1_data, encoder2_data, encoder2_data_last = 0;
 uint32_t adc_value, error_val_sum = 0;
-uint8_t motor_frequency_1 = 40, motor_frequency_2 = 1;
+uint16_t motor_frequency_1 = 40, motor_frequency_2 = 1;
 
 /* USER CODE END PV */
 
@@ -809,7 +809,7 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 107;
+  htim3.Init.Prescaler = 1079;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim3.Init.Period = 15999;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -856,7 +856,7 @@ static void MX_TIM4_Init(void)
   htim4.Instance = TIM4;
   htim4.Init.Prescaler = 10799;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim4.Init.Period = 4999;
+  htim4.Init.Period = 200;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
@@ -3235,19 +3235,31 @@ void convertAdcValues(uint8_t* buf, uint16_t size) {
 void setPlatformParam(uint16_t meas_res) {
 	switch(meas_res) {
 	case 365:
-		motor_frequency_1 = motor_frequency_2 = 40;
+		motor_frequency_1 = motor_frequency_2 = 1464;
 		setEncoderPollFrequency(200);
 		break;
 	case 182:
-		motor_frequency_1 = motor_frequency_2 = 40;
+		motor_frequency_1 = motor_frequency_2 = 976;
 		setEncoderPollFrequency(200);
 		break;
 	case 60:
+		motor_frequency_1 = motor_frequency_2 = 366;
+		setEncoderPollFrequency(1000);
+		break;
 	case 29:
+		motor_frequency_1 = motor_frequency_2 = 244;
+		setEncoderPollFrequency(1000);
+		break;
 	case 6:
+		motor_frequency_1 = motor_frequency_2 = 50;
+		setEncoderPollFrequency(1000);
+		break;
 	case 3:
+		motor_frequency_1 = motor_frequency_2 = 24;
+		setEncoderPollFrequency(1000);
+		break;
 	case 1:
-		motor_frequency_1 = motor_frequency_2 = 40;
+		motor_frequency_1 = motor_frequency_2 = 10;
 		setEncoderPollFrequency(1000);
 		break;
 	}

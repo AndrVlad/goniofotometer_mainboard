@@ -40,7 +40,7 @@ main.c:3118:6:reverseHorizontalMeasurement	15
 main.c:3203:10:calculateRequiredDataNum	1
 main.c:3213:10:getTimeOffset	3
 main.c:3227:6:convertAdcValues	2
-main.c:3235:6:setPlatformParam	9
-main.c:3256:6:DeviceInit	1
-main.c:3297:6:HAL_UART_ErrorCallback	4
-main.c:3327:6:Error_Handler	1
+main.c:3235:6:setPlatformParam	12
+main.c:3268:6:DeviceInit	1
+main.c:3309:6:HAL_UART_ErrorCallback	4
+main.c:3339:6:Error_Handler	1
