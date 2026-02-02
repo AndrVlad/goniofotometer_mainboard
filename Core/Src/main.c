@@ -2134,10 +2134,25 @@ void parser() {
 		adc_coeff_command_set = 1;
 		adc_coeff_set_complete = 0;
 
-		ampl_buf[0] = getADCAmplifierVal(uart3_rx_buffer[1]);
+		// версия без инверсии второго полубайта
+		//ampl_buf[0] = getADCAmplifierVal(uart3_rx_buffer[1]);
+
+		// определение содержимого команды для установки частоты дискретизации без инверсии второго полубайта
+		/*
 		if (uart3_rx_buffer[2] == 1) {
 			ampl_buf[0] |= 0b10001000;
 		}
+	*/
+		// версия с инверсией второго полубайта
+		ampl_buf[0] = getADCAmplifierValInverted(uart3_rx_buffer[1]);
+
+		// определение содержимого команды для установки частоты дискретизации c инверсией второго полубайта
+		if (uart3_rx_buffer[2] == 1) { 	// частота дискретизации 242Гц
+			ampl_buf[0] |= 0b10000000;
+		} else {						// частота дискретизации 16Гц
+			ampl_buf[0] |= 0b00001000;
+		}
+
 		ampl_buf[1] = ampl_buf[0];
 
 		HAL_UART_DMAStop(&huart1);
@@ -2345,49 +2360,47 @@ PUTCHAR_PROTOTYPE
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 
-	//HAL_UART_Transmit(&huart1, UART1_rxBuffer, 12, 100);
-	    //HAL_UART_Transmit(&huart1, uart1_rx_buffer,2,100);
-		if (huart->Instance == USART3) {
-			uart3_rx_complete = 1;
+	if (huart->Instance == USART3) {
+		uart3_rx_complete = 1;
+	}
 
-		}
+	if (huart->Instance == USART1) {
 
-		if (huart->Instance == USART1) {
+		// обработка ответа после отправки команды на настройку АЦП
+		if (wait_flag == 1) {
 
-			// if the coefficient of amplifier of photodetector was set
-			if (wait_flag == 1) {
+			// расчет CRC для принятого ответа
+			uint32_t CRC_Photodetector = 0;
+			CRC_Photodetector = buf[0] + buf[1] + buf[2];
+			CRC_Photodetector = CRC_Photodetector & 0xFF;
 
-				// CRC calculation
-				uint32_t CRC_Photodetector = 0;
-				CRC_Photodetector = buf[0] + buf[1] + buf[2];
-				CRC_Photodetector = CRC_Photodetector & 0xFF;
-
-				// Check CRC
-				if (!((CRC_Photodetector == buf[3]) && (buf[4] == 0xA5))) {
+			// сравнение CRC с принятым значением
+			if (!((CRC_Photodetector == buf[3]) && (buf[4] == 0xA5))) {
+				ready_status = ERROR_; // установка состояния ошибки
+				error_code = 0x02;
+			} else {
+				// проверка на совпадение второго полубайта ответа с первым полубайтом запроса
+				if (buf[0] != (ampl_buf[0] >> 4)) {
 					ready_status = ERROR_;
-				} else {
-					// Check response of photodetector
-					if (buf[0] != (ampl_buf[0] >> 4)) {
-						// handle of error
-						ready_status = ERROR_;
-						error_code = 0x01;
-					}
+					error_code = 0x01;
 				}
-				// handle of setting 0x14 command at the step of initialization of mainboard
-				if (init_state) {
-					init_state = 0;
-					adc_coeff_set_complete = 0;
-					adc_coeff_command_set = 0;
-				} else {
-					adc_coeff_set_complete = 1;
-				}
-
-				wait_flag = 0;
+			}
+			// смена внутренних состояний при установке параметров АЦП по умолчанию
+			if (init_state) { 	//смена состояний после первого подключения управляющего ПО к прибору
+				init_state = 0;	// сброс состояния инициализации
+				// сброс флагов состояний
+				adc_coeff_set_complete = 0;
+				adc_coeff_command_set = 0;
+			} else { // остальные случаи изменения параметров АЦП
+				adc_coeff_set_complete = 1; // коэффициент установлен
 			}
 
-			// other cases
-			uart1_rx_complete = 1;
+			wait_flag = 0; // сброс флага прекращения отправки данных АЦП в запросах телеметрии
 		}
+
+		// обработка ответа с данными АЦП
+		uart1_rx_complete = 1;
+	}
 
 }
 
@@ -2533,6 +2546,30 @@ uint8_t getADCAmplifierVal(uint8_t value) {
 			return 0b01100110;
 		case 128:
 			return 0b01110111;
+		default:
+			return 1;
+	}
+}
+
+uint8_t getADCAmplifierValInverted(uint8_t value) {
+
+	switch(value) {
+		case 1:
+			return 0;
+		case 2:
+			return 0b00010110;
+		case 4:
+			return 0b00100101;
+		case 8:
+			return 0b00110100;
+		case 16:
+			return 0b01000011;
+		case 32:
+			return 0b01010010;
+		case 64:
+			return 0b01100001;
+		case 128:
+			return 0b01110000;
 		default:
 			return 1;
 	}
