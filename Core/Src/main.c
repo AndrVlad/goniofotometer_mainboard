@@ -209,6 +209,7 @@ uint32_t processSSIData(uint8_t *SSI_buffer);
 uint32_t calculateEncPosition(uint32_t encoder_position, bool chosen_encoder);
 uint8_t getADCAmplifierVal(uint8_t value);
 void createDataPacket();
+uint8_t getADCAmplifierValInverted(uint8_t value);
 
 /* Measurement functions */
 void handleTestAngleOffset();
@@ -2555,7 +2556,7 @@ uint8_t getADCAmplifierValInverted(uint8_t value) {
 
 	switch(value) {
 		case 1:
-			return 0;
+			return 0b00000111;
 		case 2:
 			return 0b00010110;
 		case 4:
