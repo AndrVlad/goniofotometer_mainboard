@@ -90,7 +90,7 @@ void stopMotorRotation(uint8_t motor_id) {
 
 void setPeriodAccelTimer(uint16_t target_freq) {
 	uint32_t tim_clock, result_freq;
-	target_freq = test_freq;
+	//target_freq = test_freq;
 	tim_clock = (AHB1_TIMER_CLOCK_MHz * 1000000);
 	//float result_freq = 0;
 	float ovflw_period_seconds = (motor_freq_inc_hz / 2);

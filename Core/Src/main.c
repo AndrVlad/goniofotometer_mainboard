@@ -72,8 +72,8 @@ TIM_HandleTypeDef htim4;
 TIM_HandleTypeDef htim5;
 TIM_HandleTypeDef htim6;
 TIM_HandleTypeDef htim7;
-TIM_HandleTypeDef htim9;
 TIM_HandleTypeDef htim10;
+TIM_HandleTypeDef htim11;
 TIM_HandleTypeDef htim13;
 TIM_HandleTypeDef htim14;
 
@@ -197,8 +197,8 @@ static void MX_TIM10_Init(void);
 static void MX_TIM5_Init(void);
 static void MX_TIM14_Init(void);
 static void MX_TIM13_Init(void);
-static void MX_TIM9_Init(void);
 static void MX_TIM4_Init(void);
+static void MX_TIM11_Init(void);
 /* USER CODE BEGIN PFP */
 void parser();
 void stepDriver(uint8_t step_num);
@@ -227,6 +227,7 @@ uint32_t getTimeOffset();
 
 void convertAdcValues(uint8_t *buf, uint16_t size);
 void DeviceInit();
+void DeviceReset();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -275,8 +276,8 @@ int main(void)
   MX_TIM5_Init();
   MX_TIM14_Init();
   MX_TIM13_Init();
-  MX_TIM9_Init();
   MX_TIM4_Init();
+  MX_TIM11_Init();
   /* USER CODE BEGIN 2 */
 
   DeviceInit();
@@ -290,6 +291,7 @@ int main(void)
 
 	  // handle of message from PC
 	  if (uart3_rx_complete) {
+		  __HAL_TIM_SET_COUNTER(&htim11, 0);
 	  	  	parser();
 	  }
 	  // handle of message from Photodetector
@@ -1003,37 +1005,6 @@ static void MX_TIM7_Init(void)
 }
 
 /**
-  * @brief TIM9 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_TIM9_Init(void)
-{
-
-  /* USER CODE BEGIN TIM9_Init 0 */
-
-  /* USER CODE END TIM9_Init 0 */
-
-  /* USER CODE BEGIN TIM9_Init 1 */
-
-  /* USER CODE END TIM9_Init 1 */
-  htim9.Instance = TIM9;
-  htim9.Init.Prescaler = 10799;
-  htim9.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim9.Init.Period = 4999;
-  htim9.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim9.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_OnePulse_Init(&htim9, TIM_OPMODE_SINGLE) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN TIM9_Init 2 */
-
-  /* USER CODE END TIM9_Init 2 */
-
-}
-
-/**
   * @brief TIM10 Initialization Function
   * @param None
   * @retval None
@@ -1061,6 +1032,37 @@ static void MX_TIM10_Init(void)
   /* USER CODE BEGIN TIM10_Init 2 */
 
   /* USER CODE END TIM10_Init 2 */
+
+}
+
+/**
+  * @brief TIM11 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM11_Init(void)
+{
+
+  /* USER CODE BEGIN TIM11_Init 0 */
+
+  /* USER CODE END TIM11_Init 0 */
+
+  /* USER CODE BEGIN TIM11_Init 1 */
+
+  /* USER CODE END TIM11_Init 1 */
+  htim11.Instance = TIM11;
+  htim11.Init.Prescaler = 10799;
+  htim11.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim11.Init.Period = 50000;
+  htim11.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim11.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim11) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM11_Init 2 */
+
+  /* USER CODE END TIM11_Init 2 */
 
 }
 
@@ -1284,6 +1286,10 @@ static void MX_GPIO_Init(void)
 
 void parser() {
 	switch (uart3_rx_buffer[0]) {
+	case 0x00:
+    	HAL_UART_DeInit(&huart3);
+    	MX_USART3_UART_Init();
+    	break;
 	case 0x01:
 
 		HAL_SPI_Receive_DMA(&hspi4, dma_spi4_buf, 5);
@@ -3342,6 +3348,67 @@ void DeviceInit() {
 
 	// set status of device
 	ready_status = READY_;
+
+	HAL_TIM_Base_Start_IT(&htim11);
+}
+
+void DeviceReset() {
+
+	switch(cur_action) {
+	case HORIZONTAL:
+	case VERTICAL:
+
+		stopMotorRotation(VERTICAL_);
+		stopMotorRotation(HORIZONTAL_);
+
+		clearBuffer(adc_data_buf,33);
+		data_status = NONE_;
+
+		// reset flags and state
+		data_buf_counter = 0;
+		data_elem_cnt = 1;
+		wait_flag = 0;
+		wait_adc_data_flag = 0;
+		trans_states = 0;
+		break;
+
+	case LIGHT_POWER:
+
+		HAL_TIM_Base_Stop(&htim14);
+		HAL_TIM_Base_Stop(&htim5);
+		HAL_TIM_Base_Stop(&htim13);
+
+		// checking for remaining data packets
+		clearBuffer(adc_data_buf,33);
+		data_status = NONE_;
+
+		// reset flags and state
+		data_buf_counter = 0;
+		data_elem_cnt = 1;
+		wait_flag = 0;
+		wait_adc_data_flag = 0;
+		error_val = 0;
+		break;
+
+	case CALIBRATION:
+
+		break;
+
+	case MOVING:
+	case TEST_TURN:
+	case TEST_ANGLE_OFFSET:
+	case TEST_ROTATION:
+		stopMotorRotation(VERTICAL_);
+		stopMotorRotation(HORIZONTAL_);
+		break;
+
+	default:
+		break;
+	}
+
+	cur_action = NONE;
+	ready_status = READY_;
+	__HAL_TIM_SET_COUNTER(&htim11, 0);
 }
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
