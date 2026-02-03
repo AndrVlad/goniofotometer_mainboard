@@ -74,6 +74,12 @@ uint32_t calcRangeBoundaries(uint32_t position, uint16_t range, bool is_pos_rang
 	}
 }
 
+void stopMotorRotationReq(uint8_t motor_id) {
+	 if (is_motor_moving) {
+		 HAL_TIM_Base_Start_IT(&htim12);
+	 }
+}
+
 void stopMotorRotation(uint8_t motor_id) {
 
 	if (motor_id) {
@@ -86,6 +92,7 @@ void stopMotorRotation(uint8_t motor_id) {
 	is_motor_moving = false;
 	is_req_freq_reach = false;
 	target_motor_freq = DEFAULT_MOTOR_FREQUENCY_HZ;
+	current_motor_freq = 0;
 }
 
 void setPeriodAccelTimer(uint16_t target_freq) {

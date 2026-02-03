@@ -54,6 +54,7 @@ void setPlatformParam__(platform* cur_platf);
 void setMotorFrequency__(platform* cur_platf, uint16_t motor_frequency);
 void setMotorFrequency(bool chosen_drv, uint16_t motor_frequency);
 void stopMotorRotation(uint8_t motor_id);
+void stopMotorRotationReq(uint8_t motor_id);
 //void changeMotorDirection()
 
 #endif /* INC_PLATFORM_H_ */

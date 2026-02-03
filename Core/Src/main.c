@@ -74,6 +74,7 @@ TIM_HandleTypeDef htim6;
 TIM_HandleTypeDef htim7;
 TIM_HandleTypeDef htim10;
 TIM_HandleTypeDef htim11;
+TIM_HandleTypeDef htim12;
 TIM_HandleTypeDef htim13;
 TIM_HandleTypeDef htim14;
 
@@ -164,7 +165,7 @@ bool driver_dir1, driver_dir2, chosen_drv = 1; // 0 - forward, 1 - back
 bool init_state = 1;
 uint8_t next_command = 0xFF;
 uint16_t error_cnt = 0;
-bool tim4_ovflw = false;
+bool tim4_ovflw, tim12_ovflw = false;
 uint32_t test_enc_data = 130000;
 
 /* Telemetry status values */
@@ -199,6 +200,7 @@ static void MX_TIM14_Init(void);
 static void MX_TIM13_Init(void);
 static void MX_TIM4_Init(void);
 static void MX_TIM11_Init(void);
+static void MX_TIM12_Init(void);
 /* USER CODE BEGIN PFP */
 void parser();
 void stepDriver(uint8_t step_num);
@@ -278,6 +280,7 @@ int main(void)
   MX_TIM13_Init();
   MX_TIM4_Init();
   MX_TIM11_Init();
+  MX_TIM12_Init();
   /* USER CODE BEGIN 2 */
 
   DeviceInit();
@@ -589,7 +592,6 @@ int main(void)
 	  	  HAL_TIM_Base_Start_IT(&htim4);
 	  }
 
-
 	 // increase motor frequency
 
 	 if (tim4_ovflw) {
@@ -603,6 +605,19 @@ int main(void)
 			 HAL_TIM_Base_Stop_IT(&htim4);
 			 tim4_ovflw = false;
 			 is_req_freq_reach = true;
+		 }
+	 }
+
+
+	 if (tim12_ovflw) {
+		 if (current_motor_freq <= 50) {
+			stopMotorRotation(chosen_drv);
+			HAL_TIM_Base_Stop_IT(&htim12);
+			tim12_ovflw = false;
+		 } else {
+			setMotorFrequency(chosen_drv,current_motor_freq - 50);
+			__HAL_TIM_SET_COUNTER(&htim12, 0);
+			tim12_ovflw = false;
 		 }
 	 }
 
@@ -1063,6 +1078,44 @@ static void MX_TIM11_Init(void)
   /* USER CODE BEGIN TIM11_Init 2 */
 
   /* USER CODE END TIM11_Init 2 */
+
+}
+
+/**
+  * @brief TIM12 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM12_Init(void)
+{
+
+  /* USER CODE BEGIN TIM12_Init 0 */
+
+  /* USER CODE END TIM12_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+
+  /* USER CODE BEGIN TIM12_Init 1 */
+
+  /* USER CODE END TIM12_Init 1 */
+  htim12.Instance = TIM12;
+  htim12.Init.Prescaler = 10799;
+  htim12.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim12.Init.Period = 5000;
+  htim12.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim12.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim12) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim12, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM12_Init 2 */
+
+  /* USER CODE END TIM12_Init 2 */
 
 }
 
@@ -1809,6 +1862,23 @@ void parser() {
 
 		switch(cur_action) {
 		case HORIZONTAL:
+
+			stopMotorRotationReq(chosen_drv);
+
+			if (data_buf_counter > 0 && data_status == NONE_) {
+				// clearing the part of the buffer that does not include useful data
+				clearSpecifiedElemOfBuffer(adc_data_buf,33,data_buf_counter*3+1);
+				data_status = _READY_;
+			}
+
+			// reset flags and state
+			data_buf_counter = 0;
+			data_elem_cnt = 1;
+			wait_flag = 0;
+			wait_adc_data_flag = 0;
+			trans_states = 0;
+			break;
+
 		case VERTICAL:
 
 			  // stop measurement
@@ -1816,8 +1886,7 @@ void parser() {
 			HAL_TIM_Base_Stop_IT(&htim2); // stop motor
 			HAL_TIM_Base_Stop_IT(&htim3);
 			HAL_TIM_Base_Stop_IT(&htim7); // stop SPI timer */
-			stopMotorRotation(VERTICAL_);
-			stopMotorRotation(HORIZONTAL_);
+			stopMotorRotationReq(chosen_drv);
 
 			if (data_buf_counter > 0 && data_status == NONE_) {
 				// clearing the part of the buffer that does not include useful data
@@ -2089,7 +2158,7 @@ void parser() {
 	case 0x11: // stop moving
 		createResponsePacket(0x11,ACCEPTED__);
 		//HAL_UART_Transmit(&huart3, response_buf,33,100);
-		stopMotorRotation(chosen_drv);
+		stopMotorRotationReq(chosen_drv);
 		/*
 		if(chosen_drv) {
 			HAL_TIM_Base_Stop_IT(&htim3); // stop second motor
@@ -2642,14 +2711,14 @@ void handleTestAngleOffset() {
 	//setMotorFrequency(chosen_drv,75);
 	if (chosen_drv) {
 		if ((encoder2_data >= angle_position_drv2 - 4) && (encoder2_data <= angle_position_drv2 + 4)) {
-			stopMotorRotation(chosen_drv);
+			stopMotorRotationReq(chosen_drv);
 			//HAL_TIM_Base_Stop_IT(&htim3); // stop motor
 			//HAL_TIM_Base_Stop_IT(&htim7); // stop encoder poll
 			cur_action = NONE;
 		}
 	} else {
 		if ((encoder1_data >= angle_position_drv1 - 4) && (encoder1_data <= angle_position_drv1 + 4)) {
-			stopMotorRotation(chosen_drv);
+			stopMotorRotationReq(chosen_drv);
 			//HAL_TIM_Base_Stop_IT(&htim2); // stop motor
 			//HAL_TIM_Base_Stop_IT(&htim7); // stop encoder poll
 			cur_action = NONE;
@@ -2842,7 +2911,7 @@ void handleHorizontalMeasurement() {
 		  resetNVICPriority();
 
 		  // stop measurement
-		  stopMotorRotation(chosen_drv);
+		  stopMotorRotationReq(chosen_drv);
 		  //HAL_TIM_Base_Stop_IT(&htim2); // stop motor
 		  //HAL_TIM_Base_Stop_IT(&htim7); // stop SPI timer
 	  }
@@ -2994,7 +3063,7 @@ void handleHorizontalMeasurementVertPlatf() {
 		  wait_adc_data_flag = 0;
 		  stop_poll = 0;
 
-		  stopMotorRotation(chosen_drv);
+		  stopMotorRotationReq(chosen_drv);
 
 	  }
 }
@@ -3356,13 +3425,37 @@ void DeviceReset() {
 
 	switch(cur_action) {
 	case HORIZONTAL:
+
+		stopMotorRotationReq(HORIZONTAL_);
+
+		if (data_buf_counter > 0 && data_status == NONE_) {
+			// clearing the part of the buffer that does not include useful data
+			clearSpecifiedElemOfBuffer(adc_data_buf,33,data_buf_counter*3+1);
+			data_status = _READY_;
+		}
+
+		// reset flags and state
+		data_buf_counter = 0;
+		data_elem_cnt = 1;
+		wait_flag = 0;
+		wait_adc_data_flag = 0;
+		trans_states = 0;
+		break;
+
 	case VERTICAL:
 
-		stopMotorRotation(VERTICAL_);
-		stopMotorRotation(HORIZONTAL_);
+		  // stop measurement
+		/*
+		HAL_TIM_Base_Stop_IT(&htim2); // stop motor
+		HAL_TIM_Base_Stop_IT(&htim3);
+		HAL_TIM_Base_Stop_IT(&htim7); // stop SPI timer */
+		stopMotorRotationReq(VERTICAL_);
 
-		clearBuffer(adc_data_buf,33);
-		data_status = NONE_;
+		if (data_buf_counter > 0 && data_status == NONE_) {
+			// clearing the part of the buffer that does not include useful data
+			clearSpecifiedElemOfBuffer(adc_data_buf,33,data_buf_counter*3+1);
+			data_status = _READY_;
+		}
 
 		// reset flags and state
 		data_buf_counter = 0;
@@ -3398,8 +3491,8 @@ void DeviceReset() {
 	case TEST_TURN:
 	case TEST_ANGLE_OFFSET:
 	case TEST_ROTATION:
-		stopMotorRotation(VERTICAL_);
-		stopMotorRotation(HORIZONTAL_);
+		stopMotorRotationReq(VERTICAL_);
+		stopMotorRotationReq(HORIZONTAL_);
 		break;
 
 	default:
