@@ -611,7 +611,7 @@ int main(void)
 	 }
 
 	 if (tim12_ovflw) {
-			if (cur_action == LIGHT_POWER || cur_action == VERTICAL_) {
+			if (cur_action == LIGHT_POWER || cur_action == VERTICAL && trans_states == 0) {
 				data_status = READY_;
 			} else {
 				data_status = NONE_;
