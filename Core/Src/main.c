@@ -139,6 +139,7 @@ bool allow = 0;
 //bool stop_poll = 0;
 bool end_calibration_flag = 0;
 bool full_rotation = 0;
+uint32_t inv_encoder1_data, inv_encoder2_data;
 
 uint32_t start_position_drv1, start_position_drv2, end_position_drv1, end_position_drv2, accel_position_drv1, accel_position_drv2 = 0;
 int32_t end_position_drv_tmp, encoder1_increment_res, encoder2_increment_res;
@@ -652,7 +653,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 8;
+  RCC_OscInitStruct.PLL.PLLM = 4;
   RCC_OscInitStruct.PLL.PLLN = 216;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 2;
@@ -1101,7 +1102,7 @@ static void MX_TIM12_Init(void)
   htim12.Instance = TIM12;
   htim12.Init.Prescaler = 10799;
   htim12.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim12.Init.Period = 5000;
+  htim12.Init.Period = 1000;
   htim12.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim12.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim12) != HAL_OK)
@@ -2135,9 +2136,9 @@ void parser() {
 			//}
 
 			changeMotorDirection(chosen_drv, angle_position_drv2);
-
-			HAL_TIM_Base_Start_IT(&htim7);
-			HAL_TIM_Base_Start_IT(&htim3); // start second motor moving
+			startMotorRotation(chosen_drv,encoder2_data);
+			//HAL_TIM_Base_Start_IT(&htim7);
+			//HAL_TIM_Base_Start_IT(&htim3); // start second motor moving
       
 		} else { // first motor
 			setMotorFrequency(0,400);
@@ -2150,8 +2151,9 @@ void parser() {
 			//}
 
 			changeMotorDirection(chosen_drv, angle_position_drv1);
-			HAL_TIM_Base_Start_IT(&htim7);
-			HAL_TIM_Base_Start_IT(&htim2); // start first motor moving
+			startMotorRotation(chosen_drv,encoder2_data);
+			//HAL_TIM_Base_Start_IT(&htim7);
+			//HAL_TIM_Base_Start_IT(&htim2); // start first motor moving
 		}
 		break;
 
@@ -2488,6 +2490,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 		encoder1_data |=  ((uint32_t)dma_spi4_buf[1] << 3);
 		encoder1_data |=  (((uint32_t)dma_spi4_buf[0] & 0x3F) << 11);
 		horizontal.encoder.current_pos = encoder1_data;
+		inv_encoder1_data =  ENCODER_RESOLUTION - encoder1_data;
 		spi4_rx_complete = 1;
 	}
 
@@ -2497,12 +2500,14 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 		encoder2_data |=  ((uint32_t)dma_spi3_buf[1] << 3);
 		encoder2_data |=  (((uint32_t)dma_spi3_buf[0] & 0x3F) << 11);
 		vertical.encoder.current_pos = encoder2_data;
+		inv_encoder2_data = ENCODER_RESOLUTION - encoder2_data;
 		spi3_rx_complete = 1;
 	}
 }
 
 void createResponsePacket(uint8_t command_code, uint8_t status_code) {
 	crc=0;
+
 	if (command_code == 0x01) {
 		response_buf[0] = 0x01;
 		response_buf[1] = (uint8_t)ready_status;
@@ -2513,12 +2518,12 @@ void createResponsePacket(uint8_t command_code, uint8_t status_code) {
 		response_buf[6] = uart1_rx_safe_buffer[0];//(adc_value >> 16) & 0xFF;
 		response_buf[7] = uart1_rx_safe_buffer[1];//(adc_value >> 8) & 0xFF;
 		response_buf[8] = uart1_rx_safe_buffer[2];//adc_value & 0x000000FF;
-		response_buf[9] = encoder1_data & 0xFF;
-		response_buf[10] = encoder1_data >> 8;
-		response_buf[11] = encoder1_data >> 16;
-		response_buf[15] = encoder2_data & 0xFF;
-		response_buf[16] = encoder2_data >> 8;
-		response_buf[17] =  encoder2_data >> 16;
+		response_buf[9] = inv_encoder1_data & 0xFF;//encoder1_data & 0xFF; inv_encoder1_data
+		response_buf[10] = inv_encoder1_data >> 8;//encoder1_data >> 8;
+		response_buf[11] = inv_encoder1_data >> 16;//encoder1_data >> 16;
+		response_buf[15] = inv_encoder2_data & 0xFF;
+		response_buf[16] = inv_encoder2_data >> 8;
+		response_buf[17] = inv_encoder2_data >> 16;
 		response_buf[31] = 0;
 		response_buf[32] = 0;
 
@@ -2711,14 +2716,14 @@ void handleTestAngleOffset() {
 	//setMotorFrequency(chosen_drv,75);
 	if (chosen_drv) {
 		if ((encoder2_data >= angle_position_drv2 - 4) && (encoder2_data <= angle_position_drv2 + 4)) {
-			stopMotorRotationReq(chosen_drv);
+			stopMotorRotation(chosen_drv);
 			//HAL_TIM_Base_Stop_IT(&htim3); // stop motor
 			//HAL_TIM_Base_Stop_IT(&htim7); // stop encoder poll
 			cur_action = NONE;
 		}
 	} else {
 		if ((encoder1_data >= angle_position_drv1 - 4) && (encoder1_data <= angle_position_drv1 + 4)) {
-			stopMotorRotationReq(chosen_drv);
+			stopMotorRotation(chosen_drv);
 			//HAL_TIM_Base_Stop_IT(&htim2); // stop motor
 			//HAL_TIM_Base_Stop_IT(&htim7); // stop encoder poll
 			cur_action = NONE;
@@ -2911,7 +2916,8 @@ void handleHorizontalMeasurement() {
 		  resetNVICPriority();
 
 		  // stop measurement
-		  stopMotorRotationReq(chosen_drv);
+		  //stopMotorRotationReq(chosen_drv);
+		  stopMotorRotation(chosen_drv);
 		  //HAL_TIM_Base_Stop_IT(&htim2); // stop motor
 		  //HAL_TIM_Base_Stop_IT(&htim7); // stop SPI timer
 	  }
@@ -3063,7 +3069,8 @@ void handleHorizontalMeasurementVertPlatf() {
 		  wait_adc_data_flag = 0;
 		  stop_poll = 0;
 
-		  stopMotorRotationReq(chosen_drv);
+		  //stopMotorRotationReq(chosen_drv);
+		  stopMotorRotation(chosen_drv);
 
 	  }
 }
@@ -3418,7 +3425,7 @@ void DeviceInit() {
 	// set status of device
 	ready_status = READY_;
 
-	HAL_TIM_Base_Start_IT(&htim11);
+	//HAL_TIM_Base_Start_IT(&htim11);
 }
 
 void DeviceReset() {
@@ -3499,9 +3506,14 @@ void DeviceReset() {
 		break;
 	}
 
+	//HAL_UART_DeInit(&huart3);
+	//MX_USART3_UART_Init();
+
 	cur_action = NONE;
 	ready_status = READY_;
 	__HAL_TIM_SET_COUNTER(&htim11, 0);
+	//HAL_UART_DeInit(&huart3);
+	//MX_USART3_UART_Init();
 }
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {

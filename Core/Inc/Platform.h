@@ -13,7 +13,7 @@
 #include "stdio.h"
 #include "stm32f7xx_hal.h"
 
-#define DEFAULT_MOTOR_FREQUENCY_HZ 500
+#define DEFAULT_MOTOR_FREQUENCY_HZ 1500
 #define PICK_UP_MOTOR_FREQUENCY_HZ 10
 #define ENCODER_RESOLUTION 131072
 #define POSITION_ERROR 92
