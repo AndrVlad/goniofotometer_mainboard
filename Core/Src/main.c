@@ -75,6 +75,7 @@ TIM_HandleTypeDef htim6;
 TIM_HandleTypeDef htim7;
 TIM_HandleTypeDef htim9;
 TIM_HandleTypeDef htim10;
+TIM_HandleTypeDef htim12;
 TIM_HandleTypeDef htim13;
 TIM_HandleTypeDef htim14;
 
@@ -93,6 +94,7 @@ uint8_t response_buf[33] = {0};
 //uint8_t data_buf_counter = 0;
 //uint8_t data_elem_cnt = 1;
 uint8_t data_elem_cnt_calib = 0;
+bool tim12_ovflw;
 uint16_t tim14_arr_val = 0; 
 uint16_t test_counter_adc_data, test_cnt_uart1_rx, uart1_received_cnt, uart1_received_cnt_global, take_data_cnt = 0;
 uint16_t test_counter_adc_data2 = 0;
@@ -200,6 +202,7 @@ static void MX_TIM14_Init(void);
 static void MX_TIM13_Init(void);
 static void MX_TIM9_Init(void);
 static void MX_TIM4_Init(void);
+static void MX_TIM12_Init(void);
 /* USER CODE BEGIN PFP */
 void parser();
 void stepDriver(uint8_t step_num);
@@ -278,9 +281,11 @@ int main(void)
   MX_TIM13_Init();
   MX_TIM9_Init();
   MX_TIM4_Init();
+  MX_TIM12_Init();
   /* USER CODE BEGIN 2 */
 
   DeviceInit();
+  HAL_TIM_Base_Start_IT(&htim12);
 
   /* USER CODE END 2 */
 
@@ -603,6 +608,14 @@ int main(void)
 			 tim4_ovflw = false;
 			 is_req_freq_reach = true;
 		 }
+	 }
+
+	 if (tim12_ovflw) {
+			if (cur_action == LIGHT_POWER || cur_action == VERTICAL_) {
+				data_status = READY_;
+			} else {
+				data_status = NONE_;
+			}
 	 }
 
   }
@@ -1062,6 +1075,44 @@ static void MX_TIM10_Init(void)
   /* USER CODE BEGIN TIM10_Init 2 */
 
   /* USER CODE END TIM10_Init 2 */
+
+}
+
+/**
+  * @brief TIM12 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM12_Init(void)
+{
+
+  /* USER CODE BEGIN TIM12_Init 0 */
+
+  /* USER CODE END TIM12_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+
+  /* USER CODE BEGIN TIM12_Init 1 */
+
+  /* USER CODE END TIM12_Init 1 */
+  htim12.Instance = TIM12;
+  htim12.Init.Prescaler = 10799;
+  htim12.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim12.Init.Period = 5000;
+  htim12.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim12.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim12) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim12, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM12_Init 2 */
+
+  /* USER CODE END TIM12_Init 2 */
 
 }
 
