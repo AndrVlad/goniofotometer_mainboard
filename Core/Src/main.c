@@ -86,8 +86,10 @@ DMA_HandleTypeDef hdma_usart3_rx;
 
 /* USER CODE BEGIN PV */
 uint8_t buf[5] = {0x0A,0x0A,0x0A,0x0A,0x0A};
+uint32_t limb_offset[2] = {0};
 //uint8_t amplifier_val[3] = {0};
 uint8_t dma_spi4_buf[5] = {0};
+uint32_t test_encoder1_data = 32768, test_encoder2_data = 100000;
 uint8_t dma_spi3_buf[5] = {0};
 uint8_t response_buf[33] = {0};
 //uint8_t adc_data_buf[33] = {0};
@@ -114,6 +116,7 @@ uint32_t adc_data_cnt, required_data_num = 0;
 uint32_t usart3_reg, usart3_error = 0;
 uint32_t photodetector_offset_val = 0;
 uint32_t control_pos = 0;
+uint32_t test_encoder2_data_user, test_encoder1_data_user;
 
 uint32_t encoder_offset[2] = {0};
 //uint32_t address = ADDR_FLASH_SECTOR_2;
@@ -611,7 +614,7 @@ int main(void)
 	 }
 
 	 if (tim12_ovflw) {
-			if (cur_action == LIGHT_POWER || cur_action == VERTICAL && trans_states == 0) {
+			if (cur_action == LIGHT_POWER || (cur_action == VERTICAL && trans_states == 0) || (cur_action == HORIZONTAL && trans_states == 0)) {
 				data_status = READY_;
 			} else {
 				data_status = NONE_;
@@ -2123,8 +2126,8 @@ void parser() {
 		UNUSED */
 
 		// Write new values of encoder offset
-		ENCODER_1_OFFSET = encoder1_data;
-		ENCODER_2_OFFSET = encoder2_data;
+		ENCODER_1_OFFSET = test_encoder1_data;
+		ENCODER_2_OFFSET = test_encoder2_data;
 
 		// Write new values of encoder offset for saving to Flash
 		encoder_offset[0] = ENCODER_1_OFFSET;
@@ -2163,23 +2166,17 @@ void parser() {
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
 		break;
 	case 0x17:
-		/*
-		EraseInitStruct.Sector        = FLASH_SECTOR_4;
 
-		HAL_FLASH_Unlock();
+		createResponsePacket(0x17,ACCEPTED__);
 
-			if(HAL_FLASHEx_Erase(&EraseInitStruct, &page_error) != HAL_OK) {
-			      //error handler of erasing flash
-			      return;
-			  }
-			HAL_FLASH_Lock(); */
+		test_encoder1_data_user = test_encoder1_data;
+		test_encoder2_data_user = test_encoder2_data;
 
-		//ReadFlash(flash_data,4,ADDR_FLASH_SECTOR_2,FLASH_TYPEPROGRAM_WORD);
-		//printf("%lu, %lu, %lu, %lu\r\n",flash_data[0],flash_data[1],flash_data[2],flash_data[3]);
-		 //HAL_UART_DeInit(&huart1);
-		  //MX_USART1_UART_Init();
-		//printf("%lu,\r\n",usart3_reg);
-		//printf("error: %lu,\r\n",usart3_error);
+		limb_offset[0] = test_encoder1_data_user;
+		limb_offset[1] = test_encoder2_data_user;
+
+		WriteToFlash(limb_offset, 2, ADDR_FLASH_SECTOR_2 + 8, FLASH_TYPEPROGRAM_WORD);
+
 		break;
 	case 0x18: // only for test of mainboard
 
@@ -2408,6 +2405,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 		encoder1_data |=  ((uint32_t)dma_spi4_buf[1] << 3);
 		encoder1_data |=  (((uint32_t)dma_spi4_buf[0] & 0x3F) << 11);
 		horizontal.encoder.current_pos = encoder1_data;
+		encoder1_data = test_encoder1_data;
 		spi4_rx_complete = 1;
 	}
 
@@ -2417,6 +2415,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 		encoder2_data |=  ((uint32_t)dma_spi3_buf[1] << 3);
 		encoder2_data |=  (((uint32_t)dma_spi3_buf[0] & 0x3F) << 11);
 		vertical.encoder.current_pos = encoder2_data;
+		encoder2_data = test_encoder2_data;
 		spi3_rx_complete = 1;
 	}
 }
@@ -2434,12 +2433,18 @@ void createResponsePacket(uint8_t command_code, uint8_t status_code) {
 		response_buf[6] = adc_val1 >> 16;//uart1_rx_safe_buffer[0];//(adc_value >> 16) & 0xFF;
 		response_buf[7] = adc_val1 >> 8;//uart1_rx_safe_buffer[1];//(adc_value >> 8) & 0xFF;
 		response_buf[8] = adc_val1 & 0x000000FF;//uart1_rx_safe_buffer[2];//adc_value & 0x000000FF;
-		response_buf[9] = encoder1_data & 0xFF;
-		response_buf[10] = encoder1_data >> 8;
-		response_buf[11] = encoder1_data >> 16;
-		response_buf[15] = encoder2_data & 0xFF;
-		response_buf[16] = encoder2_data >> 8;
-		response_buf[17] =  encoder2_data >> 16;
+		response_buf[9] = test_encoder1_data & 0xFF;
+		response_buf[10] = test_encoder1_data >> 8;
+		response_buf[11] = test_encoder1_data >> 16;
+		response_buf[12] = test_encoder1_data_user & 0xFF;
+		response_buf[13] = test_encoder1_data_user >> 8;
+		response_buf[14] = test_encoder1_data_user >> 16;
+		response_buf[15] = test_encoder2_data & 0xFF;
+		response_buf[16] = test_encoder2_data >> 8;
+		response_buf[17] =  test_encoder2_data >> 16;
+		response_buf[18] =  test_encoder2_data_user & 0xFF;
+		response_buf[20] =  test_encoder2_data_user >> 8;
+		response_buf[21] =  test_encoder2_data_user >> 16;
 		response_buf[31] = 0;
 		response_buf[32] = 0;
 
