@@ -1102,7 +1102,7 @@ static void MX_TIM12_Init(void)
   htim12.Instance = TIM12;
   htim12.Init.Prescaler = 10799;
   htim12.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim12.Init.Period = 5000;
+  htim12.Init.Period = 500;
   htim12.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim12.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim12) != HAL_OK)
@@ -2916,8 +2916,8 @@ void handleHorizontalMeasurement() {
 		  resetNVICPriority();
 
 		  // stop measurement
-		  //stopMotorRotationReq(chosen_drv);
-		  stopMotorRotation(chosen_drv);
+		  stopMotorRotationReq(chosen_drv);
+		  //stopMotorRotation(chosen_drv);
 		  //HAL_TIM_Base_Stop_IT(&htim2); // stop motor
 		  //HAL_TIM_Base_Stop_IT(&htim7); // stop SPI timer
 	  }
@@ -3069,8 +3069,8 @@ void handleHorizontalMeasurementVertPlatf() {
 		  wait_adc_data_flag = 0;
 		  stop_poll = 0;
 
-		  //stopMotorRotationReq(chosen_drv);
-		  stopMotorRotation(chosen_drv);
+		  stopMotorRotationReq(chosen_drv);
+		  //stopMotorRotation(chosen_drv);
 
 	  }
 }
