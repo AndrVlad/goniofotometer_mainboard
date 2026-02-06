@@ -21,6 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "time.h"
 #include "stdbool.h"
 #include "string.h"
 #include "stdlib.h"
@@ -72,6 +73,7 @@ TIM_HandleTypeDef htim4;
 TIM_HandleTypeDef htim5;
 TIM_HandleTypeDef htim6;
 TIM_HandleTypeDef htim7;
+TIM_HandleTypeDef htim9;
 TIM_HandleTypeDef htim10;
 TIM_HandleTypeDef htim11;
 TIM_HandleTypeDef htim12;
@@ -84,6 +86,8 @@ DMA_HandleTypeDef hdma_usart1_rx;
 DMA_HandleTypeDef hdma_usart3_rx;
 
 /* USER CODE BEGIN PV */
+uint32_t limb_offset[2] = {0};
+uint32_t test_encoder1_data = 32768, test_encoder2_data = 100000;
 uint8_t buf[5] = {0x0A,0x0A,0x0A,0x0A,0x0A};
 //uint8_t amplifier_val[3] = {0};
 uint8_t dma_spi4_buf[5] = {0};
@@ -139,7 +143,9 @@ bool allow = 0;
 //bool stop_poll = 0;
 bool end_calibration_flag = 0;
 bool full_rotation = 0;
+bool tim9_ovflw;
 uint32_t inv_encoder1_data, inv_encoder2_data;
+uint32_t test_encoder2_data_user, test_encoder1_data_user;
 
 uint32_t start_position_drv1, start_position_drv2, end_position_drv1, end_position_drv2, accel_position_drv1, accel_position_drv2 = 0;
 int32_t end_position_drv_tmp, encoder1_increment_res, encoder2_increment_res;
@@ -202,6 +208,7 @@ static void MX_TIM13_Init(void);
 static void MX_TIM4_Init(void);
 static void MX_TIM11_Init(void);
 static void MX_TIM12_Init(void);
+static void MX_TIM9_Init(void);
 /* USER CODE BEGIN PFP */
 void parser();
 void stepDriver(uint8_t step_num);
@@ -231,6 +238,7 @@ uint32_t getTimeOffset();
 void convertAdcValues(uint8_t *buf, uint16_t size);
 void DeviceInit();
 void DeviceReset();
+uint32_t rand_32(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -282,6 +290,7 @@ int main(void)
   MX_TIM4_Init();
   MX_TIM11_Init();
   MX_TIM12_Init();
+  MX_TIM9_Init();
   /* USER CODE BEGIN 2 */
 
   DeviceInit();
@@ -306,8 +315,7 @@ int main(void)
           checkCRCPhotodetectorData();
 
           // processing of received messages in measurement state of device
-          if (cur_action == HORIZONTAL || cur_action == VERTICAL || cur_action == HEMISPHERE || cur_action == LIGHT_POWER) {
-
+          if (cur_action == HORIZONTAL || cur_action == VERTICAL || cur_action == HEMISPHERE /* || cur_action == LIGHT_POWER*/) {
         	  // checking that the measurement data has been received
         	if (wait_adc_data_flag) {
 
@@ -377,7 +385,7 @@ int main(void)
 
 			  if (end_calibration_flag) {
 				  if (data_status == NONE_){
-					  cur_action = NONE;
+					  //cur_action = NONE;
 					  ready_status = READY_;
 					  end_calibration_flag = 0;
 				  }
@@ -468,7 +476,7 @@ int main(void)
 			data_elem_cnt = 1;
 
 		} else if (data_buf_counter == 0 && data_status == NONE_) {
-			cur_action = NONE;
+			//cur_action = NONE;
 			wait_flag = 0;
 			ready_status = READY_;
 			end_meas_flag = 0;
@@ -620,6 +628,14 @@ int main(void)
 			__HAL_TIM_SET_COUNTER(&htim12, 0);
 			tim12_ovflw = false;
 		 }
+	 }
+
+	 if (tim9_ovflw) {
+		 if (cur_action == LIGHT_POWER || (cur_action == VERTICAL && trans_states == 0) || (cur_action == HORIZONTAL && trans_states == 0)) {
+			data_status = READY_;
+		} else {
+			data_status = NONE_;
+		}
 	 }
 
   }
@@ -1017,6 +1033,44 @@ static void MX_TIM7_Init(void)
   /* USER CODE BEGIN TIM7_Init 2 */
 
   /* USER CODE END TIM7_Init 2 */
+
+}
+
+/**
+  * @brief TIM9 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM9_Init(void)
+{
+
+  /* USER CODE BEGIN TIM9_Init 0 */
+
+  /* USER CODE END TIM9_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+
+  /* USER CODE BEGIN TIM9_Init 1 */
+
+  /* USER CODE END TIM9_Init 1 */
+  htim9.Instance = TIM9;
+  htim9.Init.Prescaler = 10799;
+  htim9.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim9.Init.Period = 5000;
+  htim9.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim9.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim9) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim9, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM9_Init 2 */
+
+  /* USER CODE END TIM9_Init 2 */
 
 }
 
@@ -1822,6 +1876,8 @@ void parser() {
 		__HAL_TIM_SET_COUNTER(&htim14, 0);
 
 		createResponsePacket(0x05,ACCEPTED__);
+		data_status = NONE_;
+		cur_action = LIGHT_POWER;
 
 		// then wait adc_coeff installation in the while ...
 	break;
@@ -2192,8 +2248,8 @@ void parser() {
 		UNUSED */
 
 		// Write new values of encoder offset
-		ENCODER_1_OFFSET = encoder1_data;
-		ENCODER_2_OFFSET = encoder2_data;
+		ENCODER_1_OFFSET = test_encoder1_data;
+		ENCODER_2_OFFSET = test_encoder2_data;
 
 		// Write new values of encoder offset for saving to Flash
 		encoder_offset[0] = ENCODER_1_OFFSET;
@@ -2247,23 +2303,15 @@ void parser() {
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
 		break;
 	case 0x17:
-		/*
-		EraseInitStruct.Sector        = FLASH_SECTOR_4;
+		createResponsePacket(0x17,ACCEPTED__);
 
-		HAL_FLASH_Unlock();
+		test_encoder1_data_user = test_encoder1_data;
+		test_encoder2_data_user = test_encoder2_data;
 
-			if(HAL_FLASHEx_Erase(&EraseInitStruct, &page_error) != HAL_OK) {
-			      //error handler of erasing flash
-			      return;
-			  }
-			HAL_FLASH_Lock(); */
+		limb_offset[0] = test_encoder1_data_user;
+		limb_offset[1] = test_encoder2_data_user;
 
-		//ReadFlash(flash_data,4,ADDR_FLASH_SECTOR_2,FLASH_TYPEPROGRAM_WORD);
-		//printf("%lu, %lu, %lu, %lu\r\n",flash_data[0],flash_data[1],flash_data[2],flash_data[3]);
-		 //HAL_UART_DeInit(&huart1);
-		  //MX_USART1_UART_Init();
-		//printf("%lu,\r\n",usart3_reg);
-		//printf("error: %lu,\r\n",usart3_error);
+		WriteToFlash(limb_offset, 2, ADDR_FLASH_SECTOR_2 + 8, FLASH_TYPEPROGRAM_WORD);
 		break;
 	case 0x18: // only for test of mainboard
 
@@ -2490,7 +2538,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 		encoder1_data |=  ((uint32_t)dma_spi4_buf[1] << 3);
 		encoder1_data |=  (((uint32_t)dma_spi4_buf[0] & 0x3F) << 11);
 		horizontal.encoder.current_pos = encoder1_data;
-		inv_encoder1_data =  ENCODER_RESOLUTION - encoder1_data;
+		inv_encoder1_data =  ENCODER_RESOLUTION - test_encoder1_data;
 		spi4_rx_complete = 1;
 	}
 
@@ -2500,14 +2548,14 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 		encoder2_data |=  ((uint32_t)dma_spi3_buf[1] << 3);
 		encoder2_data |=  (((uint32_t)dma_spi3_buf[0] & 0x3F) << 11);
 		vertical.encoder.current_pos = encoder2_data;
-		inv_encoder2_data = ENCODER_RESOLUTION - encoder2_data;
+		inv_encoder2_data = ENCODER_RESOLUTION - test_encoder2_data;
 		spi3_rx_complete = 1;
 	}
 }
 
 void createResponsePacket(uint8_t command_code, uint8_t status_code) {
 	crc=0;
-
+	uint32_t adc_val1 = rand_32();
 	if (command_code == 0x01) {
 		response_buf[0] = 0x01;
 		response_buf[1] = (uint8_t)ready_status;
@@ -2515,15 +2563,21 @@ void createResponsePacket(uint8_t command_code, uint8_t status_code) {
 		response_buf[3] = trans_states;
 		response_buf[4] = (uint8_t)data_status;
 		response_buf[5] = operation_progress;
-		response_buf[6] = uart1_rx_safe_buffer[0];//(adc_value >> 16) & 0xFF;
-		response_buf[7] = uart1_rx_safe_buffer[1];//(adc_value >> 8) & 0xFF;
-		response_buf[8] = uart1_rx_safe_buffer[2];//adc_value & 0x000000FF;
+		response_buf[6] = adc_val1 >> 16;//uart1_rx_safe_buffer[0];//(adc_value >> 16) & 0xFF;
+		response_buf[7] = adc_val1 >> 8;//uart1_rx_safe_buffer[1];//(adc_value >> 8) & 0xFF;
+		response_buf[8] = adc_val1 & 0x000000FF;//uart1_rx_safe_buffer[2];//adc_value & 0x000000FF;
 		response_buf[9] = inv_encoder1_data & 0xFF;//encoder1_data & 0xFF; inv_encoder1_data
 		response_buf[10] = inv_encoder1_data >> 8;//encoder1_data >> 8;
 		response_buf[11] = inv_encoder1_data >> 16;//encoder1_data >> 16;
+		response_buf[12] = test_encoder1_data_user & 0xFF;
+		response_buf[13] = test_encoder1_data_user >> 8;
+		response_buf[14] = test_encoder1_data_user >> 16;
 		response_buf[15] = inv_encoder2_data & 0xFF;
 		response_buf[16] = inv_encoder2_data >> 8;
 		response_buf[17] = inv_encoder2_data >> 16;
+		response_buf[18] =  test_encoder2_data_user & 0xFF;
+		response_buf[20] =  test_encoder2_data_user >> 8;
+		response_buf[21] =  test_encoder2_data_user >> 16;
 		response_buf[31] = 0;
 		response_buf[32] = 0;
 
@@ -2547,11 +2601,19 @@ void createResponsePacket(uint8_t command_code, uint8_t status_code) {
 	HAL_UART_Transmit(&huart3, response_buf,33,100);
 }
 
+uint32_t rand_32(void) {
+    return ((uint32_t)rand() << 16) | (uint32_t)rand();
+}
+
 void createDataPacket() {
 	uint16_t crc=0;
 	adc_data_buf[0] = 0x0B;
 	adc_data_buf[31] = 0;
 	adc_data_buf[32] = 0;
+
+	for (int i = 1; i < 30; i++) {
+		adc_data_buf[i] = rand_32();
+	}
 
 	// CRC calculation
 	for (int i = 0; i < 30; i+=2) {
@@ -3424,6 +3486,7 @@ void DeviceInit() {
 
 	// set status of device
 	ready_status = READY_;
+	HAL_TIM_Base_Start_IT(&htim9);
 
 	//HAL_TIM_Base_Start_IT(&htim11);
 }
