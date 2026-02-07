@@ -186,6 +186,7 @@ uint8_t operation_progress = 0;
 uint32_t SSI_data, SSI_data_safe, encoder1_data, encoder2_data, encoder2_data_last = 0;
 uint32_t adc_value, error_val_sum = 0;
 uint16_t motor_frequency_1 = 40, motor_frequency_2 = 1;
+uint32_t crc_PC_error = 0;
 
 /* USER CODE END PV */
 
@@ -239,6 +240,7 @@ void convertAdcValues(uint8_t *buf, uint16_t size);
 void DeviceInit();
 void DeviceReset();
 uint32_t rand_32(void);
+void checkCRC_PCData();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -1393,6 +1395,7 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 
 void parser() {
+	checkCRC_PCData();
 	switch (uart3_rx_buffer[0]) {
 	case 0x00:
     	HAL_UART_DeInit(&huart3);
@@ -2383,6 +2386,9 @@ void parser() {
 		HAL_UART_Transmit(&huart1, ampl_buf, 1, 100);
 		HAL_UART_Receive_DMA(&huart1, buf, 5);
 		break;
+	default:
+
+        break;
 }
 
 
@@ -3577,6 +3583,21 @@ void DeviceReset() {
 	__HAL_TIM_SET_COUNTER(&htim11, 0);
 	//HAL_UART_DeInit(&huart3);
 	//MX_USART3_UART_Init();
+}
+
+void checkCRC_PCData() {
+	memcpy(uart3_rx_safe_buffer, uart3_rx_buffer, 6);
+	uint16_t crc = 0, crc_received = 0;
+	for (int i = 0; i < 4; i+=2) {
+		crc += (uint16_t)uart3_rx_safe_buffer[i] + ((uint16_t)(uart3_rx_safe_buffer[i+1])<<8);
+	}
+	crc_received = (uint16_t)uart3_rx_safe_buffer[4] + ((uint16_t)(uart3_rx_safe_buffer[5])<<8);
+	if (crc_received != crc) {
+      	HAL_UART_DeInit(&huart3);
+        MX_USART3_UART_Init();
+        HAL_UART_Receive_DMA(&huart3, uart3_rx_buffer, 6);
+        crc_PC_error++;
+	}
 }
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
