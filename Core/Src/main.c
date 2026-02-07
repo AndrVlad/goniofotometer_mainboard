@@ -180,6 +180,7 @@ uint8_t operation_progress = 0;
 uint32_t SSI_data, SSI_data_safe, encoder1_data, encoder2_data, encoder2_data_last = 0;
 uint32_t adc_value, error_val_sum = 0;
 uint16_t motor_frequency_1 = 40, motor_frequency_2 = 1;
+uint32_t crc_PC_error_cnt = 0;
 
 /* USER CODE END PV */
 
@@ -231,6 +232,7 @@ uint32_t getTimeOffset();
 void convertAdcValues(uint8_t *buf, uint16_t size);
 void DeviceInit();
 void DeviceReset();
+bool checkCRC_PCData();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -296,7 +298,9 @@ int main(void)
 	  // handle of message from PC
 	  if (uart3_rx_complete) {
 		  __HAL_TIM_SET_COUNTER(&htim11, 0);
-	  	  	parser();
+		  if (checkCRC_PCData()) {
+			  parser();
+		  }
 	  }
 	  // handle of message from Photodetector
 	  if (uart1_rx_complete) {
@@ -3514,6 +3518,24 @@ void DeviceReset() {
 	__HAL_TIM_SET_COUNTER(&htim11, 0);
 	//HAL_UART_DeInit(&huart3);
 	//MX_USART3_UART_Init();
+}
+
+bool checkCRC_PCData() {
+	memcpy(uart3_rx_safe_buffer, uart3_rx_buffer, 6);
+	uint16_t crc = 0, crc_received = 0;
+	for (int i = 0; i < 4; i+=2) {
+		crc += (uint16_t)uart3_rx_safe_buffer[i] + ((uint16_t)(uart3_rx_safe_buffer[i+1])<<8);
+	}
+	crc_received = (uint16_t)uart3_rx_safe_buffer[4] + ((uint16_t)(uart3_rx_safe_buffer[5])<<8);
+	if (crc_received != crc) {
+      	HAL_UART_DeInit(&huart3);
+        MX_USART3_UART_Init();
+        uart3_rx_complete = 0;
+        HAL_UART_Receive_DMA(&huart3, uart3_rx_buffer, 6);
+        crc_PC_error_cnt++;
+        return false;
+	}
+	return true;
 }
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {

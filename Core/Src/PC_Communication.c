@@ -9,5 +9,6 @@
 
 bool stop_poll = 0;
 
+
 enum data data_status = NONE_;
 
