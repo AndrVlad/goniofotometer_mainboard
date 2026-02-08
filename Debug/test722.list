@@ -10856,9 +10856,9 @@ void setPlatformParam(uint16_t meas_res) {
 	}
 }
  8004ac4:	e054      	b.n	8004b70 <setPlatformParam+0x164>
-		motor_frequency_1 = motor_frequency_2 = 1464;
+		motor_frequency_1 = motor_frequency_2 = 860;
  8004ac6:	4b2c      	ldr	r3, [pc, #176]	; (8004b78 <setPlatformParam+0x16c>)
- 8004ac8:	f44f 62b7 	mov.w	r2, #1464	; 0x5b8
+ 8004ac8:	f44f 7257 	mov.w	r2, #860	; 0x35c
  8004acc:	801a      	strh	r2, [r3, #0]
  8004ace:	4b2a      	ldr	r3, [pc, #168]	; (8004b78 <setPlatformParam+0x16c>)
  8004ad0:	881a      	ldrh	r2, [r3, #0]
@@ -10869,9 +10869,9 @@ void setPlatformParam(uint16_t meas_res) {
  8004ad8:	f7fc f802 	bl	8000ae0 <setEncoderPollFrequency>
 		break;
  8004adc:	e048      	b.n	8004b70 <setPlatformParam+0x164>
-		motor_frequency_1 = motor_frequency_2 = 976;
+		motor_frequency_1 = motor_frequency_2 = 860;
  8004ade:	4b26      	ldr	r3, [pc, #152]	; (8004b78 <setPlatformParam+0x16c>)
- 8004ae0:	f44f 7274 	mov.w	r2, #976	; 0x3d0
+ 8004ae0:	f44f 7257 	mov.w	r2, #860	; 0x35c
  8004ae4:	801a      	strh	r2, [r3, #0]
  8004ae6:	4b24      	ldr	r3, [pc, #144]	; (8004b78 <setPlatformParam+0x16c>)
  8004ae8:	881a      	ldrh	r2, [r3, #0]

@@ -3392,31 +3392,31 @@ void convertAdcValues(uint8_t* buf, uint16_t size) {
 
 void setPlatformParam(uint16_t meas_res) {
 	switch(meas_res) {
-	case 365:
-		motor_frequency_1 = motor_frequency_2 = 1464;
+	case 365: // разрешение 1 градус
+		motor_frequency_1 = motor_frequency_2 = 860;
 		setEncoderPollFrequency(200);
 		break;
-	case 182:
-		motor_frequency_1 = motor_frequency_2 = 976;
+	case 182: // разрешение 30 минут
+		motor_frequency_1 = motor_frequency_2 = 860;
 		setEncoderPollFrequency(200);
 		break;
-	case 60:
+	case 60: // разрешение 10 минут
 		motor_frequency_1 = motor_frequency_2 = 366;
 		setEncoderPollFrequency(1000);
 		break;
-	case 29:
+	case 29: // разрешение 5 минут
 		motor_frequency_1 = motor_frequency_2 = 244;
 		setEncoderPollFrequency(1000);
 		break;
-	case 6:
+	case 6: // разрешение 1 минута
 		motor_frequency_1 = motor_frequency_2 = 50;
 		setEncoderPollFrequency(1000);
 		break;
-	case 3:
-		motor_frequency_1 = motor_frequency_2 = 24;
+	case 3: // разрешение 30 секунд
+		motor_frequency_1 = motor_frequency_2 = 20;
 		setEncoderPollFrequency(1000);
 		break;
-	case 1:
+	case 1: // разрешение 10 секунд
 		motor_frequency_1 = motor_frequency_2 = 10;
 		setEncoderPollFrequency(1000);
 		break;
