@@ -101,7 +101,7 @@ uint16_t test_counter_adc_data2 = 0;
 uint16_t busy_cnt, tim13_ovflw = 0;
 uint8_t ampl_buf[2];
 uint8_t start_ending_angle_items[2][8] = {{1,2,3,4,5,6,7,8},{180,150,120,90,60,30,10,5}};
-uint16_t measurement_res_items[2][8] = {{1,2,3,4,5,6,7,8},{365,182,60,29,6,3,1}}; // The values are set in arc seconds.
+uint16_t measurement_res_items[2][9] = {{1,2,3,4,5,6,7,8},{365,182,60,29,6,3,1,1820}}; // The values are set in arc seconds.
 uint32_t light_pow_period_items[9] = {36001000,18001000,6001000,601000,301000,101000,10000,5000,1000}; // values for TIMER_5 ARR
 uint16_t light_pow_res_items[12] = {50000,25000,10000,5000,2500,1000,500,250,100,50,25,10}; // values for TIMER ARR
 uint16_t crc, packet_cnt, error_val = 0;

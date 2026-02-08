@@ -5775,7 +5775,7 @@ LOAD d:/program files/stm32cubeide_1.12.0/stm32cubeide/plugins/com.st.stm32cube.
                 0x000000000800bf2c                . = ALIGN (0x4)
                 0x000000000800bf2c                _sidata = LOADADDR (.data)
 
-.data           0x0000000020000000      0x124 load address 0x000000000800bf2c
+.data           0x0000000020000000      0x128 load address 0x000000000800bf2c
                 0x0000000020000000                . = ALIGN (0x4)
                 0x0000000020000000                _sdata = .
  *(.data)
@@ -5801,493 +5801,492 @@ LOAD d:/program files/stm32cubeide_1.12.0/stm32cubeide/plugins/com.st.stm32cube.
                 0x0000000020000040       0x10 ./Core/Src/main.o
                 0x0000000020000040                start_ending_angle_items
  .data.measurement_res_items
-                0x0000000020000050       0x20 ./Core/Src/main.o
+                0x0000000020000050       0x24 ./Core/Src/main.o
                 0x0000000020000050                measurement_res_items
  .data.light_pow_period_items
-                0x0000000020000070       0x24 ./Core/Src/main.o
-                0x0000000020000070                light_pow_period_items
+                0x0000000020000074       0x24 ./Core/Src/main.o
+                0x0000000020000074                light_pow_period_items
  .data.light_pow_res_items
-                0x0000000020000094       0x18 ./Core/Src/main.o
-                0x0000000020000094                light_pow_res_items
+                0x0000000020000098       0x18 ./Core/Src/main.o
+                0x0000000020000098                light_pow_res_items
  .data.chosen_drv
-                0x00000000200000ac        0x1 ./Core/Src/main.o
-                0x00000000200000ac                chosen_drv
+                0x00000000200000b0        0x1 ./Core/Src/main.o
+                0x00000000200000b0                chosen_drv
  .data.init_state
-                0x00000000200000ad        0x1 ./Core/Src/main.o
-                0x00000000200000ad                init_state
+                0x00000000200000b1        0x1 ./Core/Src/main.o
+                0x00000000200000b1                init_state
  .data.next_command
-                0x00000000200000ae        0x1 ./Core/Src/main.o
-                0x00000000200000ae                next_command
- *fill*         0x00000000200000af        0x1 
+                0x00000000200000b2        0x1 ./Core/Src/main.o
+                0x00000000200000b2                next_command
+ *fill*         0x00000000200000b3        0x1 
  .data.motor_frequency_1
-                0x00000000200000b0        0x2 ./Core/Src/main.o
-                0x00000000200000b0                motor_frequency_1
+                0x00000000200000b4        0x2 ./Core/Src/main.o
+                0x00000000200000b4                motor_frequency_1
  .data.motor_frequency_2
-                0x00000000200000b2        0x2 ./Core/Src/main.o
-                0x00000000200000b2                motor_frequency_2
+                0x00000000200000b6        0x2 ./Core/Src/main.o
+                0x00000000200000b6                motor_frequency_2
  .data.SystemCoreClock
-                0x00000000200000b4        0x4 ./Core/Src/system_stm32f7xx.o
-                0x00000000200000b4                SystemCoreClock
+                0x00000000200000b8        0x4 ./Core/Src/system_stm32f7xx.o
+                0x00000000200000b8                SystemCoreClock
  .data.uwTickPrio
-                0x00000000200000b8        0x4 ./Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal.o
-                0x00000000200000b8                uwTickPrio
+                0x00000000200000bc        0x4 ./Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal.o
+                0x00000000200000bc                uwTickPrio
  .data.uwTickFreq
-                0x00000000200000bc        0x1 ./Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal.o
-                0x00000000200000bc                uwTickFreq
- *fill*         0x00000000200000bd        0x3 
+                0x00000000200000c0        0x1 ./Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal.o
+                0x00000000200000c0                uwTickFreq
+ *fill*         0x00000000200000c1        0x3 
  .data._impure_ptr
-                0x00000000200000c0        0x4 d:/program files/stm32cubeide_1.12.0/stm32cubeide/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.10.3-2021.10.win32_1.0.200.202301161003/tools/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libc_nano.a(lib_a-impure.o)
-                0x00000000200000c0                _impure_ptr
+                0x00000000200000c4        0x4 d:/program files/stm32cubeide_1.12.0/stm32cubeide/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.10.3-2021.10.win32_1.0.200.202301161003/tools/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libc_nano.a(lib_a-impure.o)
+                0x00000000200000c4                _impure_ptr
  .data.impure_data
-                0x00000000200000c4       0x60 d:/program files/stm32cubeide_1.12.0/stm32cubeide/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.10.3-2021.10.win32_1.0.200.202301161003/tools/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libc_nano.a(lib_a-impure.o)
+                0x00000000200000c8       0x60 d:/program files/stm32cubeide_1.12.0/stm32cubeide/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.10.3-2021.10.win32_1.0.200.202301161003/tools/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libc_nano.a(lib_a-impure.o)
  *(.RamFunc)
  *(.RamFunc*)
-                0x0000000020000124                . = ALIGN (0x4)
-                0x0000000020000124                _edata = .
+                0x0000000020000128                . = ALIGN (0x4)
+                0x0000000020000128                _edata = .
 
-.igot.plt       0x0000000020000124        0x0 load address 0x000000000800c050
- .igot.plt      0x0000000020000124        0x0 d:/program files/stm32cubeide_1.12.0/stm32cubeide/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.10.3-2021.10.win32_1.0.200.202301161003/tools/bin/../lib/gcc/arm-none-eabi/10.3.1/thumb/v7e-m+fp/hard/crtbegin.o
-                0x0000000020000124                . = ALIGN (0x4)
+.igot.plt       0x0000000020000128        0x0 load address 0x000000000800c054
+ .igot.plt      0x0000000020000128        0x0 d:/program files/stm32cubeide_1.12.0/stm32cubeide/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.10.3-2021.10.win32_1.0.200.202301161003/tools/bin/../lib/gcc/arm-none-eabi/10.3.1/thumb/v7e-m+fp/hard/crtbegin.o
+                0x0000000020000128                . = ALIGN (0x4)
 
-.bss            0x0000000020000124      0xad0 load address 0x000000000800c050
-                0x0000000020000124                _sbss = .
-                0x0000000020000124                __bss_start__ = _sbss
+.bss            0x0000000020000128      0xad0 load address 0x000000000800c054
+                0x0000000020000128                _sbss = .
+                0x0000000020000128                __bss_start__ = _sbss
  *(.bss)
- .bss           0x0000000020000124       0x1c d:/program files/stm32cubeide_1.12.0/stm32cubeide/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.10.3-2021.10.win32_1.0.200.202301161003/tools/bin/../lib/gcc/arm-none-eabi/10.3.1/thumb/v7e-m+fp/hard/crtbegin.o
+ .bss           0x0000000020000128       0x1c d:/program files/stm32cubeide_1.12.0/stm32cubeide/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.10.3-2021.10.win32_1.0.200.202301161003/tools/bin/../lib/gcc/arm-none-eabi/10.3.1/thumb/v7e-m+fp/hard/crtbegin.o
  *(.bss*)
  .bss.page_error
-                0x0000000020000140        0x4 ./Core/Src/FlashUtils.o
-                0x0000000020000140                page_error
+                0x0000000020000144        0x4 ./Core/Src/FlashUtils.o
+                0x0000000020000144                page_error
  .bss.EraseInitStruct
-                0x0000000020000144       0x10 ./Core/Src/FlashUtils.o
+                0x0000000020000148       0x10 ./Core/Src/FlashUtils.o
  .bss.stop_poll
-                0x0000000020000154        0x1 ./Core/Src/PC_Communication.o
-                0x0000000020000154                stop_poll
+                0x0000000020000158        0x1 ./Core/Src/PC_Communication.o
+                0x0000000020000158                stop_poll
  .bss.data_status
-                0x0000000020000155        0x1 ./Core/Src/PC_Communication.o
-                0x0000000020000155                data_status
+                0x0000000020000159        0x1 ./Core/Src/PC_Communication.o
+                0x0000000020000159                data_status
  .bss.wait_adc_data_flag
-                0x0000000020000156        0x1 ./Core/Src/PD_Communication.o
-                0x0000000020000156                wait_adc_data_flag
- *fill*         0x0000000020000157        0x1 
+                0x000000002000015a        0x1 ./Core/Src/PD_Communication.o
+                0x000000002000015a                wait_adc_data_flag
+ *fill*         0x000000002000015b        0x1 
  .bss.uart1_rx_buffer
-                0x0000000020000158        0x5 ./Core/Src/PD_Communication.o
-                0x0000000020000158                uart1_rx_buffer
+                0x000000002000015c        0x5 ./Core/Src/PD_Communication.o
+                0x000000002000015c                uart1_rx_buffer
  .bss.data_buf_counter
-                0x000000002000015d        0x1 ./Core/Src/PD_Communication.o
-                0x000000002000015d                data_buf_counter
- *fill*         0x000000002000015e        0x2 
+                0x0000000020000161        0x1 ./Core/Src/PD_Communication.o
+                0x0000000020000161                data_buf_counter
+ *fill*         0x0000000020000162        0x2 
  .bss.adc_data_buf
-                0x0000000020000160       0x21 ./Core/Src/PD_Communication.o
-                0x0000000020000160                adc_data_buf
+                0x0000000020000164       0x21 ./Core/Src/PD_Communication.o
+                0x0000000020000164                adc_data_buf
  .bss.wait_flag
-                0x0000000020000181        0x1 ./Core/Src/PD_Communication.o
-                0x0000000020000181                wait_flag
- *fill*         0x0000000020000182        0x2 
+                0x0000000020000185        0x1 ./Core/Src/PD_Communication.o
+                0x0000000020000185                wait_flag
+ *fill*         0x0000000020000186        0x2 
  .bss.horizontal
-                0x0000000020000184       0x30 ./Core/Src/Platform.o
-                0x0000000020000184                horizontal
+                0x0000000020000188       0x30 ./Core/Src/Platform.o
+                0x0000000020000188                horizontal
  .bss.is_motor_moving
-                0x00000000200001b4        0x1 ./Core/Src/Platform.o
-                0x00000000200001b4                is_motor_moving
+                0x00000000200001b8        0x1 ./Core/Src/Platform.o
+                0x00000000200001b8                is_motor_moving
  .bss.is_backlash_passed
-                0x00000000200001b5        0x1 ./Core/Src/Platform.o
-                0x00000000200001b5                is_backlash_passed
+                0x00000000200001b9        0x1 ./Core/Src/Platform.o
+                0x00000000200001b9                is_backlash_passed
  .bss.use_check_backlash
-                0x00000000200001b6        0x1 ./Core/Src/Platform.o
-                0x00000000200001b6                use_check_backlash
+                0x00000000200001ba        0x1 ./Core/Src/Platform.o
+                0x00000000200001ba                use_check_backlash
  .bss.is_req_freq_reach
-                0x00000000200001b7        0x1 ./Core/Src/Platform.o
-                0x00000000200001b7                is_req_freq_reach
+                0x00000000200001bb        0x1 ./Core/Src/Platform.o
+                0x00000000200001bb                is_req_freq_reach
  .bss.last_encoder_pos
-                0x00000000200001b8        0x4 ./Core/Src/Platform.o
-                0x00000000200001b8                last_encoder_pos
- .bss.left_bound
                 0x00000000200001bc        0x4 ./Core/Src/Platform.o
-                0x00000000200001bc                left_bound
- .bss.right_bound
+                0x00000000200001bc                last_encoder_pos
+ .bss.left_bound
                 0x00000000200001c0        0x4 ./Core/Src/Platform.o
-                0x00000000200001c0                right_bound
+                0x00000000200001c0                left_bound
+ .bss.right_bound
+                0x00000000200001c4        0x4 ./Core/Src/Platform.o
+                0x00000000200001c4                right_bound
  .bss.current_motor_freq
-                0x00000000200001c4        0x2 ./Core/Src/Platform.o
-                0x00000000200001c4                current_motor_freq
+                0x00000000200001c8        0x2 ./Core/Src/Platform.o
+                0x00000000200001c8                current_motor_freq
  .bss.target_motor_freq
-                0x00000000200001c6        0x2 ./Core/Src/Platform.o
-                0x00000000200001c6                target_motor_freq
- .bss.hiwdg     0x00000000200001c8       0x10 ./Core/Src/main.o
-                0x00000000200001c8                hiwdg
- .bss.hspi3     0x00000000200001d8       0x64 ./Core/Src/main.o
-                0x00000000200001d8                hspi3
- .bss.hspi4     0x000000002000023c       0x64 ./Core/Src/main.o
-                0x000000002000023c                hspi4
+                0x00000000200001ca        0x2 ./Core/Src/Platform.o
+                0x00000000200001ca                target_motor_freq
+ .bss.hiwdg     0x00000000200001cc       0x10 ./Core/Src/main.o
+                0x00000000200001cc                hiwdg
+ .bss.hspi3     0x00000000200001dc       0x64 ./Core/Src/main.o
+                0x00000000200001dc                hspi3
+ .bss.hspi4     0x0000000020000240       0x64 ./Core/Src/main.o
+                0x0000000020000240                hspi4
  .bss.hdma_spi3_rx
-                0x00000000200002a0       0x60 ./Core/Src/main.o
-                0x00000000200002a0                hdma_spi3_rx
+                0x00000000200002a4       0x60 ./Core/Src/main.o
+                0x00000000200002a4                hdma_spi3_rx
  .bss.hdma_spi3_tx
-                0x0000000020000300       0x60 ./Core/Src/main.o
-                0x0000000020000300                hdma_spi3_tx
+                0x0000000020000304       0x60 ./Core/Src/main.o
+                0x0000000020000304                hdma_spi3_tx
  .bss.hdma_spi4_rx
-                0x0000000020000360       0x60 ./Core/Src/main.o
-                0x0000000020000360                hdma_spi4_rx
+                0x0000000020000364       0x60 ./Core/Src/main.o
+                0x0000000020000364                hdma_spi4_rx
  .bss.hdma_spi4_tx
-                0x00000000200003c0       0x60 ./Core/Src/main.o
-                0x00000000200003c0                hdma_spi4_tx
- .bss.htim2     0x0000000020000420       0x4c ./Core/Src/main.o
-                0x0000000020000420                htim2
- .bss.htim3     0x000000002000046c       0x4c ./Core/Src/main.o
-                0x000000002000046c                htim3
- .bss.htim4     0x00000000200004b8       0x4c ./Core/Src/main.o
-                0x00000000200004b8                htim4
- .bss.htim5     0x0000000020000504       0x4c ./Core/Src/main.o
-                0x0000000020000504                htim5
- .bss.htim6     0x0000000020000550       0x4c ./Core/Src/main.o
-                0x0000000020000550                htim6
- .bss.htim7     0x000000002000059c       0x4c ./Core/Src/main.o
-                0x000000002000059c                htim7
- .bss.htim10    0x00000000200005e8       0x4c ./Core/Src/main.o
-                0x00000000200005e8                htim10
- .bss.htim11    0x0000000020000634       0x4c ./Core/Src/main.o
-                0x0000000020000634                htim11
- .bss.htim12    0x0000000020000680       0x4c ./Core/Src/main.o
-                0x0000000020000680                htim12
- .bss.htim13    0x00000000200006cc       0x4c ./Core/Src/main.o
-                0x00000000200006cc                htim13
- .bss.htim14    0x0000000020000718       0x4c ./Core/Src/main.o
-                0x0000000020000718                htim14
- .bss.huart1    0x0000000020000764       0x88 ./Core/Src/main.o
-                0x0000000020000764                huart1
- .bss.huart3    0x00000000200007ec       0x88 ./Core/Src/main.o
-                0x00000000200007ec                huart3
+                0x00000000200003c4       0x60 ./Core/Src/main.o
+                0x00000000200003c4                hdma_spi4_tx
+ .bss.htim2     0x0000000020000424       0x4c ./Core/Src/main.o
+                0x0000000020000424                htim2
+ .bss.htim3     0x0000000020000470       0x4c ./Core/Src/main.o
+                0x0000000020000470                htim3
+ .bss.htim4     0x00000000200004bc       0x4c ./Core/Src/main.o
+                0x00000000200004bc                htim4
+ .bss.htim5     0x0000000020000508       0x4c ./Core/Src/main.o
+                0x0000000020000508                htim5
+ .bss.htim6     0x0000000020000554       0x4c ./Core/Src/main.o
+                0x0000000020000554                htim6
+ .bss.htim7     0x00000000200005a0       0x4c ./Core/Src/main.o
+                0x00000000200005a0                htim7
+ .bss.htim10    0x00000000200005ec       0x4c ./Core/Src/main.o
+                0x00000000200005ec                htim10
+ .bss.htim11    0x0000000020000638       0x4c ./Core/Src/main.o
+                0x0000000020000638                htim11
+ .bss.htim12    0x0000000020000684       0x4c ./Core/Src/main.o
+                0x0000000020000684                htim12
+ .bss.htim13    0x00000000200006d0       0x4c ./Core/Src/main.o
+                0x00000000200006d0                htim13
+ .bss.htim14    0x000000002000071c       0x4c ./Core/Src/main.o
+                0x000000002000071c                htim14
+ .bss.huart1    0x0000000020000768       0x88 ./Core/Src/main.o
+                0x0000000020000768                huart1
+ .bss.huart3    0x00000000200007f0       0x88 ./Core/Src/main.o
+                0x00000000200007f0                huart3
  .bss.hdma_usart1_rx
-                0x0000000020000874       0x60 ./Core/Src/main.o
-                0x0000000020000874                hdma_usart1_rx
+                0x0000000020000878       0x60 ./Core/Src/main.o
+                0x0000000020000878                hdma_usart1_rx
  .bss.hdma_usart3_rx
-                0x00000000200008d4       0x60 ./Core/Src/main.o
-                0x00000000200008d4                hdma_usart3_rx
+                0x00000000200008d8       0x60 ./Core/Src/main.o
+                0x00000000200008d8                hdma_usart3_rx
  .bss.dma_spi4_buf
-                0x0000000020000934        0x5 ./Core/Src/main.o
-                0x0000000020000934                dma_spi4_buf
- *fill*         0x0000000020000939        0x3 
+                0x0000000020000938        0x5 ./Core/Src/main.o
+                0x0000000020000938                dma_spi4_buf
+ *fill*         0x000000002000093d        0x3 
  .bss.dma_spi3_buf
-                0x000000002000093c        0x5 ./Core/Src/main.o
-                0x000000002000093c                dma_spi3_buf
- *fill*         0x0000000020000941        0x3 
+                0x0000000020000940        0x5 ./Core/Src/main.o
+                0x0000000020000940                dma_spi3_buf
+ *fill*         0x0000000020000945        0x3 
  .bss.response_buf
-                0x0000000020000944       0x21 ./Core/Src/main.o
-                0x0000000020000944                response_buf
+                0x0000000020000948       0x21 ./Core/Src/main.o
+                0x0000000020000948                response_buf
  .bss.data_elem_cnt_calib
-                0x0000000020000965        0x1 ./Core/Src/main.o
-                0x0000000020000965                data_elem_cnt_calib
+                0x0000000020000969        0x1 ./Core/Src/main.o
+                0x0000000020000969                data_elem_cnt_calib
  .bss.tim14_arr_val
-                0x0000000020000966        0x2 ./Core/Src/main.o
-                0x0000000020000966                tim14_arr_val
- .bss.test_counter_adc_data
-                0x0000000020000968        0x2 ./Core/Src/main.o
-                0x0000000020000968                test_counter_adc_data
- .bss.test_cnt_uart1_rx
                 0x000000002000096a        0x2 ./Core/Src/main.o
-                0x000000002000096a                test_cnt_uart1_rx
- .bss.uart1_received_cnt
+                0x000000002000096a                tim14_arr_val
+ .bss.test_counter_adc_data
                 0x000000002000096c        0x2 ./Core/Src/main.o
-                0x000000002000096c                uart1_received_cnt
- .bss.uart1_received_cnt_global
+                0x000000002000096c                test_counter_adc_data
+ .bss.test_cnt_uart1_rx
                 0x000000002000096e        0x2 ./Core/Src/main.o
-                0x000000002000096e                uart1_received_cnt_global
- .bss.take_data_cnt
+                0x000000002000096e                test_cnt_uart1_rx
+ .bss.uart1_received_cnt
                 0x0000000020000970        0x2 ./Core/Src/main.o
-                0x0000000020000970                take_data_cnt
- .bss.test_counter_adc_data2
+                0x0000000020000970                uart1_received_cnt
+ .bss.uart1_received_cnt_global
                 0x0000000020000972        0x2 ./Core/Src/main.o
-                0x0000000020000972                test_counter_adc_data2
- .bss.tim13_ovflw
+                0x0000000020000972                uart1_received_cnt_global
+ .bss.take_data_cnt
                 0x0000000020000974        0x2 ./Core/Src/main.o
-                0x0000000020000974                tim13_ovflw
- *fill*         0x0000000020000976        0x2 
- .bss.ampl_buf  0x0000000020000978        0x2 ./Core/Src/main.o
-                0x0000000020000978                ampl_buf
- .bss.crc       0x000000002000097a        0x2 ./Core/Src/main.o
-                0x000000002000097a                crc
+                0x0000000020000974                take_data_cnt
+ .bss.test_counter_adc_data2
+                0x0000000020000976        0x2 ./Core/Src/main.o
+                0x0000000020000976                test_counter_adc_data2
+ .bss.tim13_ovflw
+                0x0000000020000978        0x2 ./Core/Src/main.o
+                0x0000000020000978                tim13_ovflw
+ *fill*         0x000000002000097a        0x2 
+ .bss.ampl_buf  0x000000002000097c        0x2 ./Core/Src/main.o
+                0x000000002000097c                ampl_buf
+ .bss.crc       0x000000002000097e        0x2 ./Core/Src/main.o
+                0x000000002000097e                crc
  .bss.packet_cnt
-                0x000000002000097c        0x2 ./Core/Src/main.o
-                0x000000002000097c                packet_cnt
+                0x0000000020000980        0x2 ./Core/Src/main.o
+                0x0000000020000980                packet_cnt
  .bss.error_val
-                0x000000002000097e        0x2 ./Core/Src/main.o
-                0x000000002000097e                error_val
+                0x0000000020000982        0x2 ./Core/Src/main.o
+                0x0000000020000982                error_val
  .bss.current_pos
-                0x0000000020000980        0x1 ./Core/Src/main.o
-                0x0000000020000980                current_pos
- .bss.i         0x0000000020000981        0x1 ./Core/Src/main.o
-                0x0000000020000981                i
- *fill*         0x0000000020000982        0x2 
- .bss.tim13cnt  0x0000000020000984        0x4 ./Core/Src/main.o
-                0x0000000020000984                tim13cnt
+                0x0000000020000984        0x1 ./Core/Src/main.o
+                0x0000000020000984                current_pos
+ .bss.i         0x0000000020000985        0x1 ./Core/Src/main.o
+                0x0000000020000985                i
+ *fill*         0x0000000020000986        0x2 
+ .bss.tim13cnt  0x0000000020000988        0x4 ./Core/Src/main.o
+                0x0000000020000988                tim13cnt
  .bss.tim14_arr_val_converted
-                0x0000000020000988        0x4 ./Core/Src/main.o
-                0x0000000020000988                tim14_arr_val_converted
- .bss.new_tim_arr_val
                 0x000000002000098c        0x4 ./Core/Src/main.o
-                0x000000002000098c                new_tim_arr_val
- .bss.new_arr_val
+                0x000000002000098c                tim14_arr_val_converted
+ .bss.new_tim_arr_val
                 0x0000000020000990        0x4 ./Core/Src/main.o
-                0x0000000020000990                new_arr_val
- .bss.adc_data_cnt
+                0x0000000020000990                new_tim_arr_val
+ .bss.new_arr_val
                 0x0000000020000994        0x4 ./Core/Src/main.o
-                0x0000000020000994                adc_data_cnt
- .bss.required_data_num
+                0x0000000020000994                new_arr_val
+ .bss.adc_data_cnt
                 0x0000000020000998        0x4 ./Core/Src/main.o
-                0x0000000020000998                required_data_num
- .bss.usart3_reg
+                0x0000000020000998                adc_data_cnt
+ .bss.required_data_num
                 0x000000002000099c        0x4 ./Core/Src/main.o
-                0x000000002000099c                usart3_reg
- .bss.usart3_error
+                0x000000002000099c                required_data_num
+ .bss.usart3_reg
                 0x00000000200009a0        0x4 ./Core/Src/main.o
-                0x00000000200009a0                usart3_error
- .bss.photodetector_offset_val
+                0x00000000200009a0                usart3_reg
+ .bss.usart3_error
                 0x00000000200009a4        0x4 ./Core/Src/main.o
-                0x00000000200009a4                photodetector_offset_val
- .bss.control_pos
+                0x00000000200009a4                usart3_error
+ .bss.photodetector_offset_val
                 0x00000000200009a8        0x4 ./Core/Src/main.o
-                0x00000000200009a8                control_pos
+                0x00000000200009a8                photodetector_offset_val
+ .bss.control_pos
+                0x00000000200009ac        0x4 ./Core/Src/main.o
+                0x00000000200009ac                control_pos
  .bss.encoder_offset
-                0x00000000200009ac        0x8 ./Core/Src/main.o
-                0x00000000200009ac                encoder_offset
+                0x00000000200009b0        0x8 ./Core/Src/main.o
+                0x00000000200009b0                encoder_offset
  .bss.error_code
-                0x00000000200009b4        0x1 ./Core/Src/main.o
-                0x00000000200009b4                error_code
- .bss.reach_start_position
-                0x00000000200009b5        0x1 ./Core/Src/main.o
-                0x00000000200009b5                reach_start_position
- .bss.reach_end_position
-                0x00000000200009b6        0x1 ./Core/Src/main.o
-                0x00000000200009b6                reach_end_position
- .bss.reach_accel_position
-                0x00000000200009b7        0x1 ./Core/Src/main.o
-                0x00000000200009b7                reach_accel_position
- .bss.step_1_vertical_meas
                 0x00000000200009b8        0x1 ./Core/Src/main.o
-                0x00000000200009b8                step_1_vertical_meas
- .bss.step_2_vertical_meas
+                0x00000000200009b8                error_code
+ .bss.reach_start_position
                 0x00000000200009b9        0x1 ./Core/Src/main.o
-                0x00000000200009b9                step_2_vertical_meas
- .bss.reach_start_position_vertical
+                0x00000000200009b9                reach_start_position
+ .bss.reach_end_position
                 0x00000000200009ba        0x1 ./Core/Src/main.o
-                0x00000000200009ba                reach_start_position_vertical
- .bss.end_meas_flag
+                0x00000000200009ba                reach_end_position
+ .bss.reach_accel_position
                 0x00000000200009bb        0x1 ./Core/Src/main.o
-                0x00000000200009bb                end_meas_flag
- .bss.reducing_pos_calc
+                0x00000000200009bb                reach_accel_position
+ .bss.step_1_vertical_meas
                 0x00000000200009bc        0x1 ./Core/Src/main.o
-                0x00000000200009bc                reducing_pos_calc
- .bss.reach_test_turn_pos
+                0x00000000200009bc                step_1_vertical_meas
+ .bss.step_2_vertical_meas
                 0x00000000200009bd        0x1 ./Core/Src/main.o
-                0x00000000200009bd                reach_test_turn_pos
- .bss.start_light_pow_meas
+                0x00000000200009bd                step_2_vertical_meas
+ .bss.reach_start_position_vertical
                 0x00000000200009be        0x1 ./Core/Src/main.o
-                0x00000000200009be                start_light_pow_meas
- .bss.adc_coeff_command_set
+                0x00000000200009be                reach_start_position_vertical
+ .bss.end_meas_flag
                 0x00000000200009bf        0x1 ./Core/Src/main.o
-                0x00000000200009bf                adc_coeff_command_set
- .bss.adc_coeff_set_complete
+                0x00000000200009bf                end_meas_flag
+ .bss.reducing_pos_calc
                 0x00000000200009c0        0x1 ./Core/Src/main.o
-                0x00000000200009c0                adc_coeff_set_complete
- .bss.tim14_cnt
+                0x00000000200009c0                reducing_pos_calc
+ .bss.reach_test_turn_pos
                 0x00000000200009c1        0x1 ./Core/Src/main.o
-                0x00000000200009c1                tim14_cnt
- .bss.tim10_cnt
+                0x00000000200009c1                reach_test_turn_pos
+ .bss.start_light_pow_meas
                 0x00000000200009c2        0x1 ./Core/Src/main.o
-                0x00000000200009c2                tim10_cnt
- .bss.allow     0x00000000200009c3        0x1 ./Core/Src/main.o
-                0x00000000200009c3                allow
- .bss.end_calibration_flag
+                0x00000000200009c2                start_light_pow_meas
+ .bss.adc_coeff_command_set
+                0x00000000200009c3        0x1 ./Core/Src/main.o
+                0x00000000200009c3                adc_coeff_command_set
+ .bss.adc_coeff_set_complete
                 0x00000000200009c4        0x1 ./Core/Src/main.o
-                0x00000000200009c4                end_calibration_flag
- .bss.full_rotation
+                0x00000000200009c4                adc_coeff_set_complete
+ .bss.tim14_cnt
                 0x00000000200009c5        0x1 ./Core/Src/main.o
-                0x00000000200009c5                full_rotation
- *fill*         0x00000000200009c6        0x2 
+                0x00000000200009c5                tim14_cnt
+ .bss.tim10_cnt
+                0x00000000200009c6        0x1 ./Core/Src/main.o
+                0x00000000200009c6                tim10_cnt
+ .bss.allow     0x00000000200009c7        0x1 ./Core/Src/main.o
+                0x00000000200009c7                allow
+ .bss.end_calibration_flag
+                0x00000000200009c8        0x1 ./Core/Src/main.o
+                0x00000000200009c8                end_calibration_flag
+ .bss.full_rotation
+                0x00000000200009c9        0x1 ./Core/Src/main.o
+                0x00000000200009c9                full_rotation
+ *fill*         0x00000000200009ca        0x2 
  .bss.inv_encoder1_data
-                0x00000000200009c8        0x4 ./Core/Src/main.o
-                0x00000000200009c8                inv_encoder1_data
- .bss.inv_encoder2_data
                 0x00000000200009cc        0x4 ./Core/Src/main.o
-                0x00000000200009cc                inv_encoder2_data
- .bss.start_position_drv1
+                0x00000000200009cc                inv_encoder1_data
+ .bss.inv_encoder2_data
                 0x00000000200009d0        0x4 ./Core/Src/main.o
-                0x00000000200009d0                start_position_drv1
- .bss.start_position_drv2
+                0x00000000200009d0                inv_encoder2_data
+ .bss.start_position_drv1
                 0x00000000200009d4        0x4 ./Core/Src/main.o
-                0x00000000200009d4                start_position_drv2
- .bss.end_position_drv1
+                0x00000000200009d4                start_position_drv1
+ .bss.start_position_drv2
                 0x00000000200009d8        0x4 ./Core/Src/main.o
-                0x00000000200009d8                end_position_drv1
- .bss.end_position_drv2
+                0x00000000200009d8                start_position_drv2
+ .bss.end_position_drv1
                 0x00000000200009dc        0x4 ./Core/Src/main.o
-                0x00000000200009dc                end_position_drv2
- .bss.accel_position_drv1
+                0x00000000200009dc                end_position_drv1
+ .bss.end_position_drv2
                 0x00000000200009e0        0x4 ./Core/Src/main.o
-                0x00000000200009e0                accel_position_drv1
- .bss.accel_position_drv2
+                0x00000000200009e0                end_position_drv2
+ .bss.accel_position_drv1
                 0x00000000200009e4        0x4 ./Core/Src/main.o
-                0x00000000200009e4                accel_position_drv2
- .bss.end_position_drv_tmp
+                0x00000000200009e4                accel_position_drv1
+ .bss.accel_position_drv2
                 0x00000000200009e8        0x4 ./Core/Src/main.o
-                0x00000000200009e8                end_position_drv_tmp
- .bss.encoder1_increment_res
+                0x00000000200009e8                accel_position_drv2
+ .bss.end_position_drv_tmp
                 0x00000000200009ec        0x4 ./Core/Src/main.o
-                0x00000000200009ec                encoder1_increment_res
- .bss.encoder2_increment_res
+                0x00000000200009ec                end_position_drv_tmp
+ .bss.encoder1_increment_res
                 0x00000000200009f0        0x4 ./Core/Src/main.o
-                0x00000000200009f0                encoder2_increment_res
- .bss.ENCODER_1_OFFSET
+                0x00000000200009f0                encoder1_increment_res
+ .bss.encoder2_increment_res
                 0x00000000200009f4        0x4 ./Core/Src/main.o
-                0x00000000200009f4                ENCODER_1_OFFSET
- .bss.ENCODER_2_OFFSET
+                0x00000000200009f4                encoder2_increment_res
+ .bss.ENCODER_1_OFFSET
                 0x00000000200009f8        0x4 ./Core/Src/main.o
-                0x00000000200009f8                ENCODER_2_OFFSET
- .bss.angle_position_drv1
+                0x00000000200009f8                ENCODER_1_OFFSET
+ .bss.ENCODER_2_OFFSET
                 0x00000000200009fc        0x4 ./Core/Src/main.o
-                0x00000000200009fc                angle_position_drv1
- .bss.angle_position_drv2
+                0x00000000200009fc                ENCODER_2_OFFSET
+ .bss.angle_position_drv1
                 0x0000000020000a00        0x4 ./Core/Src/main.o
-                0x0000000020000a00                angle_position_drv2
- .bss.begin_pos_drv1
+                0x0000000020000a00                angle_position_drv1
+ .bss.angle_position_drv2
                 0x0000000020000a04        0x4 ./Core/Src/main.o
-                0x0000000020000a04                begin_pos_drv1
- .bss.begin_pos_drv2
+                0x0000000020000a04                angle_position_drv2
+ .bss.begin_pos_drv1
                 0x0000000020000a08        0x4 ./Core/Src/main.o
-                0x0000000020000a08                begin_pos_drv2
- .bss.angle_position_drv1_tmp
+                0x0000000020000a08                begin_pos_drv1
+ .bss.begin_pos_drv2
                 0x0000000020000a0c        0x4 ./Core/Src/main.o
-                0x0000000020000a0c                angle_position_drv1_tmp
- .bss.test_angle
+                0x0000000020000a0c                begin_pos_drv2
+ .bss.angle_position_drv1_tmp
                 0x0000000020000a10        0x4 ./Core/Src/main.o
-                0x0000000020000a10                test_angle
+                0x0000000020000a10                angle_position_drv1_tmp
+ .bss.test_angle
+                0x0000000020000a14        0x4 ./Core/Src/main.o
+                0x0000000020000a14                test_angle
  .bss.meas_res_drv1
-                0x0000000020000a14        0x2 ./Core/Src/main.o
-                0x0000000020000a14                meas_res_drv1
- .bss.meas_res_drv2
-                0x0000000020000a16        0x2 ./Core/Src/main.o
-                0x0000000020000a16                meas_res_drv2
- .bss.start_angle
                 0x0000000020000a18        0x2 ./Core/Src/main.o
-                0x0000000020000a18                start_angle
- .bss.end_angle
+                0x0000000020000a18                meas_res_drv1
+ .bss.meas_res_drv2
                 0x0000000020000a1a        0x2 ./Core/Src/main.o
-                0x0000000020000a1a                end_angle
- .bss.accel_angle
+                0x0000000020000a1a                meas_res_drv2
+ .bss.start_angle
                 0x0000000020000a1c        0x2 ./Core/Src/main.o
-                0x0000000020000a1c                accel_angle
- .bss.test_data_buf_cnt
+                0x0000000020000a1c                start_angle
+ .bss.end_angle
                 0x0000000020000a1e        0x2 ./Core/Src/main.o
-                0x0000000020000a1e                test_data_buf_cnt
+                0x0000000020000a1e                end_angle
+ .bss.accel_angle
+                0x0000000020000a20        0x2 ./Core/Src/main.o
+                0x0000000020000a20                accel_angle
+ .bss.test_data_buf_cnt
+                0x0000000020000a22        0x2 ./Core/Src/main.o
+                0x0000000020000a22                test_data_buf_cnt
  .bss.uart3_rx_buffer
-                0x0000000020000a20        0x6 ./Core/Src/main.o
-                0x0000000020000a20                uart3_rx_buffer
- *fill*         0x0000000020000a26        0x2 
+                0x0000000020000a24        0x6 ./Core/Src/main.o
+                0x0000000020000a24                uart3_rx_buffer
+ *fill*         0x0000000020000a2a        0x2 
  .bss.uart3_rx_safe_buffer
-                0x0000000020000a28        0x6 ./Core/Src/main.o
-                0x0000000020000a28                uart3_rx_safe_buffer
- *fill*         0x0000000020000a2e        0x2 
+                0x0000000020000a2c        0x6 ./Core/Src/main.o
+                0x0000000020000a2c                uart3_rx_safe_buffer
+ *fill*         0x0000000020000a32        0x2 
  .bss.uart1_rx_safe_buffer
-                0x0000000020000a30        0x5 ./Core/Src/main.o
-                0x0000000020000a30                uart1_rx_safe_buffer
- *fill*         0x0000000020000a35        0x3 
+                0x0000000020000a34        0x5 ./Core/Src/main.o
+                0x0000000020000a34                uart1_rx_safe_buffer
+ *fill*         0x0000000020000a39        0x3 
  .bss.uart1_rx_safe_buffer_meas
-                0x0000000020000a38        0x5 ./Core/Src/main.o
-                0x0000000020000a38                uart1_rx_safe_buffer_meas
- *fill*         0x0000000020000a3d        0x3 
+                0x0000000020000a3c        0x5 ./Core/Src/main.o
+                0x0000000020000a3c                uart1_rx_safe_buffer_meas
+ *fill*         0x0000000020000a41        0x3 
  .bss.uart1_rx_calibration_buffer
-                0x0000000020000a40       0x96 ./Core/Src/main.o
-                0x0000000020000a40                uart1_rx_calibration_buffer
- *fill*         0x0000000020000ad6        0x2 
+                0x0000000020000a44       0x96 ./Core/Src/main.o
+                0x0000000020000a44                uart1_rx_calibration_buffer
+ *fill*         0x0000000020000ada        0x2 
  .bss.adc_values_buf
-                0x0000000020000ad8       0xc8 ./Core/Src/main.o
-                0x0000000020000ad8                adc_values_buf
+                0x0000000020000adc       0xc8 ./Core/Src/main.o
+                0x0000000020000adc                adc_values_buf
  .bss.uart1_rx_complete
-                0x0000000020000ba0        0x1 ./Core/Src/main.o
-                0x0000000020000ba0                uart1_rx_complete
- .bss.uart3_rx_complete
-                0x0000000020000ba1        0x1 ./Core/Src/main.o
-                0x0000000020000ba1                uart3_rx_complete
- .bss.spi4_rx_complete
-                0x0000000020000ba2        0x1 ./Core/Src/main.o
-                0x0000000020000ba2                spi4_rx_complete
- .bss.spi3_rx_complete
-                0x0000000020000ba3        0x1 ./Core/Src/main.o
-                0x0000000020000ba3                spi3_rx_complete
- .bss.driver_dir1
                 0x0000000020000ba4        0x1 ./Core/Src/main.o
-                0x0000000020000ba4                driver_dir1
- .bss.driver_dir2
+                0x0000000020000ba4                uart1_rx_complete
+ .bss.uart3_rx_complete
                 0x0000000020000ba5        0x1 ./Core/Src/main.o
-                0x0000000020000ba5                driver_dir2
- .bss.tim4_ovflw
+                0x0000000020000ba5                uart3_rx_complete
+ .bss.spi4_rx_complete
                 0x0000000020000ba6        0x1 ./Core/Src/main.o
-                0x0000000020000ba6                tim4_ovflw
- .bss.tim12_ovflw
+                0x0000000020000ba6                spi4_rx_complete
+ .bss.spi3_rx_complete
                 0x0000000020000ba7        0x1 ./Core/Src/main.o
-                0x0000000020000ba7                tim12_ovflw
- .bss.ready_status
+                0x0000000020000ba7                spi3_rx_complete
+ .bss.driver_dir1
                 0x0000000020000ba8        0x1 ./Core/Src/main.o
-                0x0000000020000ba8                ready_status
- .bss.cur_action
+                0x0000000020000ba8                driver_dir1
+ .bss.driver_dir2
                 0x0000000020000ba9        0x1 ./Core/Src/main.o
-                0x0000000020000ba9                cur_action
- .bss.trans_states
+                0x0000000020000ba9                driver_dir2
+ .bss.tim4_ovflw
                 0x0000000020000baa        0x1 ./Core/Src/main.o
-                0x0000000020000baa                trans_states
- .bss.current_horiz_platform
+                0x0000000020000baa                tim4_ovflw
+ .bss.tim12_ovflw
                 0x0000000020000bab        0x1 ./Core/Src/main.o
-                0x0000000020000bab                current_horiz_platform
- .bss.operation_progress
+                0x0000000020000bab                tim12_ovflw
+ .bss.ready_status
                 0x0000000020000bac        0x1 ./Core/Src/main.o
-                0x0000000020000bac                operation_progress
- *fill*         0x0000000020000bad        0x3 
+                0x0000000020000bac                ready_status
+ .bss.cur_action
+                0x0000000020000bad        0x1 ./Core/Src/main.o
+                0x0000000020000bad                cur_action
+ .bss.trans_states
+                0x0000000020000bae        0x1 ./Core/Src/main.o
+                0x0000000020000bae                trans_states
+ .bss.current_horiz_platform
+                0x0000000020000baf        0x1 ./Core/Src/main.o
+                0x0000000020000baf                current_horiz_platform
+ .bss.operation_progress
+                0x0000000020000bb0        0x1 ./Core/Src/main.o
+                0x0000000020000bb0                operation_progress
+ *fill*         0x0000000020000bb1        0x3 
  .bss.encoder1_data
-                0x0000000020000bb0        0x4 ./Core/Src/main.o
-                0x0000000020000bb0                encoder1_data
- .bss.encoder2_data
                 0x0000000020000bb4        0x4 ./Core/Src/main.o
-                0x0000000020000bb4                encoder2_data
- .bss.error_val_sum
+                0x0000000020000bb4                encoder1_data
+ .bss.encoder2_data
                 0x0000000020000bb8        0x4 ./Core/Src/main.o
-                0x0000000020000bb8                error_val_sum
- .bss.crc_PC_error_cnt
+                0x0000000020000bb8                encoder2_data
+ .bss.error_val_sum
                 0x0000000020000bbc        0x4 ./Core/Src/main.o
-                0x0000000020000bbc                crc_PC_error_cnt
+                0x0000000020000bbc                error_val_sum
+ .bss.crc_PC_error_cnt
+                0x0000000020000bc0        0x4 ./Core/Src/main.o
+                0x0000000020000bc0                crc_PC_error_cnt
  .bss.__sbrk_heap_end
-                0x0000000020000bc0        0x4 ./Core/Src/sysmem.o
- .bss.uwTick    0x0000000020000bc4        0x4 ./Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal.o
-                0x0000000020000bc4                uwTick
- .bss.pFlash    0x0000000020000bc8       0x1c ./Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_flash.o
-                0x0000000020000bc8                pFlash
+                0x0000000020000bc4        0x4 ./Core/Src/sysmem.o
+ .bss.uwTick    0x0000000020000bc8        0x4 ./Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal.o
+                0x0000000020000bc8                uwTick
+ .bss.pFlash    0x0000000020000bcc       0x1c ./Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_flash.o
+                0x0000000020000bcc                pFlash
  .bss.__lock___malloc_recursive_mutex
-                0x0000000020000be4        0x1 d:/program files/stm32cubeide_1.12.0/stm32cubeide/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.10.3-2021.10.win32_1.0.200.202301161003/tools/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libc_nano.a(lib_a-lock.o)
-                0x0000000020000be4                __lock___malloc_recursive_mutex
+                0x0000000020000be8        0x1 d:/program files/stm32cubeide_1.12.0/stm32cubeide/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.10.3-2021.10.win32_1.0.200.202301161003/tools/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libc_nano.a(lib_a-lock.o)
+                0x0000000020000be8                __lock___malloc_recursive_mutex
  .bss.__lock___sfp_recursive_mutex
-                0x0000000020000be5        0x1 d:/program files/stm32cubeide_1.12.0/stm32cubeide/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.10.3-2021.10.win32_1.0.200.202301161003/tools/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libc_nano.a(lib_a-lock.o)
-                0x0000000020000be5                __lock___sfp_recursive_mutex
+                0x0000000020000be9        0x1 d:/program files/stm32cubeide_1.12.0/stm32cubeide/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.10.3-2021.10.win32_1.0.200.202301161003/tools/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libc_nano.a(lib_a-lock.o)
+                0x0000000020000be9                __lock___sfp_recursive_mutex
  .bss.__lock___sinit_recursive_mutex
-                0x0000000020000be6        0x1 d:/program files/stm32cubeide_1.12.0/stm32cubeide/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.10.3-2021.10.win32_1.0.200.202301161003/tools/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libc_nano.a(lib_a-lock.o)
-                0x0000000020000be6                __lock___sinit_recursive_mutex
- *fill*         0x0000000020000be7        0x1 
+                0x0000000020000bea        0x1 d:/program files/stm32cubeide_1.12.0/stm32cubeide/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.10.3-2021.10.win32_1.0.200.202301161003/tools/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libc_nano.a(lib_a-lock.o)
+                0x0000000020000bea                __lock___sinit_recursive_mutex
+ *fill*         0x0000000020000beb        0x1 
  .bss.__malloc_free_list
-                0x0000000020000be8        0x4 d:/program files/stm32cubeide_1.12.0/stm32cubeide/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.10.3-2021.10.win32_1.0.200.202301161003/tools/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libc_nano.a(lib_a-nano-mallocr.o)
-                0x0000000020000be8                __malloc_free_list
- .bss.__malloc_sbrk_start
                 0x0000000020000bec        0x4 d:/program files/stm32cubeide_1.12.0/stm32cubeide/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.10.3-2021.10.win32_1.0.200.202301161003/tools/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libc_nano.a(lib_a-nano-mallocr.o)
-                0x0000000020000bec                __malloc_sbrk_start
- .bss.errno     0x0000000020000bf0        0x4 d:/program files/stm32cubeide_1.12.0/stm32cubeide/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.10.3-2021.10.win32_1.0.200.202301161003/tools/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libc_nano.a(lib_a-reent.o)
-                0x0000000020000bf0                errno
+                0x0000000020000bec                __malloc_free_list
+ .bss.__malloc_sbrk_start
+                0x0000000020000bf0        0x4 d:/program files/stm32cubeide_1.12.0/stm32cubeide/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.10.3-2021.10.win32_1.0.200.202301161003/tools/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libc_nano.a(lib_a-nano-mallocr.o)
+                0x0000000020000bf0                __malloc_sbrk_start
+ .bss.errno     0x0000000020000bf4        0x4 d:/program files/stm32cubeide_1.12.0/stm32cubeide/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.10.3-2021.10.win32_1.0.200.202301161003/tools/bin/../lib/gcc/arm-none-eabi/10.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libc_nano.a(lib_a-reent.o)
+                0x0000000020000bf4                errno
  *(COMMON)
-                0x0000000020000bf4                . = ALIGN (0x4)
-                0x0000000020000bf4                _ebss = .
-                0x0000000020000bf4                __bss_end__ = _ebss
+                0x0000000020000bf8                . = ALIGN (0x4)
+                0x0000000020000bf8                _ebss = .
+                0x0000000020000bf8                __bss_end__ = _ebss
 
 ._user_heap_stack
-                0x0000000020000bf4      0x604 load address 0x000000000800c050
+                0x0000000020000bf8      0x600 load address 0x000000000800c054
                 0x0000000020000bf8                . = ALIGN (0x8)
- *fill*         0x0000000020000bf4        0x4 
                 [!provide]                        PROVIDE (end = .)
                 0x0000000020000bf8                PROVIDE (_end = .)
                 0x0000000020000df8                . = (. + _Min_Heap_Size)
