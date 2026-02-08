@@ -1107,7 +1107,7 @@ static void MX_TIM11_Init(void)
   htim11.Instance = TIM11;
   htim11.Init.Prescaler = 10799;
   htim11.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim11.Init.Period = 50000;
+  htim11.Init.Period = 30000;
   htim11.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim11.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim11) != HAL_OK)
@@ -3463,7 +3463,7 @@ void DeviceInit() {
 	// set status of device
 	ready_status = READY_;
 
-	//HAL_TIM_Base_Start_IT(&htim11);
+	HAL_TIM_Base_Start_IT(&htim11);
 }
 
 void DeviceReset() {
