@@ -116,6 +116,7 @@ uint32_t photodetector_offset_val = 0;
 uint32_t control_pos = 0;
 
 uint32_t encoder_offset[2] = {0};
+uint32_t zero_limb_pos[2] = {0};
 //uint32_t address = ADDR_FLASH_SECTOR_2;
 uint8_t amplifier_val = 0;
 uint8_t amplifier_val_saved = 0;
@@ -2238,7 +2239,7 @@ void parser() {
 		encoder_offset[1] = ENCODER_2_OFFSET;
 
 		// Save data to flash
-		WriteToFlash(encoder_offset, 2, ADDR_FLASH_SECTOR_2, FLASH_TYPEPROGRAM_WORD);
+		WriteToFlash(encoder_offset, 2, ADDR_FLASH_SECTOR_4, FLASH_TYPEPROGRAM_WORD, FLASH_SECTOR_4);
 
 		break;
 	case 0x14:
@@ -2285,23 +2286,10 @@ void parser() {
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
 		break;
 	case 0x17:
-		/*
-		EraseInitStruct.Sector        = FLASH_SECTOR_4;
-
-		HAL_FLASH_Unlock();
-
-			if(HAL_FLASHEx_Erase(&EraseInitStruct, &page_error) != HAL_OK) {
-			      //error handler of erasing flash
-			      return;
-			  }
-			HAL_FLASH_Lock(); */
-
-		//ReadFlash(flash_data,4,ADDR_FLASH_SECTOR_2,FLASH_TYPEPROGRAM_WORD);
-		//printf("%lu, %lu, %lu, %lu\r\n",flash_data[0],flash_data[1],flash_data[2],flash_data[3]);
-		 //HAL_UART_DeInit(&huart1);
-		  //MX_USART1_UART_Init();
-		//printf("%lu,\r\n",usart3_reg);
-		//printf("error: %lu,\r\n",usart3_error);
+		createResponsePacket(0x17,ACCEPTED__);
+		zero_limb_pos[0] = encoder1_data;
+		zero_limb_pos[1] = encoder2_data;
+		WriteToFlash(zero_limb_pos, 2, ADDR_FLASH_SECTOR_3, FLASH_TYPEPROGRAM_WORD, FLASH_SECTOR_3);
 		break;
 	case 0x18: // only for test of mainboard
 
@@ -2559,9 +2547,15 @@ void createResponsePacket(uint8_t command_code, uint8_t status_code) {
 		response_buf[9] = inv_encoder1_data & 0xFF;//encoder1_data & 0xFF; inv_encoder1_data
 		response_buf[10] = inv_encoder1_data >> 8;//encoder1_data >> 8;
 		response_buf[11] = inv_encoder1_data >> 16;//encoder1_data >> 16;
+		response_buf[12] = zero_limb_pos[0] & 0xFF;//encoder1_data & 0xFF; inv_encoder1_data
+		response_buf[13] = zero_limb_pos[0] >> 8;//encoder1_data >> 8;
+		response_buf[14] = zero_limb_pos[0] >> 16;//encoder1_data >> 16;
 		response_buf[15] = inv_encoder2_data & 0xFF;
 		response_buf[16] = inv_encoder2_data >> 8;
 		response_buf[17] = inv_encoder2_data >> 16;
+		response_buf[18] = zero_limb_pos[1] & 0xFF;//encoder1_data & 0xFF; inv_encoder1_data
+		response_buf[19] = zero_limb_pos[1] >> 8;//encoder1_data >> 8;
+		response_buf[20] = zero_limb_pos[1] >> 16;//encoder1_data >> 16;
 		response_buf[31] = 0;
 		response_buf[32] = 0;
 
@@ -3439,13 +3433,16 @@ void DeviceInit() {
 	// Motor init
 
 	// Read encoder offset values from flash
-	FlashInit();
-	ReadFlash(encoder_offset,2,ADDR_FLASH_SECTOR_2,FLASH_TYPEPROGRAM_WORD);
+	//FlashInit();
+	ReadFlash(encoder_offset,2,ADDR_FLASH_SECTOR_4,FLASH_TYPEPROGRAM_WORD);
 	horizontal.encoder.ENCODER_OFFSET = encoder_offset[0];
 	vertical.encoder.ENCODER_OFFSET = encoder_offset[1];
 
 	ENCODER_1_OFFSET = encoder_offset[0];
 	ENCODER_2_OFFSET = encoder_offset[1];
+
+	// Чтение сохраненных значений энкодера нуля лимба
+	ReadFlash(zero_limb_pos,2,ADDR_FLASH_SECTOR_3,FLASH_TYPEPROGRAM_WORD);
 
 	// set motor timers for pull
 	horizontal.motor_tim = &htim2;

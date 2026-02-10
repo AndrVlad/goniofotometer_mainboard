@@ -19,8 +19,16 @@ void FlashInit() {
 	EraseInitStruct.NbSectors     = 1;
 }
 
-void WriteToFlash(uint32_t *data, uint8_t data_size, uint32_t address, uint32_t type_of_program) {
+void FlashEraseInit(uint32_t erase_sector_num) {
+	EraseInitStruct.TypeErase     = FLASH_TYPEERASE_SECTORS;
+	EraseInitStruct.VoltageRange  = FLASH_VOLTAGE_RANGE_3;
+	EraseInitStruct.Sector        = erase_sector_num;
+	EraseInitStruct.NbSectors     = 1;
+}
 
+void WriteToFlash(uint32_t *data, uint8_t data_size, uint32_t address, uint32_t type_of_program, uint32_t erase_sector_num) {
+
+	FlashEraseInit(erase_sector_num);
 	HAL_FLASH_Unlock();
 
 	if(HAL_FLASHEx_Erase(&EraseInitStruct, &page_error) != HAL_OK) {

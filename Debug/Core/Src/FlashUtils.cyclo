@@ -1,3 +1,4 @@
 FlashUtils.c:15:6:FlashInit	1
-FlashUtils.c:22:6:WriteToFlash	6
-FlashUtils.c:51:6:ReadFlash	4
+FlashUtils.c:22:6:FlashEraseInit	1
+FlashUtils.c:29:6:WriteToFlash	6
+FlashUtils.c:59:6:ReadFlash	4

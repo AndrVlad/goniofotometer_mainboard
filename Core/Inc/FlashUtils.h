@@ -13,11 +13,11 @@
 #include "stdlib.h"
 #include "stdio.h"
 #include <stdint.h>
-
-#define ADDR_FLASH_SECTOR_2 ((uint32_t)0x08018000) /* Base address of Sector 3, 32 Kbytes */
+#define ADDR_FLASH_SECTOR_3 ((uint32_t)0x08010000) /* Базовый адрес сектора для хранения смещения нуля лимба */
+#define ADDR_FLASH_SECTOR_4 ((uint32_t)0x08018000) /* Базовый адрес сектора для хранения смещения энкодеров */
 
 void FlashInit();
-void WriteToFlash(uint32_t *data, uint8_t data_size, uint32_t address, uint32_t type_of_program);
+void WriteToFlash(uint32_t *data, uint8_t data_size, uint32_t address, uint32_t type_of_program, uint32_t erase_sector_num);
 void ReadFlash(uint32_t *data, uint8_t data_size, uint32_t address, uint32_t type_of_read);
 
 extern uint32_t page_error;

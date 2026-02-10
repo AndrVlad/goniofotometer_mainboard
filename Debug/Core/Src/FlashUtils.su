@@ -1,3 +1,4 @@
 ../Core/Src/FlashUtils.c:15:6:FlashInit	4	static
-../Core/Src/FlashUtils.c:22:6:WriteToFlash	40	static
-../Core/Src/FlashUtils.c:51:6:ReadFlash	32	static
+../Core/Src/FlashUtils.c:22:6:FlashEraseInit	16	static
+../Core/Src/FlashUtils.c:29:6:WriteToFlash	40	static
+../Core/Src/FlashUtils.c:59:6:ReadFlash	32	static
