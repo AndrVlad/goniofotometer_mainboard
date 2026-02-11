@@ -171,6 +171,7 @@ uint8_t next_command = 0xFF;
 uint16_t error_cnt = 0;
 bool tim4_ovflw, tim12_ovflw = false;
 uint32_t test_enc_data = 130000;
+uint32_t encoder1_test_data = 32678, encoder2_test_data = 32768;
 
 /* Telemetry status values */
 enum status ready_status;
@@ -3261,8 +3262,6 @@ void handleVerticalMeasurement() {
 				HAL_TIM_Base_Start_IT(&htim2);
 			}
 		}
-
-
 	}
 
 }
@@ -3386,6 +3385,9 @@ void convertAdcValues(uint8_t* buf, uint16_t size) {
 
 void setPlatformParam(uint16_t meas_res) {
 	switch(meas_res) {
+	case 1820: // разрешение 5 градусов
+		motor_frequency_1 = motor_frequency_2 = 860;
+		setEncoderPollFrequency(200);
 	case 365: // разрешение 1 градус
 		motor_frequency_1 = motor_frequency_2 = 860;
 		setEncoderPollFrequency(200);
@@ -3459,6 +3461,10 @@ void DeviceInit() {
 
 	// set status of device
 	ready_status = READY_;
+
+//	zero_limb_pos[0] = encoder1_test_data;
+//	zero_limb_pos[1] = encoder2_test_data;
+//	WriteToFlash(zero_limb_pos, 2, ADDR_FLASH_SECTOR_3, FLASH_TYPEPROGRAM_WORD, FLASH_SECTOR_3);
 
 	HAL_TIM_Base_Start_IT(&htim11);
 }
