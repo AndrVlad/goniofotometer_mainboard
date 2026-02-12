@@ -1895,7 +1895,7 @@ void parser() {
 		switch(cur_action) {
 		case HORIZONTAL:
 
-			stopMotorRotationReq(chosen_drv);
+			stopMotorRotation(chosen_drv);
 
 			if (data_buf_counter > 0 && data_status == NONE_) {
 				// clearing the part of the buffer that does not include useful data
@@ -1913,12 +1913,7 @@ void parser() {
 
 		case VERTICAL:
 
-			  // stop measurement
-			/*
-			HAL_TIM_Base_Stop_IT(&htim2); // stop motor
-			HAL_TIM_Base_Stop_IT(&htim3);
-			HAL_TIM_Base_Stop_IT(&htim7); // stop SPI timer */
-			stopMotorRotationReq(chosen_drv);
+			stopMotorRotation(chosen_drv);
 
 			if (data_buf_counter > 0 && data_status == NONE_) {
 				// clearing the part of the buffer that does not include useful data
@@ -1957,6 +1952,11 @@ void parser() {
 			break;
 		case TEST_TURN:
 			stopMotorRotation(HORIZONTAL_);
+			break;
+		case TEST_ANGLE_OFFSET:
+			stopMotorRotation(HORIZONTAL_);
+			stopMotorRotation(VERTICAL_);
+			trans_states = 0;
 			break;
 		default:
 			break;
@@ -2076,14 +2076,9 @@ void parser() {
 		break;
 
 	case 0x0B:
-		//HAL_TIM_Base_Start(&htim10);
-
 		createDataPacket();
 		data_status = NONE_;
 		take_data_cnt++;
-			//HAL_TIM_Base_Stop(&htim10);
-			//tim10_cnt += htim10.Instance->CNT;
-			//__HAL_TIM_SET_COUNTER(&htim10, 0);
 		break;
 
 	case 0x0C:
@@ -2104,34 +2099,9 @@ void parser() {
 			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
 			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_5, GPIO_PIN_RESET);
 		}
-		/*
-		if (uart3_rx_buffer[3]) {
-			chosen_drv = 1;
-		} else {
-			chosen_drv = 0;
-		} */
-
 		stepDriver(uart3_rx_buffer[1]);
 		break;
 	case 0x0F:
-
-		/*
-		start_position_drv1 = 0;
-		start_position_drv1 |= uart1_rx_buffer[1] << 16;
-		start_position_drv1 |= uart1_rx_buffer[2] << 8;
-		start_position_drv1 |= uart1_rx_buffer[3];
-		*/
-
-		/*
-		if (start_position_drv1 < SSI_data_safe) {
-			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET); // движение назад
-			driver_dir1 = 1;
-		} else {
-			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET); // движение вперед
-			driver_dir1 = 0;
-		}
-		*/
-
 		if(chosen_drv) {
 			//HAL_TIM_Base_Start_IT(&htim3); // start second motor
 		} else {
@@ -2139,10 +2109,6 @@ void parser() {
 			HAL_TIM_Base_Start_IT(&htim7);
 			HAL_TIM_Base_Start_IT(&htim2); // start first motor
 		}
-
-
-
-		//HAL_TIM_Base_Start_IT(&htim2);
 		break;
 
 	case 0x10: // move to the specified angle
@@ -2183,23 +2149,14 @@ void parser() {
 			//HAL_TIM_Base_Start_IT(&htim2); // start first motor moving
 		}
 		break;
-
+/*
 	case 0x11: // stop moving
 		createResponsePacket(0x11,ACCEPTED__);
-		//HAL_UART_Transmit(&huart3, response_buf,33,100);
-		stopMotorRotationReq(chosen_drv);
-		/*
-		if(chosen_drv) {
-			HAL_TIM_Base_Stop_IT(&htim3); // stop second motor
-			HAL_TIM_Base_Stop_IT(&htim7);
-		} else {
-			HAL_TIM_Base_Stop_IT(&htim2); // stop first motor
-			HAL_TIM_Base_Stop_IT(&htim7);
-		} */
+		stopMotorRotation(HORIZONTAL_);
+		stopMotorRotation(VERTICAL_);
 		cur_action = NONE;
 		trans_states = 0;
-
-		break;
+		break; */
 	case 0x12:
 		createResponsePacket(0x12,ACCEPTED__);
 		if(uart3_rx_buffer[1] != 0) {
