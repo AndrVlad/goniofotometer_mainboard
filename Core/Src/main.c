@@ -2288,8 +2288,8 @@ void parser() {
 		break;
 	case 0x17:
 		createResponsePacket(0x17,ACCEPTED__);
-		zero_limb_pos[0] = encoder1_data;
-		zero_limb_pos[1] = encoder2_data;
+		zero_limb_pos[0] = inv_encoder1_data;
+		zero_limb_pos[1] = inv_encoder1_data;
 		WriteToFlash(zero_limb_pos, 2, ADDR_FLASH_SECTOR_3, FLASH_TYPEPROGRAM_WORD, FLASH_SECTOR_3);
 		break;
 	case 0x18: // only for test of mainboard
@@ -3434,9 +3434,16 @@ void DeviceInit() {
 
 	// Motor init
 
-	// Read encoder offset values from flash
-	//FlashInit();
+	// Чтение сохраненных значений энкодера для начала координат
 	ReadFlash(encoder_offset,2,ADDR_FLASH_SECTOR_4,FLASH_TYPEPROGRAM_WORD);
+	// проверка наличия прежней записи во флеш памяти
+	if (encoder_offset[0] > 131072 && encoder_offset[1] > 131072) {
+		encoder_offset[0] = 0;
+		encoder_offset[1] = 0;
+		// запись 0 во флеш память
+		WriteToFlash(encoder_offset, 2, ADDR_FLASH_SECTOR_4, FLASH_TYPEPROGRAM_WORD, FLASH_SECTOR_4);
+	}
+
 	horizontal.encoder.ENCODER_OFFSET = encoder_offset[0];
 	vertical.encoder.ENCODER_OFFSET = encoder_offset[1];
 
@@ -3445,6 +3452,13 @@ void DeviceInit() {
 
 	// Чтение сохраненных значений энкодера нуля лимба
 	ReadFlash(zero_limb_pos,2,ADDR_FLASH_SECTOR_3,FLASH_TYPEPROGRAM_WORD);
+	// проверка наличия прежней записи во флеш памяти
+	if (zero_limb_pos[0] > 131071 && zero_limb_pos[1] > 131071) {
+		zero_limb_pos[0] = 0;
+		zero_limb_pos[1] = 0;
+		// запись 0 во флеш память
+		WriteToFlash(zero_limb_pos, 2, ADDR_FLASH_SECTOR_3, FLASH_TYPEPROGRAM_WORD, FLASH_SECTOR_3);
+	}
 
 	// set motor timers for pull
 	horizontal.motor_tim = &htim2;

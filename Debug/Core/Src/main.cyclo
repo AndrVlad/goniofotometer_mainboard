@@ -44,8 +44,8 @@ main.c:3354:10:calculateRequiredDataNum	1
 main.c:3364:10:getTimeOffset	3
 main.c:3378:6:convertAdcValues	2
 main.c:3386:6:setPlatformParam	14
-main.c:3422:6:DeviceInit	1
-main.c:3472:6:DeviceReset	9
-main.c:3560:6:checkCRC_PCData	3
-main.c:3578:6:HAL_UART_ErrorCallback	4
-main.c:3608:6:Error_Handler	1
+main.c:3422:6:DeviceInit	5
+main.c:3486:6:DeviceReset	9
+main.c:3574:6:checkCRC_PCData	3
+main.c:3592:6:HAL_UART_ErrorCallback	4
+main.c:3622:6:Error_Handler	1
