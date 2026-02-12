@@ -444,9 +444,6 @@ int main(void)
 // only for previous desktop app
 			  //handleMovingToStartOffset();
 			  break;
-		  case TEST_TURN:
-			  handleTestTurn();
-			  break;
 		  case MOVING:
 			  handleMovingToStartOffset(); //right version
 			  break;
@@ -1869,33 +1866,27 @@ void parser() {
 	case 0x06:
 		createResponsePacket(0x06,ACCEPTED__);
 
+		// сохранение текущей позиции, относительно которой будет выполнять полный оборот
 		angle_position_drv1 = encoder1_data;
 
-		/*
-
-		angle_position_drv1 = calculateEncPosition(start_angle_offset_1,chosen_drv);
-
-		angle_position_drv1_tmp = angle_position_drv1 +;
-		if (angle_position_drv1_tmp + 300 > ENCODER_RESOLUTION) {
-			angle_position_drv1_tmp = (angle_position_drv1_tmp + 300) - ENCODER_RESOLUTION;
+		// определение контрольной позиции энкодера после прохождения которой произойдет установка конечной позиции
+		if (angle_position_drv1 < 720) {
+			angle_position_drv1_tmp = ENCODER_RESOLUTION - (720 - angle_position_drv1);
 		} else {
-			angle_position_drv1_tmp += 300;
+			angle_position_drv1_tmp = angle_position_drv1 - 720;
 		};
-		*/
 
+		// сброс флага достижения контрольной позиции
 		reach_test_turn_pos = 0;
 
-		// set direction
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
+		// задание направления вращения платформы к контрольной позиции
 		changeMotorDirection(HORIZONTAL_,angle_position_drv1_tmp);
-		setMotorFrequency(0,400);
-
-		HAL_TIM_Base_Start_IT(&htim7); // start encoder poll
-		HAL_TIM_Base_Start_IT(&htim2); // start horizontal motor moving
 
 		cur_action = TEST_TURN;
-		ready_status = READY_;
+		ready_status = BUSY_;
 
+		// старт вращения платформы
+		startMotorRotation(HORIZONTAL_, encoder1_data);
 		break;
 
 	case 0x07:
@@ -1965,11 +1956,7 @@ void parser() {
 
 			break;
 		case TEST_TURN:
-
-			HAL_TIM_Base_Stop_IT(&htim2); // stop motor
-			HAL_TIM_Base_Stop_IT(&htim3);
-			HAL_TIM_Base_Stop_IT(&htim7); // stop SPI timer
-
+			stopMotorRotation(HORIZONTAL_);
 			break;
 		default:
 			break;
@@ -2786,14 +2773,16 @@ void handleMovingToStartOffset() {
 void handleTestTurn() {
 
 	if (!reach_test_turn_pos) {
-		if ((encoder1_data >= angle_position_drv1_tmp - ENCODER_TOLERANCE) && (encoder1_data <= angle_position_drv1_tmp + ENCODER_TOLERANCE)) {
+		if ((encoder1_data >= angle_position_drv1_tmp - ENCODER_TOLERANCE)
+				&& (encoder1_data <= angle_position_drv1_tmp + ENCODER_TOLERANCE)) {
 			  reach_test_turn_pos = 1;
 		  }
 	} else {
-		if ((encoder1_data >= angle_position_drv1 - ENCODER_TOLERANCE) && (encoder1_data <= angle_position_drv1 + ENCODER_TOLERANCE)) {
-			  HAL_TIM_Base_Stop_IT(&htim2); // stop motor
-			  HAL_TIM_Base_Stop_IT(&htim7); // stop encoder poll
-			  cur_action = NONE;
+		if ((encoder1_data >= angle_position_drv1 - ENCODER_TOLERANCE)
+				&& (encoder1_data <= angle_position_drv1 + ENCODER_TOLERANCE)) {
+			stopMotorRotation(HORIZONTAL_);
+			cur_action = NONE;
+			ready_status = READY_;
 		  }
 	}
 }
@@ -3553,8 +3542,8 @@ void DeviceReset() {
 	case TEST_TURN:
 	case TEST_ANGLE_OFFSET:
 	case TEST_ROTATION:
-		stopMotorRotationReq(VERTICAL_);
-		stopMotorRotationReq(HORIZONTAL_);
+		stopMotorRotation(VERTICAL_);
+		stopMotorRotation(HORIZONTAL_);
 		break;
 
 	default:
