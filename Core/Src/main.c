@@ -217,6 +217,7 @@ void moveToPosition(uint8_t angle, bool chosen_drv);
 void changeMotorDirection(bool chosen_drv, uint32_t target_position);
 uint32_t processSSIData(uint8_t *SSI_buffer);
 uint32_t calculateEncPosition(uint32_t encoder_position, bool chosen_encoder);
+uint32_t calculateOffsetEncPosition(uint32_t encoder_position, uint32_t offset_pos);
 uint8_t getADCAmplifierVal(uint8_t value);
 void createDataPacket();
 uint8_t getADCAmplifierValInverted(uint8_t value);
@@ -2112,42 +2113,42 @@ void parser() {
 		}
 		break;
 
-	case 0x10: // move to the specified angle
+	case 0x10: // Вращение на заданный угол
 		createResponsePacket(0x10,ACCEPTED__);
 		cur_action = TEST_ANGLE_OFFSET;
-		uint32_t temp_pos;
+		uint32_t temp_pos; // временная переменная для расчета позиции на которую произойдет смещение
+		// получение заданного угла из команды
 		test_angle = 0;
 		test_angle = uart3_rx_buffer[2] << 8;
 		test_angle |= uart3_rx_buffer[1];
+		temp_pos = (test_angle * ENCODER_RESOLUTION) / 360;
 
-		if(chosen_drv) { // second motor
-			setMotorFrequency(1,150);
+		// определение платформы для вращения
+		if(chosen_drv) { // вертикальная платформа
+
 			angle_position_drv2 = 0;
 
-			//if(!(uart3_rx_buffer[3])) { // absolute moving
-				temp_pos = (test_angle * ENCODER_RESOLUTION) / 360; // get absolute encoder position
-				angle_position_drv2 = calculateEncPosition(temp_pos,chosen_drv);
-			//}
+			if(uart3_rx_buffer[3] == 0xFF) { // вращение на абсолютный угол по лимбу
+				angle_position_drv2 = calculateOffsetEncPosition(temp_pos,zero_limb_pos[1]);
+			} else {						// вращение на угол относительно текущей позиции
+				angle_position_drv2 = calculateOffsetEncPosition(temp_pos,encoder2_data);
+			}
 
 			changeMotorDirection(chosen_drv, angle_position_drv2);
 			startMotorRotation(chosen_drv,encoder2_data);
-			//HAL_TIM_Base_Start_IT(&htim7);
-			//HAL_TIM_Base_Start_IT(&htim3); // start second motor moving
-      
-		} else { // first motor
-			setMotorFrequency(0,400);
+
+		} else { // горизонтальная платформа
 
 			angle_position_drv1 = 0;
 
-			//if(!(uart3_rx_buffer[3])) { // absolute moving
-				temp_pos = (test_angle * ENCODER_RESOLUTION) / 360; // get absolute encoder position
-				angle_position_drv1 = calculateEncPosition(temp_pos,chosen_drv);
-			//}
+			if(uart3_rx_buffer[3] == 0xFF) { // вращение на абсолютный угол по лимбу
+				angle_position_drv1 = calculateOffsetEncPosition(temp_pos,zero_limb_pos[0]);
+			} else {						// вращение на угол относительно текущей позиции
+				angle_position_drv1 = calculateOffsetEncPosition(temp_pos,encoder1_data);
+			}
 
 			changeMotorDirection(chosen_drv, angle_position_drv1);
-			startMotorRotation(chosen_drv,encoder2_data);
-			//HAL_TIM_Base_Start_IT(&htim7);
-			//HAL_TIM_Base_Start_IT(&htim2); // start first motor moving
+			startMotorRotation(chosen_drv,encoder1_data);
 		}
 		break;
 /*
@@ -2584,6 +2585,27 @@ uint32_t calculateEncPosition(uint32_t encoder_position, bool chosen_encoder) {
 
 }
 
+uint32_t calculateOffsetEncPosition(uint32_t encoder_position, uint32_t offset_pos) {
+
+	uint32_t encoder_pos_ret = 0;
+
+	if((encoder_position + offset_pos) > ENCODER_RESOLUTION) {
+		encoder_pos_ret = (encoder_position + offset_pos) - ENCODER_RESOLUTION;
+	} else {
+		encoder_pos_ret = encoder_position + offset_pos;
+	}
+
+	if (encoder_pos_ret == 0) {
+		encoder_pos_ret = POSITION_ERROR;
+	}
+
+	if (encoder_pos_ret == ENCODER_RESOLUTION) {
+		encoder_pos_ret -= POSITION_ERROR;
+	}
+
+	return encoder_pos_ret;
+}
+
 uint32_t processSSIData(uint8_t *SSI_buffer) {
 	uint32_t encoder_data = 0;
 	encoder_data  =  (SSI_buffer[2] >> 5) & 0x07;
@@ -2697,19 +2719,14 @@ void createErrorResponse() {
 
 void handleTestAngleOffset() {
 
-	//setMotorFrequency(chosen_drv,75);
 	if (chosen_drv) {
 		if ((encoder2_data >= angle_position_drv2 - 4) && (encoder2_data <= angle_position_drv2 + 4)) {
 			stopMotorRotation(chosen_drv);
-			//HAL_TIM_Base_Stop_IT(&htim3); // stop motor
-			//HAL_TIM_Base_Stop_IT(&htim7); // stop encoder poll
 			cur_action = NONE;
 		}
 	} else {
 		if ((encoder1_data >= angle_position_drv1 - 4) && (encoder1_data <= angle_position_drv1 + 4)) {
 			stopMotorRotation(chosen_drv);
-			//HAL_TIM_Base_Stop_IT(&htim2); // stop motor
-			//HAL_TIM_Base_Stop_IT(&htim7); // stop encoder poll
 			cur_action = NONE;
 		}
 	}
