@@ -143,7 +143,7 @@ bool allow = 0;
 //bool stop_poll = 0;
 bool end_calibration_flag = 0;
 bool full_rotation = 0;
-uint32_t inv_encoder1_data, inv_encoder2_data;
+uint32_t inv_encoder1_data, inv_encoder2_data, inv_encoder1_offset, inv_encoder2_offset;
 
 uint32_t start_position_drv1, start_position_drv2, end_position_drv1, end_position_drv2, accel_position_drv1, accel_position_drv2 = 0;
 int32_t end_position_drv_tmp, encoder1_increment_res, encoder2_increment_res;
@@ -2169,13 +2169,6 @@ void parser() {
 	case 0x13:
 		createResponsePacket(0x13,ACCEPTED__);
 
-		/* UNUSED
-		// get current first encoder data
-		//HAL_SPI_Receive(&hspi4, dma_spi4_buf, 5,100);
-		// get current second encoder data
-		//HAL_SPI_Receive(&hspi3, dma_spi3_buf, 5,100);
-		UNUSED */
-
 		// Write new values of encoder offset
 		ENCODER_1_OFFSET = encoder1_data;
 		ENCODER_2_OFFSET = encoder2_data;
@@ -2183,6 +2176,9 @@ void parser() {
 		// Write new values of encoder offset for saving to Flash
 		encoder_offset[0] = ENCODER_1_OFFSET;
 		encoder_offset[1] = ENCODER_2_OFFSET;
+
+		inv_encoder1_offset = getInvertedEncoderVal(encoder_offset[0]);
+		inv_encoder2_offset = getInvertedEncoderVal(encoder_offset[1]);
 
 		// Save data to flash
 		WriteToFlash(encoder_offset, 2, ADDR_FLASH_SECTOR_4, FLASH_TYPEPROGRAM_WORD, FLASH_SECTOR_4);
@@ -2506,6 +2502,12 @@ void createResponsePacket(uint8_t command_code, uint8_t status_code) {
 		response_buf[18] = inv_zero_limb_pos[1] & 0xFF;//encoder1_data & 0xFF; inv_encoder1_data
 		response_buf[19] = inv_zero_limb_pos[1] >> 8;//encoder1_data >> 8;
 		response_buf[20] = inv_zero_limb_pos[1] >> 16;//encoder1_data >> 16;
+		response_buf[21] = inv_encoder1_offset & 0xFF;//encoder1_data & 0xFF; inv_encoder1_data
+		response_buf[22] = inv_encoder1_offset >> 8;//encoder1_data >> 8;
+		response_buf[23] = inv_encoder1_offset >> 16;//encoder1_data >> 16;
+		response_buf[24] = inv_encoder2_offset & 0xFF;//encoder1_data & 0xFF; inv_encoder1_data
+		response_buf[25] = inv_encoder2_offset >> 8;//encoder1_data >> 8;
+		response_buf[26] = inv_encoder2_offset >> 16;//encoder1_data >> 16;
 		response_buf[31] = 0;
 		response_buf[32] = 0;
 
@@ -3394,6 +3396,9 @@ void DeviceInit() {
 		// запись 0 во флеш память
 		WriteToFlash(encoder_offset, 2, ADDR_FLASH_SECTOR_4, FLASH_TYPEPROGRAM_WORD, FLASH_SECTOR_4);
 	}
+
+	inv_encoder1_offset = getInvertedEncoderVal(encoder_offset[0]);
+	inv_encoder2_offset = getInvertedEncoderVal(encoder_offset[1]);
 
 	horizontal.encoder.ENCODER_OFFSET = encoder_offset[0];
 	vertical.encoder.ENCODER_OFFSET = encoder_offset[1];
