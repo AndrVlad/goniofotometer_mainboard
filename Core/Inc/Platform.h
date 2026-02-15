@@ -42,7 +42,7 @@ typedef struct  {
 } platform;
 
 extern platform horizontal, vertical;
-extern bool is_motor_moving, is_backlash_passed, is_req_freq_reach;;
+extern bool is_motor_moving, is_backlash_passed, is_req_freq_reach;
 extern uint16_t current_motor_freq, target_motor_freq, motor_freq_inc_hz;
 
 void setEncoderPollFrequency(uint16_t frequency_mcs);
@@ -55,6 +55,7 @@ void setMotorFrequency__(platform* cur_platf, uint16_t motor_frequency);
 void setMotorFrequency(bool chosen_drv, uint16_t motor_frequency);
 void stopMotorRotation(uint8_t motor_id);
 void stopMotorRotationReq(uint8_t motor_id);
+uint32_t getInvertedEncoderVal(uint32_t encoder_val);
 //void changeMotorDirection()
 
 #endif /* INC_PLATFORM_H_ */

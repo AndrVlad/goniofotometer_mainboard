@@ -6,7 +6,8 @@
 ../Core/Src/Platform.c:98:6:setPeriodAccelTimer	32	static
 ../Core/Src/Platform.c:113:6:setMotorFrequency	24	static
 ../Core/Src/Platform.c:129:6:setEncoderPollFrequency	16	static
-../Core/Src/Platform.c:133:6:changeMotorDirection__	16	static
-../Core/Src/Platform.c:166:10:calculateEncPosition__	24	static
-../Core/Src/Platform.c:187:6:setPlatformParam__	16	static
-../Core/Src/Platform.c:208:6:setMotorFrequency__	24	static
+../Core/Src/Platform.c:133:10:getInvertedEncoderVal	16	static
+../Core/Src/Platform.c:137:6:changeMotorDirection__	16	static
+../Core/Src/Platform.c:170:10:calculateEncPosition__	24	static
+../Core/Src/Platform.c:191:6:setPlatformParam__	16	static
+../Core/Src/Platform.c:212:6:setMotorFrequency__	24	static

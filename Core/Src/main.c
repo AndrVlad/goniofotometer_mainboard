@@ -114,6 +114,7 @@ uint32_t adc_data_cnt, required_data_num = 0;
 uint32_t usart3_reg, usart3_error = 0;
 uint32_t photodetector_offset_val = 0;
 uint32_t control_pos = 0;
+uint32_t inv_zero_limb_pos[2] = {0};
 
 uint32_t encoder_offset[2] = {0};
 uint32_t zero_limb_pos[2] = {0};
@@ -2232,9 +2233,13 @@ void parser() {
 		break;
 	case 0x17:
 		createResponsePacket(0x17,ACCEPTED__);
-		zero_limb_pos[0] = inv_encoder1_data;
-		zero_limb_pos[1] = inv_encoder1_data;
+		// подоготовка абсолютных значений энкодера для хранения во флеш
+		zero_limb_pos[0] = encoder1_data;
+		zero_limb_pos[1] = encoder2_data;
 		WriteToFlash(zero_limb_pos, 2, ADDR_FLASH_SECTOR_3, FLASH_TYPEPROGRAM_WORD, FLASH_SECTOR_3);
+		// подготовка инверсных значений энкодера для отправки на ПК
+		inv_zero_limb_pos[0] = inv_encoder1_data;
+		inv_zero_limb_pos[1] = inv_encoder2_data;
 		break;
 	case 0x18: // only for test of mainboard
 
@@ -2492,15 +2497,15 @@ void createResponsePacket(uint8_t command_code, uint8_t status_code) {
 		response_buf[9] = inv_encoder1_data & 0xFF;//encoder1_data & 0xFF; inv_encoder1_data
 		response_buf[10] = inv_encoder1_data >> 8;//encoder1_data >> 8;
 		response_buf[11] = inv_encoder1_data >> 16;//encoder1_data >> 16;
-		response_buf[12] = zero_limb_pos[0] & 0xFF;//encoder1_data & 0xFF; inv_encoder1_data
-		response_buf[13] = zero_limb_pos[0] >> 8;//encoder1_data >> 8;
-		response_buf[14] = zero_limb_pos[0] >> 16;//encoder1_data >> 16;
+		response_buf[12] = inv_zero_limb_pos[0] & 0xFF;//encoder1_data & 0xFF; inv_encoder1_data
+		response_buf[13] = inv_zero_limb_pos[0] >> 8;//encoder1_data >> 8;
+		response_buf[14] = inv_zero_limb_pos[0] >> 16;//encoder1_data >> 16;
 		response_buf[15] = inv_encoder2_data & 0xFF;
 		response_buf[16] = inv_encoder2_data >> 8;
 		response_buf[17] = inv_encoder2_data >> 16;
-		response_buf[18] = zero_limb_pos[1] & 0xFF;//encoder1_data & 0xFF; inv_encoder1_data
-		response_buf[19] = zero_limb_pos[1] >> 8;//encoder1_data >> 8;
-		response_buf[20] = zero_limb_pos[1] >> 16;//encoder1_data >> 16;
+		response_buf[18] = inv_zero_limb_pos[1] & 0xFF;//encoder1_data & 0xFF; inv_encoder1_data
+		response_buf[19] = inv_zero_limb_pos[1] >> 8;//encoder1_data >> 8;
+		response_buf[20] = inv_zero_limb_pos[1] >> 16;//encoder1_data >> 16;
 		response_buf[31] = 0;
 		response_buf[32] = 0;
 
@@ -3405,6 +3410,9 @@ void DeviceInit() {
 		// запись 0 во флеш память
 		WriteToFlash(zero_limb_pos, 2, ADDR_FLASH_SECTOR_3, FLASH_TYPEPROGRAM_WORD, FLASH_SECTOR_3);
 	}
+
+	inv_zero_limb_pos[0] = getInvertedEncoderVal(zero_limb_pos[0]);
+	inv_zero_limb_pos[1] = getInvertedEncoderVal(zero_limb_pos[1]);
 
 	// set motor timers for pull
 	horizontal.motor_tim = &htim2;

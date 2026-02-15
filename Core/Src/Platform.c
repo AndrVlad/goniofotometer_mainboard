@@ -130,6 +130,10 @@ void setEncoderPollFrequency(uint16_t frequency_mcs) {
 	htim7.Instance->ARR = frequency_mcs-1;
 }
 
+uint32_t getInvertedEncoderVal(uint32_t encoder_val) {
+	return ENCODER_RESOLUTION - encoder_val;
+}
+
 void changeMotorDirection__(platform *cur_platf, uint32_t target_position) {
 
 	if (target_position < cur_platf->encoder.current_pos) {
