@@ -172,7 +172,7 @@ uint8_t next_command = 0xFF;
 uint16_t error_cnt = 0;
 bool tim4_ovflw, tim12_ovflw = false;
 uint32_t test_enc_data = 130000;
-uint32_t encoder1_test_data = 32678, encoder2_test_data = 32768;
+uint32_t encoder1_test_data = 98304, encoder2_test_data = 98304;
 
 /* Telemetry status values */
 enum status ready_status;
@@ -2233,10 +2233,11 @@ void parser() {
 		// подоготовка абсолютных значений энкодера для хранения во флеш
 		zero_limb_pos[0] = encoder1_data;
 		zero_limb_pos[1] = encoder2_data;
-		WriteToFlash(zero_limb_pos, 2, ADDR_FLASH_SECTOR_3, FLASH_TYPEPROGRAM_WORD, FLASH_SECTOR_3);
+		WriteToFlash(zero_limb_pos, 2, ADDR_FLASH_SECTOR_3, FLASH_TYPEPROGRAM_WORD, FLASH_SECTOR_5);
 		// подготовка инверсных значений энкодера для отправки на ПК
 		inv_zero_limb_pos[0] = inv_encoder1_data;
 		inv_zero_limb_pos[1] = inv_encoder2_data;
+		ReadFlash(zero_limb_pos,2,ADDR_FLASH_SECTOR_3,FLASH_TYPEPROGRAM_WORD);
 		break;
 	case 0x18: // only for test of mainboard
 
@@ -3396,7 +3397,7 @@ void DeviceInit() {
 	HAL_TIM_Base_Stop_IT(&htim2);
 	HAL_TIM_Base_Start(&htim6);
 
-	HAL_Delay(1000);
+	HAL_Delay(100);
 	// start receiving of messages from PC
 	HAL_UART_Receive_DMA(&huart3, uart3_rx_buffer, 6);
 
@@ -3425,14 +3426,16 @@ void DeviceInit() {
 	ENCODER_1_OFFSET = encoder_offset[0];
 	ENCODER_2_OFFSET = encoder_offset[1];
 
+	FlashEraseInit(FLASH_SECTOR_5);
 	// Чтение сохраненных значений энкодера нуля лимба
 	ReadFlash(zero_limb_pos,2,ADDR_FLASH_SECTOR_3,FLASH_TYPEPROGRAM_WORD);
 	// проверка наличия прежней записи во флеш памяти
-	if (zero_limb_pos[0] > 131071 && zero_limb_pos[1] > 131071) {
-		zero_limb_pos[0] = 0;
-		zero_limb_pos[1] = 0;
+
+	if (zero_limb_pos[0] > 131072 && zero_limb_pos[1] > 131072) {
+		zero_limb_pos[0] = 1;
+		zero_limb_pos[1] = 1;
 		// запись 0 во флеш память
-		WriteToFlash(zero_limb_pos, 2, ADDR_FLASH_SECTOR_3, FLASH_TYPEPROGRAM_WORD, FLASH_SECTOR_3);
+		WriteToFlash(zero_limb_pos, 2, ADDR_FLASH_SECTOR_3, FLASH_TYPEPROGRAM_WORD, FLASH_SECTOR_5);
 	}
 
 	inv_zero_limb_pos[0] = getInvertedEncoderVal(zero_limb_pos[0]);
