@@ -13,7 +13,7 @@
 #include "stdlib.h"
 #include "stdio.h"
 #include <stdint.h>
-#define ADDR_FLASH_SECTOR_3 ((uint32_t)0x08020000) /* Базовый адрес сектора для хранения смещения нуля лимба */
+#define ADDR_FLASH_SECTOR_5 ((uint32_t)0x08020000) /* Базовый адрес сектора для хранения смещения нуля лимба */
 #define ADDR_FLASH_SECTOR_4 ((uint32_t)0x08018000) /* Базовый адрес сектора для хранения смещения энкодеров */
 
 void FlashInit();

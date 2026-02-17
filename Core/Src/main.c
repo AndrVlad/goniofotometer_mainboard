@@ -2233,11 +2233,11 @@ void parser() {
 		// подоготовка абсолютных значений энкодера для хранения во флеш
 		zero_limb_pos[0] = encoder1_data;
 		zero_limb_pos[1] = encoder2_data;
-		WriteToFlash(zero_limb_pos, 2, ADDR_FLASH_SECTOR_3, FLASH_TYPEPROGRAM_WORD, FLASH_SECTOR_5);
+		WriteToFlash(zero_limb_pos, 2, ADDR_FLASH_SECTOR_5, FLASH_TYPEPROGRAM_WORD, FLASH_SECTOR_5);
 		// подготовка инверсных значений энкодера для отправки на ПК
 		inv_zero_limb_pos[0] = inv_encoder1_data;
 		inv_zero_limb_pos[1] = inv_encoder2_data;
-		ReadFlash(zero_limb_pos,2,ADDR_FLASH_SECTOR_3,FLASH_TYPEPROGRAM_WORD);
+
 		break;
 	case 0x18: // only for test of mainboard
 
@@ -3428,14 +3428,14 @@ void DeviceInit() {
 
 	FlashEraseInit(FLASH_SECTOR_5);
 	// Чтение сохраненных значений энкодера нуля лимба
-	ReadFlash(zero_limb_pos,2,ADDR_FLASH_SECTOR_3,FLASH_TYPEPROGRAM_WORD);
+	ReadFlash(zero_limb_pos,2,ADDR_FLASH_SECTOR_5,FLASH_TYPEPROGRAM_WORD);
 	// проверка наличия прежней записи во флеш памяти
 
 	if (zero_limb_pos[0] > 131072 && zero_limb_pos[1] > 131072) {
 		zero_limb_pos[0] = 1;
 		zero_limb_pos[1] = 1;
 		// запись 0 во флеш память
-		WriteToFlash(zero_limb_pos, 2, ADDR_FLASH_SECTOR_3, FLASH_TYPEPROGRAM_WORD, FLASH_SECTOR_5);
+		WriteToFlash(zero_limb_pos, 2, ADDR_FLASH_SECTOR_5, FLASH_TYPEPROGRAM_WORD, FLASH_SECTOR_5);
 	}
 
 	inv_zero_limb_pos[0] = getInvertedEncoderVal(zero_limb_pos[0]);

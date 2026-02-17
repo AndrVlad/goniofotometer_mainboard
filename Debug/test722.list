@@ -7000,7 +7000,7 @@ void parser() {
  8002ff4:	681b      	ldr	r3, [r3, #0]
  8002ff6:	4a72      	ldr	r2, [pc, #456]	; (80031c0 <parser+0x130c>)
  8002ff8:	6053      	str	r3, [r2, #4]
-		WriteToFlash(zero_limb_pos, 2, ADDR_FLASH_SECTOR_3, FLASH_TYPEPROGRAM_WORD, FLASH_SECTOR_5);
+		WriteToFlash(zero_limb_pos, 2, ADDR_FLASH_SECTOR_5, FLASH_TYPEPROGRAM_WORD, FLASH_SECTOR_5);
  8002ffa:	2305      	movs	r3, #5
  8002ffc:	9300      	str	r3, [sp, #0]
  8002ffe:	2302      	movs	r3, #2
@@ -7019,7 +7019,7 @@ void parser() {
  8003014:	681b      	ldr	r3, [r3, #0]
  8003016:	4a6e      	ldr	r2, [pc, #440]	; (80031d0 <parser+0x131c>)
  8003018:	6053      	str	r3, [r2, #4]
-		ReadFlash(zero_limb_pos,2,ADDR_FLASH_SECTOR_3,FLASH_TYPEPROGRAM_WORD);
+		ReadFlash(zero_limb_pos,2,ADDR_FLASH_SECTOR_5,FLASH_TYPEPROGRAM_WORD);
  800301a:	2302      	movs	r3, #2
  800301c:	4a6a      	ldr	r2, [pc, #424]	; (80031c8 <parser+0x1314>)
  800301e:	2102      	movs	r1, #2
@@ -11316,7 +11316,7 @@ void DeviceInit() {
  8004e12:	2005      	movs	r0, #5
  8004e14:	f7fb fb86 	bl	8000524 <FlashEraseInit>
 	// Чтение сохраненных значений энкодера нуля лимба
-	ReadFlash(zero_limb_pos,2,ADDR_FLASH_SECTOR_3,FLASH_TYPEPROGRAM_WORD);
+	ReadFlash(zero_limb_pos,2,ADDR_FLASH_SECTOR_5,FLASH_TYPEPROGRAM_WORD);
  8004e18:	2302      	movs	r3, #2
  8004e1a:	4a3a      	ldr	r2, [pc, #232]	; (8004f04 <DeviceInit+0x1a4>)
  8004e1c:	2102      	movs	r1, #2
@@ -11342,7 +11342,7 @@ void DeviceInit() {
  8004e40:	2201      	movs	r2, #1
  8004e42:	605a      	str	r2, [r3, #4]
 		// запись 0 во флеш память
-		WriteToFlash(zero_limb_pos, 2, ADDR_FLASH_SECTOR_3, FLASH_TYPEPROGRAM_WORD, FLASH_SECTOR_5);
+		WriteToFlash(zero_limb_pos, 2, ADDR_FLASH_SECTOR_5, FLASH_TYPEPROGRAM_WORD, FLASH_SECTOR_5);
  8004e44:	2305      	movs	r3, #5
  8004e46:	9300      	str	r3, [sp, #0]
  8004e48:	2302      	movs	r3, #2
