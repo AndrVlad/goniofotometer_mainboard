@@ -2101,13 +2101,15 @@ void parser() {
 		break;
 
 	case 0x10: // Вращение на заданный угол
+		memcpy(uart3_rx_safe_buffer, uart3_rx_buffer, 6);
 		createResponsePacket(0x10,ACCEPTED__);
 		cur_action = TEST_ANGLE_OFFSET;
 		uint32_t temp_pos; // временная переменная для расчета позиции на которую произойдет смещение
 		// получение заданного угла из команды
 		test_angle = 0;
-		test_angle = uart3_rx_buffer[2] << 8;
-		test_angle |= uart3_rx_buffer[1];
+		test_angle = uart3_rx_safe_buffer[2] << 8;
+		test_angle |= uart3_rx_safe_buffer[1];
+		test_angle = 360 - test_angle;
 		temp_pos = (test_angle * ENCODER_RESOLUTION) / 360;
 
 		// определение платформы для вращения
@@ -2115,7 +2117,7 @@ void parser() {
 
 			angle_position_drv2 = 0;
 
-			if(uart3_rx_buffer[3] == 0xFF) { // вращение на абсолютный угол по лимбу
+			if(uart3_rx_safe_buffer[3] == 0) { // вращение на абсолютный угол по лимбу
 				angle_position_drv2 = calculateOffsetEncPosition(temp_pos,zero_limb_pos[1]);
 			} else {						// вращение на угол относительно текущей позиции
 				angle_position_drv2 = calculateOffsetEncPosition(temp_pos,encoder2_data);
@@ -2128,7 +2130,7 @@ void parser() {
 
 			angle_position_drv1 = 0;
 
-			if(uart3_rx_buffer[3] == 0xFF) { // вращение на абсолютный угол по лимбу
+			if(uart3_rx_safe_buffer[3] == 0) { // вращение на абсолютный угол по лимбу
 				angle_position_drv1 = calculateOffsetEncPosition(temp_pos,zero_limb_pos[0]);
 			} else {						// вращение на угол относительно текущей позиции
 				angle_position_drv1 = calculateOffsetEncPosition(temp_pos,encoder1_data);
