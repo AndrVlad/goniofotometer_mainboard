@@ -1867,28 +1867,15 @@ void parser() {
 
 	case 0x06:
 		createResponsePacket(0x06,ACCEPTED__);
-
-		// сохранение текущей позиции, относительно которой будет выполнять полный оборот
-		angle_position_drv1 = encoder1_data;
-
-		// определение контрольной позиции энкодера после прохождения которой произойдет установка конечной позиции
-		if (angle_position_drv1 < 720) {
-			angle_position_drv1_tmp = ENCODER_RESOLUTION - (720 - angle_position_drv1);
-		} else {
-			angle_position_drv1_tmp = angle_position_drv1 - 720;
-		};
-
-		// сброс флага достижения контрольной позиции
-		reach_test_turn_pos = 0;
-
-		// задание направления вращения платформы к контрольной позиции
-		changeMotorDirection(HORIZONTAL_,angle_position_drv1_tmp);
+		// установка направления вращения
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
 
 		cur_action = TEST_TURN;
-		ready_status = BUSY_;
+		ready_status = READY_;
 
 		// старт вращения платформы
 		startMotorRotation(HORIZONTAL_, encoder1_data);
+
 		break;
 
 	case 0x07:
