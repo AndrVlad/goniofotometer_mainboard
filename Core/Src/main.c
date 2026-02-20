@@ -2090,14 +2090,28 @@ void parser() {
 		}
 		stepDriver(uart3_rx_buffer[1]);
 		break;
-	case 0x0F:
-		if(chosen_drv) {
-			//HAL_TIM_Base_Start_IT(&htim3); // start second motor
-		} else {
-			//changeMotorDirection(chosen_drv, start_position_drv1);
-			HAL_TIM_Base_Start_IT(&htim7);
-			HAL_TIM_Base_Start_IT(&htim2); // start first motor
+	case 0x0F: // тестовый проворот с выбором платформ и направлением вращения
+		memcpy(uart3_rx_safe_buffer, uart3_rx_buffer, 6);
+		createResponsePacket(0x0F,ACCEPTED__);
+		if (uart3_rx_safe_buffer[2] == 0xFF) { 		// выбрана вертикальная платформа
+			if (uart3_rx_safe_buffer[1] == 0xFF) { 	// выбрано направление вращения назад
+				HAL_GPIO_WritePin(GPIOC, GPIO_PIN_5, GPIO_PIN_RESET);
+			} else {								// выбрано направление вращения вперед
+				HAL_GPIO_WritePin(GPIOC, GPIO_PIN_5, GPIO_PIN_SET);
+			}
+			startMotorRotation(VERTICAL_, encoder1_data);
+		} else {									// выбрана горизонтальная платформа
+			if (uart3_rx_safe_buffer[1] == 0xFF) { 	// выбрано направление вращения назад
+				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
+			} else {								// выбрано направление вращения вперед
+				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+			}
+			startMotorRotation(HORIZONTAL_, encoder2_data);
 		}
+
+		cur_action = TEST_TURN;
+		ready_status = READY_;
+
 		break;
 
 	case 0x10: // Вращение на заданный угол
