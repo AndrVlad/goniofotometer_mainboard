@@ -173,6 +173,8 @@ uint16_t error_cnt = 0;
 bool tim4_ovflw, tim12_ovflw = false;
 uint32_t test_enc_data = 130000;
 uint32_t encoder1_test_data = 98304, encoder2_test_data = 98304;
+uint8_t test_buf[500];
+int k = 0;
 
 /* Telemetry status values */
 enum status ready_status;
@@ -186,6 +188,7 @@ uint32_t SSI_data, SSI_data_safe, encoder1_data, encoder2_data, encoder2_data_la
 uint32_t adc_value, error_val_sum = 0;
 uint16_t motor_frequency_1 = 40, motor_frequency_2 = 1;
 uint32_t crc_PC_error_cnt = 0;
+uint8_t adc_data_buf_safe[33] = {0};
 
 /* USER CODE END PV */
 
@@ -324,8 +327,9 @@ int main(void)
         	if (wait_adc_data_flag) {
 
         		// filling the buffer of measurement data
-        		for (uint8_t i = 0; i < 3; i++, data_elem_cnt++) {
+        		for (uint8_t i = 0; i < 3; i++, data_elem_cnt++, k++) {
         			adc_data_buf[data_elem_cnt] = uart1_rx_safe_buffer_meas[i];
+        			test_buf[k] = data_elem_cnt;
         		}
 
         		wait_adc_data_flag = 0;
@@ -335,7 +339,8 @@ int main(void)
         		adc_data_cnt++;
         		test_counter_adc_data++;
 
-        		if (data_buf_counter == 10) {
+        		if (data_buf_counter == 10 && data_elem_cnt == 31) {
+        			memcpy(adc_data_buf_safe, adc_data_buf, 33);
         			data_buf_counter = 0;
         			data_elem_cnt = 1;
         			data_status = _READY_;
@@ -472,6 +477,7 @@ int main(void)
 			 wait_adc_data_flag = 0;
 			// clearing the part of the buffer that does not contain useful data
 			clearSpecifiedElemOfBuffer(adc_data_buf,33,data_buf_counter*3+1);
+			memcpy(adc_data_buf_safe, adc_data_buf,33);
 			data_status = _READY_;
 			data_buf_counter = 0;
 			data_elem_cnt = 1;
@@ -1834,6 +1840,7 @@ void parser() {
 	case 0x05:
 
 		memcpy(uart3_rx_safe_buffer, uart3_rx_buffer, 6);
+		clearBuffer(adc_data_buf,33);
 		__HAL_TIM_SET_COUNTER(&htim13, 0);
 		allow = 1;
 		// check of setting adc coefficient command
@@ -2540,19 +2547,20 @@ void createResponsePacket(uint8_t command_code, uint8_t status_code) {
 
 void createDataPacket() {
 	uint16_t crc=0;
-	adc_data_buf[0] = 0x0B;
-	adc_data_buf[31] = 0;
-	adc_data_buf[32] = 0;
+	adc_data_buf_safe[0] = 0x0B;
+	adc_data_buf_safe[31] = 0;
+	adc_data_buf_safe[32] = 0;
 
 	// CRC calculation
 	for (int i = 0; i < 30; i+=2) {
-		crc += (uint16_t)adc_data_buf[i] + ((uint16_t)(adc_data_buf[i+1])<<8);
+		crc += (uint16_t)adc_data_buf_safe[i] + ((uint16_t)(adc_data_buf_safe[i+1])<<8);
 	}
-	crc += adc_data_buf[30];
-	*(uint16_t*)(adc_data_buf+31) = crc;
+	crc += adc_data_buf_safe[30];
+	*(uint16_t*)(adc_data_buf_safe+31) = crc;
 	HAL_UART_DMAStop(&huart3);
-	HAL_UART_Transmit(&huart3, adc_data_buf,33,100);
+	HAL_UART_Transmit(&huart3, adc_data_buf_safe,33,100);
 	HAL_UART_Receive_DMA(&huart3, uart3_rx_buffer,6);
+	//memcpy(adc_data_buf, 0, 33);
 	//clearBuffer(adc_data_buf,33);
 
 }
