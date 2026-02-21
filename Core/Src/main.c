@@ -2916,6 +2916,7 @@ void handleHorizontalMeasurement() {
 		  if (data_buf_counter > 0) {
 			  // clearing the part of the buffer that does not include useful data
 			  clearSpecifiedElemOfBuffer(adc_data_buf,33,data_buf_counter*3+1);
+			  memcpy(adc_data_buf_safe, adc_data_buf,33);
 			  data_status = _READY_;
 		  }
 
@@ -3073,6 +3074,7 @@ void handleHorizontalMeasurementVertPlatf() {
 		  if (data_buf_counter > 0) {
 			  // clearing the part of the buffer that does not include useful data
 			  clearSpecifiedElemOfBuffer(adc_data_buf,33,data_buf_counter*3+1);
+			  memcpy(adc_data_buf_safe, adc_data_buf,33);
 			  data_status = _READY_;
 		  }
 
@@ -3527,6 +3529,7 @@ void DeviceReset() {
 
 		// checking for remaining data packets
 		clearBuffer(adc_data_buf,33);
+		clearBuffer(adc_data_buf_safe,33);
 		data_status = NONE_;
 
 		// reset flags and state
