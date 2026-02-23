@@ -413,9 +413,6 @@ int main(void)
 // only for previous desktop app
 			 // handleMovingToStartOffset();
 			  break;
-		  case TEST_TURN:
-			  handleTestTurn();
-			  break;
 		  case MOVING:
 			  handleMovingToStartOffset(); //right version
 			  break;
@@ -1945,6 +1942,7 @@ void parser() {
 			break;
 		case TEST_TURN:
 			stopMotorRotation(HORIZONTAL_);
+			stopMotorRotation(VERTICAL_);
 			break;
 		case TEST_ANGLE_OFFSET:
 			stopMotorRotation(HORIZONTAL_);
@@ -2028,20 +2026,25 @@ void parser() {
 		stepDriver(uart3_rx_buffer[1]);
 		break;
 	case 0x0F: // тестовый проворот с выбором платформ и направлением вращения
-		memcpy(uart3_rx_safe_buffer, uart3_rx_buffer, 6);
+
 		createResponsePacket(0x0F,ACCEPTED__);
+		memcpy(uart3_rx_safe_buffer, uart3_rx_buffer, 6);
 		if (uart3_rx_safe_buffer[2] == 0xFF) { 		// выбрана вертикальная платформа
 			if (uart3_rx_safe_buffer[1] == 0xFF) { 	// выбрано направление вращения назад
 				HAL_GPIO_WritePin(GPIOC, GPIO_PIN_5, GPIO_PIN_RESET);
+				driver_dir2 = false;
 			} else {								// выбрано направление вращения вперед
 				HAL_GPIO_WritePin(GPIOC, GPIO_PIN_5, GPIO_PIN_SET);
+				driver_dir2 = true;
 			}
 			startMotorRotation(VERTICAL_, encoder1_data);
 		} else {									// выбрана горизонтальная платформа
 			if (uart3_rx_safe_buffer[1] == 0xFF) { 	// выбрано направление вращения назад
 				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
+				driver_dir1 = false;
 			} else {								// выбрано направление вращения вперед
 				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+				driver_dir1 = true;
 			}
 			startMotorRotation(HORIZONTAL_, encoder2_data);
 		}
