@@ -663,7 +663,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 8;
+  RCC_OscInitStruct.PLL.PLLM = 4;
   RCC_OscInitStruct.PLL.PLLN = 216;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 2;
@@ -3351,7 +3351,7 @@ void DeviceInit() {
 	HAL_SPI_Receive_DMA(&hspi4, dma_spi4_buf, 5);
 	HAL_SPI_Receive_DMA(&hspi3, dma_spi3_buf, 5);
 
-	/* begin Использовалось ранее при надобности хранить начало координат в ПЗУ
+	/* begin �?спользовалось ранее при надобности хранить начало координат в ПЗУ
 
 	// Чтение сохраненных значений энкодера для начала координат
 	ReadFlash(encoder_offset,2,ADDR_FLASH_SECTOR_4,FLASH_TYPEPROGRAM_WORD);
