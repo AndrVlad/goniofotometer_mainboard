@@ -173,8 +173,6 @@ uint16_t error_cnt = 0;
 bool tim4_ovflw, tim12_ovflw = false;
 uint32_t test_enc_data = 130000;
 uint32_t encoder1_test_data = 98304, encoder2_test_data = 98304;
-uint8_t test_buf[500];
-int k = 0;
 
 /* Telemetry status values */
 enum status ready_status;
@@ -327,9 +325,8 @@ int main(void)
         	if (wait_adc_data_flag) {
 
         		// filling the buffer of measurement data
-        		for (uint8_t i = 0; i < 3; i++, data_elem_cnt++, k++) {
+        		for (uint8_t i = 0; i < 3; i++, data_elem_cnt++) {
         			adc_data_buf[data_elem_cnt] = uart1_rx_safe_buffer_meas[i];
-        			test_buf[k] = data_elem_cnt;
         		}
 
         		wait_adc_data_flag = 0;
@@ -1964,79 +1961,12 @@ void parser() {
 		break;
 	case 0x08:
 		createResponsePacket(0x08,ACCEPTED__);
-		uint16_t angle_tmp = 0;
-		if(uart3_rx_buffer[3] != 0) { // move vertical driver
-
-			//set start position
-			begin_pos_drv2 = 0;
-			chosen_drv = 1;
-
-			angle_tmp = uart3_rx_buffer[2] << 8;
-			angle_tmp |= uart3_rx_buffer[1];
-
-			begin_pos_drv2 = (angle_tmp * ENCODER_RESOLUTION) / 360; // get absolute encoder position
-			begin_pos_drv2 = calculateEncPosition(begin_pos_drv2,chosen_drv);
-
-			changeMotorDirection(chosen_drv, begin_pos_drv2);
-
-		} else { // move horizontal driver
-
-			//set start position
-			begin_pos_drv1 = 0;
-			chosen_drv = 0;
-
-			angle_tmp = uart3_rx_buffer[2] << 8;
-			angle_tmp |= uart3_rx_buffer[1];
-
-			begin_pos_drv1 = (angle_tmp * ENCODER_RESOLUTION) / 360; // get absolute encoder position
-			begin_pos_drv1 = calculateEncPosition(begin_pos_drv1,chosen_drv);
-
-			changeMotorDirection(chosen_drv, begin_pos_drv1);
-
-		}
-
-		/* last version
-
-		if(uart3_rx_buffer[3] != 0) { // move vertical driver
-
-			//set start position
-			start_angle_offset_2 = 0;
-			chosen_drv = 1;
-
-			start_angle_offset_2 = uart3_rx_buffer[2] << 8;
-			start_angle_offset_2 |= uart3_rx_buffer[1];
-
-			start_position_drv2 = (start_angle_offset_2 * ENCODER_RESOLUTION) / 360; // get absolute encoder position
-			start_position_drv2 = calculateEncPosition(start_position_drv2,chosen_drv);
-
-			changeMotorDirection(chosen_drv, start_position_drv2);
-
-		} else { // move horizontal driver
-
-			//set start position
-			start_angle_offset_1 = 0;
-			chosen_drv = 0;
-
-			start_position_drv1 = 0;
-			start_angle_offset_1  = uart3_rx_buffer[2] << 8;
-			start_angle_offset_1  |= uart3_rx_buffer[1];
-
-			start_position_drv1 = (start_angle_offset_1 * ENCODER_RESOLUTION) / 360; // get absolute encoder position
-			start_position_drv1 = calculateEncPosition(start_position_drv1,chosen_drv);
-
-			changeMotorDirection(chosen_drv, start_position_drv1);
-
-			// only for previous version of desktop app
-			HAL_TIM_Base_Start_IT(&htim7);
-			HAL_TIM_Base_Start_IT(&htim2); // start horizontal motor moving
-
-		}
-
-		*/
-
-		// only for previous version of desktop app
-		/*cur_action = TEST_ROTATION;
-		trans_states = 1; */
+		memcpy(uart3_rx_safe_buffer, uart3_rx_buffer,6);
+		uint16_t offset_angle = 0;
+		offset_angle = uart3_rx_safe_buffer[2] << 8;
+		offset_angle |= uart3_rx_safe_buffer[1];
+		offset_angle = 360 - offset_angle;
+		ENCODER_1_OFFSET = ENCODER_2_OFFSET = (offset_angle * ENCODER_RESOLUTION) / 360;
 
 		break;
 	case 0x09:
@@ -2516,12 +2446,12 @@ void createResponsePacket(uint8_t command_code, uint8_t status_code) {
 		response_buf[18] = inv_zero_limb_pos[1] & 0xFF;//encoder1_data & 0xFF; inv_encoder1_data
 		response_buf[19] = inv_zero_limb_pos[1] >> 8;//encoder1_data >> 8;
 		response_buf[20] = inv_zero_limb_pos[1] >> 16;//encoder1_data >> 16;
-		response_buf[21] = inv_encoder1_offset & 0xFF;//encoder1_data & 0xFF; inv_encoder1_data
-		response_buf[22] = inv_encoder1_offset >> 8;//encoder1_data >> 8;
-		response_buf[23] = inv_encoder1_offset >> 16;//encoder1_data >> 16;
-		response_buf[24] = inv_encoder2_offset & 0xFF;//encoder1_data & 0xFF; inv_encoder1_data
-		response_buf[25] = inv_encoder2_offset >> 8;//encoder1_data >> 8;
-		response_buf[26] = inv_encoder2_offset >> 16;//encoder1_data >> 16;
+		response_buf[21] = 0;//inv_encoder1_offset & 0xFF;
+		response_buf[22] = 0;//inv_encoder1_offset >> 8;
+		response_buf[23] = 0;//inv_encoder1_offset >> 16;
+		response_buf[24] = 0;//inv_encoder2_offset & 0xFF;
+		response_buf[25] = 0;//inv_encoder2_offset >> 8;
+		response_buf[26] = 0;//inv_encoder2_offset >> 16;
 		response_buf[31] = 0;
 		response_buf[32] = 0;
 
@@ -3418,7 +3348,7 @@ void DeviceInit() {
 	HAL_SPI_Receive_DMA(&hspi4, dma_spi4_buf, 5);
 	HAL_SPI_Receive_DMA(&hspi3, dma_spi3_buf, 5);
 
-	// Motor init
+	/* begin Использовалось ранее при надобности хранить начало координат в ПЗУ
 
 	// Чтение сохраненных значений энкодера для начала координат
 	ReadFlash(encoder_offset,2,ADDR_FLASH_SECTOR_4,FLASH_TYPEPROGRAM_WORD);
@@ -3438,6 +3368,10 @@ void DeviceInit() {
 
 	ENCODER_1_OFFSET = encoder_offset[0];
 	ENCODER_2_OFFSET = encoder_offset[1];
+	end */
+
+	ENCODER_1_OFFSET = 0;
+	ENCODER_2_OFFSET = 0;
 
 	FlashEraseInit(FLASH_SECTOR_5);
 	// Чтение сохраненных значений энкодера нуля лимба
@@ -3470,10 +3404,6 @@ void DeviceInit() {
 	// set status of device
 	ready_status = READY_;
 
-//	zero_limb_pos[0] = encoder1_test_data;
-//	zero_limb_pos[1] = encoder2_test_data;
-//	WriteToFlash(zero_limb_pos, 2, ADDR_FLASH_SECTOR_3, FLASH_TYPEPROGRAM_WORD, FLASH_SECTOR_3);
-
 	HAL_TIM_Base_Start_IT(&htim11);
 }
 
@@ -3500,11 +3430,6 @@ void DeviceReset() {
 
 	case VERTICAL:
 
-		  // stop measurement
-		/*
-		HAL_TIM_Base_Stop_IT(&htim2); // stop motor
-		HAL_TIM_Base_Stop_IT(&htim3);
-		HAL_TIM_Base_Stop_IT(&htim7); // stop SPI timer */
 		stopMotorRotationReq(VERTICAL_);
 
 		if (data_buf_counter > 0 && data_status == NONE_) {
@@ -3556,14 +3481,9 @@ void DeviceReset() {
 		break;
 	}
 
-	//HAL_UART_DeInit(&huart3);
-	//MX_USART3_UART_Init();
-
 	cur_action = NONE;
 	ready_status = READY_;
 	__HAL_TIM_SET_COUNTER(&htim11, 0);
-	//HAL_UART_DeInit(&huart3);
-	//MX_USART3_UART_Init();
 }
 
 bool checkCRC_PCData() {
