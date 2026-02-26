@@ -2406,7 +2406,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 		encoder1_data  =  (dma_spi4_buf[2] >> 5) & 0x07;
 		encoder1_data |=  ((uint32_t)dma_spi4_buf[1] << 3);
 		encoder1_data |=  (((uint32_t)dma_spi4_buf[0] & 0x3F) << 11);
-		encoder1_data = encoder1_test_data;
+		//encoder1_data = encoder1_test_data;
 		horizontal.encoder.current_pos = encoder1_data;
 		inv_encoder1_data =  ENCODER_RESOLUTION - encoder1_data;
 		spi4_rx_complete = 1;
@@ -2417,7 +2417,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 		encoder2_data  =  (dma_spi3_buf[2] >> 5) & 0x07;
 		encoder2_data |=  ((uint32_t)dma_spi3_buf[1] << 3);
 		encoder2_data |=  (((uint32_t)dma_spi3_buf[0] & 0x3F) << 11);
-		encoder2_data = encoder2_test_data;
+		//encoder2_data = encoder2_test_data;
 		vertical.encoder.current_pos = encoder2_data;
 		inv_encoder2_data = ENCODER_RESOLUTION - encoder2_data;
 		spi3_rx_complete = 1;
@@ -3351,7 +3351,7 @@ void DeviceInit() {
 	HAL_SPI_Receive_DMA(&hspi4, dma_spi4_buf, 5);
 	HAL_SPI_Receive_DMA(&hspi3, dma_spi3_buf, 5);
 
-	/* begin �?спользовалось ранее при надобности хранить начало координат в ПЗУ
+	/* begin �?спользовалось ранее при надобности хранить начало координат в ПЗУ
 
 	// Чтение сохраненных значений энкодера для начала координат
 	ReadFlash(encoder_offset,2,ADDR_FLASH_SECTOR_4,FLASH_TYPEPROGRAM_WORD);
