@@ -127,6 +127,7 @@ uint8_t error_code = 0;
 bool reach_start_position = 0;
 bool reach_end_position = 0;
 bool reach_accel_position = 0;
+bool move_to_user_zero = 0;
 bool step_1_vertical_meas = 0;
 bool step_2_vertical_meas = 0;
 bool reach_start_position_vertical = 0;
@@ -1483,6 +1484,7 @@ void parser() {
 		reach_start_position = 0;
 		reach_accel_position = 0;
 		reach_end_position = 0;
+		move_to_user_zero = 0;
 		step_1_vertical_meas = 0;
 		step_2_vertical_meas = 0;
 		reach_start_position_vertical = 0;
@@ -1659,6 +1661,7 @@ void parser() {
 		reach_start_position = 0;
 		reach_accel_position = 0;
 		reach_end_position = 0;
+		move_to_user_zero = 0;
 
 		if (chosen_drv == HORIZONTAL_) {
 
@@ -1899,6 +1902,7 @@ void parser() {
 			wait_flag = 0;
 			wait_adc_data_flag = 0;
 			trans_states = 0;
+			move_to_user_zero = 0;
 			break;
 
 		case VERTICAL:
@@ -1917,6 +1921,7 @@ void parser() {
 			wait_flag = 0;
 			wait_adc_data_flag = 0;
 			trans_states = 0;
+			move_to_user_zero = 0;
 			break;
 
 		case LIGHT_POWER:
@@ -2845,7 +2850,7 @@ void handleHorizontalMeasurement() {
 		  }
 	  }
 
-	  if (reach_end_position && !wait_adc_data_flag && data_status == NONE_) {
+	  if (reach_end_position && !wait_adc_data_flag && data_status == NONE_ && !move_to_user_zero) {
 		  if (data_buf_counter > 0) {
 			  // clearing the part of the buffer that does not include useful data
 			  clearSpecifiedElemOfBuffer(adc_data_buf,33,data_buf_counter*3+1);
@@ -2856,9 +2861,9 @@ void handleHorizontalMeasurement() {
 		  // reset flags and state
 		  data_buf_counter = 0;
 		  data_elem_cnt = 1;
-		  cur_action = NONE;
+		  //cur_action = NONE;
 		  wait_flag = 0;
-		  ready_status = READY_;
+		  //ready_status = READY_;
 		  reach_end_position = 1;
 		  wait_adc_data_flag = 0;
 
@@ -2867,10 +2872,24 @@ void handleHorizontalMeasurement() {
 		  resetNVICPriority();
 
 		  // stop measurement
-		  stopMotorRotationReq(chosen_drv);
-		  //stopMotorRotation(chosen_drv);
-		  //HAL_TIM_Base_Stop_IT(&htim2); // stop motor
-		  //HAL_TIM_Base_Stop_IT(&htim7); // stop SPI timer
+		  stopMotorRotation(chosen_drv);
+		  // задание направления для возврата в начало координат
+		  changeMotorDirection(chosen_drv, ENCODER_1_OFFSET);
+		  move_to_user_zero = true; // разрешение вращения для возврата в начало координат
+		  trans_states = 1;
+		  startMotorRotation(chosen_drv, encoder1_data);
+	  }
+	  // обработка процесса перемещения в начало координат после окончания измерения
+	  if (reach_end_position && move_to_user_zero) {
+		  if ((encoder1_data >= ENCODER_1_OFFSET - 5) && (encoder1_data <= ENCODER_1_OFFSET + 5)) {
+			  move_to_user_zero = false;
+			  reach_end_position = false;
+			  stopMotorRotation(chosen_drv);
+			  cur_action = NONE;
+			  ready_status = READY_;
+			  trans_states = 0;
+		  }
+
 	  }
 }
 
@@ -3429,6 +3448,7 @@ void DeviceReset() {
 		wait_flag = 0;
 		wait_adc_data_flag = 0;
 		trans_states = 0;
+		move_to_user_zero = 0;
 		break;
 
 	case VERTICAL:
@@ -3447,6 +3467,7 @@ void DeviceReset() {
 		wait_flag = 0;
 		wait_adc_data_flag = 0;
 		trans_states = 0;
+		move_to_user_zero = 0;
 		break;
 
 	case LIGHT_POWER:
