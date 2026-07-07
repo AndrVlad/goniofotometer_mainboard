@@ -2009,25 +2009,25 @@ int main(void)
  8000fe0:	2200      	movs	r2, #0
  8000fe2:	701a      	strb	r2, [r3, #0]
 					  
-					  clearBuffer(adc_data_buf,33);
+					  clearBuffer(adc_data_buf_safe,33);
  8000fe4:	2121      	movs	r1, #33	; 0x21
  8000fe6:	4875      	ldr	r0, [pc, #468]	; (80011bc <main+0x474>)
  8000fe8:	f7ff fdd8 	bl	8000b9c <clearBuffer>
 
-					  adc_data_buf[1] = photodetector_offset_val;
+					  adc_data_buf_safe[1] = photodetector_offset_val;
  8000fec:	4b71      	ldr	r3, [pc, #452]	; (80011b4 <main+0x46c>)
  8000fee:	681b      	ldr	r3, [r3, #0]
  8000ff0:	b2da      	uxtb	r2, r3
  8000ff2:	4b72      	ldr	r3, [pc, #456]	; (80011bc <main+0x474>)
  8000ff4:	705a      	strb	r2, [r3, #1]
-					  adc_data_buf[2] = photodetector_offset_val >> 8;
+					  adc_data_buf_safe[2] = photodetector_offset_val >> 8;
  8000ff6:	4b6f      	ldr	r3, [pc, #444]	; (80011b4 <main+0x46c>)
  8000ff8:	681b      	ldr	r3, [r3, #0]
  8000ffa:	0a1b      	lsrs	r3, r3, #8
  8000ffc:	b2da      	uxtb	r2, r3
  8000ffe:	4b6f      	ldr	r3, [pc, #444]	; (80011bc <main+0x474>)
  8001000:	709a      	strb	r2, [r3, #2]
-					  adc_data_buf[3] = photodetector_offset_val >> 16;
+					  adc_data_buf_safe[3] = photodetector_offset_val >> 16;
  8001002:	4b6c      	ldr	r3, [pc, #432]	; (80011b4 <main+0x46c>)
  8001004:	681b      	ldr	r3, [r3, #0]
  8001006:	0c1b      	lsrs	r3, r3, #16
@@ -2035,17 +2035,17 @@ int main(void)
  800100a:	4b6c      	ldr	r3, [pc, #432]	; (80011bc <main+0x474>)
  800100c:	70da      	strb	r2, [r3, #3]
 
-					  adc_data_buf[4] = adc_data_buf[1];
+					  adc_data_buf_safe[4] = adc_data_buf_safe[1];
  800100e:	4b6b      	ldr	r3, [pc, #428]	; (80011bc <main+0x474>)
  8001010:	785a      	ldrb	r2, [r3, #1]
  8001012:	4b6a      	ldr	r3, [pc, #424]	; (80011bc <main+0x474>)
  8001014:	711a      	strb	r2, [r3, #4]
-					  adc_data_buf[5] = adc_data_buf[2];
+					  adc_data_buf_safe[5] = adc_data_buf_safe[2];
  8001016:	4b69      	ldr	r3, [pc, #420]	; (80011bc <main+0x474>)
  8001018:	789a      	ldrb	r2, [r3, #2]
  800101a:	4b68      	ldr	r3, [pc, #416]	; (80011bc <main+0x474>)
  800101c:	715a      	strb	r2, [r3, #5]
-					  adc_data_buf[6] = adc_data_buf[3];
+					  adc_data_buf_safe[6] = adc_data_buf_safe[3];
  800101e:	4b67      	ldr	r3, [pc, #412]	; (80011bc <main+0x474>)
  8001020:	78da      	ldrb	r2, [r3, #3]
  8001022:	4b66      	ldr	r3, [pc, #408]	; (80011bc <main+0x474>)
@@ -2255,11 +2255,11 @@ int main(void)
  8001142:	b2db      	uxtb	r3, r3
  8001144:	461a      	mov	r2, r3
  8001146:	2121      	movs	r1, #33	; 0x21
- 8001148:	481c      	ldr	r0, [pc, #112]	; (80011bc <main+0x474>)
+ 8001148:	4825      	ldr	r0, [pc, #148]	; (80011e0 <main+0x498>)
  800114a:	f7ff fd43 	bl	8000bd4 <clearSpecifiedElemOfBuffer>
 			memcpy(adc_data_buf_safe, adc_data_buf,33);
- 800114e:	4b24      	ldr	r3, [pc, #144]	; (80011e0 <main+0x498>)
- 8001150:	4a1a      	ldr	r2, [pc, #104]	; (80011bc <main+0x474>)
+ 800114e:	4b1b      	ldr	r3, [pc, #108]	; (80011bc <main+0x474>)
+ 8001150:	4a23      	ldr	r2, [pc, #140]	; (80011e0 <main+0x498>)
  8001152:	4614      	mov	r4, r2
  8001154:	461e      	mov	r6, r3
  8001156:	f104 0c20 	add.w	ip, r4, #32
@@ -2303,7 +2303,7 @@ int main(void)
  80011b0:	20000af0 	.word	0x20000af0
  80011b4:	200009a8 	.word	0x200009a8
  80011b8:	20000185 	.word	0x20000185
- 80011bc:	20000164 	.word	0x20000164
+ 80011bc:	20000bd8 	.word	0x20000bd8
  80011c0:	20000159 	.word	0x20000159
  80011c4:	200009d7 	.word	0x200009d7
  80011c8:	20000bc1 	.word	0x20000bc1
@@ -2312,7 +2312,7 @@ int main(void)
  80011d4:	20000bba 	.word	0x20000bba
  80011d8:	20000bbb 	.word	0x20000bbb
  80011dc:	200009cf 	.word	0x200009cf
- 80011e0:	20000bd8 	.word	0x20000bd8
+ 80011e0:	20000164 	.word	0x20000164
  80011e4:	20000000 	.word	0x20000000
 
 		} else if (data_buf_counter == 0 && data_status == NONE_) {
@@ -2940,8 +2940,8 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
  8001622:	f44f 53a0 	mov.w	r3, #5120	; 0x1400
  8001626:	61bb      	str	r3, [r7, #24]
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV4;
- 8001628:	f44f 53a0 	mov.w	r3, #5120	; 0x1400
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
+ 8001628:	f44f 5380 	mov.w	r3, #4096	; 0x1000
  800162c:	61fb      	str	r3, [r7, #28]
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_7) != HAL_OK)

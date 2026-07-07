@@ -373,15 +373,15 @@ int main(void)
 					  data_elem_cnt_calib = 0;
 					  wait_flag = 0;
 					  
-					  clearBuffer(adc_data_buf,33);
+					  clearBuffer(adc_data_buf_safe,33);
 
-					  adc_data_buf[1] = photodetector_offset_val;
-					  adc_data_buf[2] = photodetector_offset_val >> 8;
-					  adc_data_buf[3] = photodetector_offset_val >> 16;
+					  adc_data_buf_safe[1] = photodetector_offset_val;
+					  adc_data_buf_safe[2] = photodetector_offset_val >> 8;
+					  adc_data_buf_safe[3] = photodetector_offset_val >> 16;
 
-					  adc_data_buf[4] = adc_data_buf[1];
-					  adc_data_buf[5] = adc_data_buf[2];
-					  adc_data_buf[6] = adc_data_buf[3];
+					  adc_data_buf_safe[4] = adc_data_buf_safe[1];
+					  adc_data_buf_safe[5] = adc_data_buf_safe[2];
+					  adc_data_buf_safe[6] = adc_data_buf_safe[3];
 
 					  data_status = _READY_;
 					  end_calibration_flag = 1;
@@ -686,7 +686,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV4;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_7) != HAL_OK)
   {
