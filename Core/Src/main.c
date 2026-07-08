@@ -686,7 +686,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV4;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_7) != HAL_OK)
   {
@@ -1602,7 +1602,7 @@ void parser() {
 		// set data availability status
 		data_status = NONE_;
 
-		setNVICPriority(HORIZONTAL);
+		//setNVICPriority(HORIZONTAL);
 
 		memcpy(uart3_rx_safe_buffer, uart3_rx_buffer, 6);
 
@@ -2864,7 +2864,7 @@ void handleHorizontalMeasurement() {
 
 		  stop_poll = 0;
 
-		  resetNVICPriority();
+		  //resetNVICPriority();
 
 		  // stop measurement
 		  stopMotorRotationReq(chosen_drv);
