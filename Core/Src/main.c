@@ -87,6 +87,7 @@ DMA_HandleTypeDef hdma_usart3_rx;
 
 /* USER CODE BEGIN PV */
 uint8_t buf[5] = {0x0A,0x0A,0x0A,0x0A,0x0A};
+uint32_t error_framing_cnt, error_noise_cnt, error_overrun_cnt,error_parity_cnt = 0;
 //uint8_t amplifier_val[3] = {0};
 uint8_t dma_spi4_buf[5] = {0};
 uint8_t dma_spi3_buf[5] = {0};
@@ -94,6 +95,7 @@ uint8_t response_buf[33] = {0};
 //uint8_t adc_data_buf[33] = {0};
 //uint8_t data_buf_counter = 0;
 //uint8_t data_elem_cnt = 1;
+uint8_t error_counter = 0;
 uint8_t data_elem_cnt_calib = 0;
 uint16_t tim14_arr_val = 0; 
 uint16_t test_counter_adc_data, test_cnt_uart1_rx, uart1_received_cnt, uart1_received_cnt_global, take_data_cnt = 0;
@@ -115,7 +117,8 @@ uint32_t usart3_reg, usart3_error = 0;
 uint32_t photodetector_offset_val = 0;
 uint32_t control_pos = 0;
 uint32_t inv_zero_limb_pos[2] = {0};
-
+uint32_t uart_cnt = 0;
+uint32_t uart_not_full = 0;
 uint32_t encoder_offset[2] = {0};
 uint32_t zero_limb_pos[2] = {0};
 //uint32_t address = ADDR_FLASH_SECTOR_2;
@@ -144,6 +147,7 @@ bool allow = 0;
 bool end_calibration_flag = 0;
 bool full_rotation = 0;
 uint32_t inv_encoder1_data, inv_encoder2_data, inv_encoder1_offset, inv_encoder2_offset;
+uint32_t message_cnt = 0;
 
 uint32_t start_position_drv1, start_position_drv2, end_position_drv1, end_position_drv2, accel_position_drv1, accel_position_drv2 = 0;
 int32_t end_position_drv_tmp, encoder1_increment_res, encoder2_increment_res;
@@ -306,6 +310,7 @@ int main(void)
 	  HAL_IWDG_Refresh(&hiwdg);
 	  // handle of message from PC
 	  if (uart3_rx_complete) {
+		  message_cnt++;
 		  __HAL_TIM_SET_COUNTER(&htim11, 0);
 		  if (checkCRC_PCData()) {
 			  parser();
@@ -483,7 +488,7 @@ int main(void)
 			end_meas_flag = 0;
 			wait_adc_data_flag = 0;
 			adc_data_cnt = 0;
-			resetNVICPriority();
+			//resetNVICPriority();
 			HAL_TIM_Base_Stop_IT(&htim13);
 		}
 
@@ -498,7 +503,7 @@ int main(void)
 		ready_status = BUSY_;
 		start_light_pow_meas = 1;
 		//HAL_TIM_Base_Start_IT(&htim5);
-		setNVICPriority(LIGHT_POWER);
+		//setNVICPriority(LIGHT_POWER);
 		HAL_TIM_Base_Start_IT(&htim14);
 
 	 }
@@ -509,7 +514,7 @@ int main(void)
 			 adc_coeff_command_set = 0;
 			 adc_coeff_set_complete = 0;
 
-			 setNVICPriority(CALIBRATION);
+			 //setNVICPriority(CALIBRATION);
 			 // need to choose timer
 			 __HAL_TIM_SET_COUNTER(&htim10, 0);
 			 HAL_TIM_Base_Start_IT(&htim10);
@@ -663,7 +668,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 4;
+  RCC_OscInitStruct.PLL.PLLM = 8;
   RCC_OscInitStruct.PLL.PLLN = 216;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 2;
@@ -1265,7 +1270,8 @@ static void MX_USART3_UART_Init(void)
 {
 
   /* USER CODE BEGIN USART3_Init 0 */
-	__HAL_UART_ENABLE_IT(&huart1, UART_IT_ERR);
+
+	//__HAL_UART_ENABLE_IT(&huart3, UART_IT_ERR);
   /* USER CODE END USART3_Init 0 */
 
   /* USER CODE BEGIN USART3_Init 1 */
@@ -1286,7 +1292,7 @@ static void MX_USART3_UART_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN USART3_Init 2 */
-
+  __HAL_UART_ENABLE_IT(&huart3, UART_IT_ERR);
   /* USER CODE END USART3_Init 2 */
 
 }
@@ -1602,7 +1608,7 @@ void parser() {
 		// set data availability status
 		data_status = NONE_;
 
-		setNVICPriority(HORIZONTAL);
+		//setNVICPriority(HORIZONTAL);
 
 		memcpy(uart3_rx_safe_buffer, uart3_rx_buffer, 6);
 
@@ -2356,7 +2362,28 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 
 	if (huart->Instance == USART3) {
-		uart3_rx_complete = 1;
+
+		uint16_t rx_size = __HAL_DMA_GET_COUNTER(huart->hdmarx);
+
+		    if(rx_size == 6) {
+
+		        uint8_t is_valid = 0;
+		        for(int i = 0; i < 6; i++) {
+		            if(uart3_rx_buffer[i] != 0x00) {
+		                is_valid = 1;
+		                break;
+		            }
+		        }
+
+		        if(is_valid) {
+		            uart_cnt++;
+		            uart3_rx_complete = 1;
+		        } else {
+		            uart_not_full++;  // Новый счетчик
+		            HAL_UART_Receive_DMA(&huart3, uart3_rx_buffer, 6);
+		        }
+		    }
+
 	}
 
 	if (huart->Instance == USART1) {
@@ -2864,7 +2891,7 @@ void handleHorizontalMeasurement() {
 
 		  stop_poll = 0;
 
-		  resetNVICPriority();
+		  //resetNVICPriority();
 
 		  // stop measurement
 		  stopMotorRotationReq(chosen_drv);
@@ -3514,20 +3541,27 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
         volatile uint8_t data = huart1.Instance->RDR;
     }
     if (huart == &huart3) {
+    	 uint32_t error = HAL_UART_GetError(huart);
 
-    	if (huart->ErrorCode & HAL_UART_ERROR_ORE) {
-    		__HAL_UART_CLEAR_FLAG(huart, UART_CLEAR_OREF);
-    		// clear RXNE flag
-    		volatile uint8_t data = huart3.Instance->RDR;
-    		HAL_UART_Receive_DMA(&huart3, uart3_rx_buffer, 6);
-    	} else {
-        	// write status of ISR and error_code for unhandled cases
-        	usart3_reg = huart->Instance->ISR;
-        	usart3_error = huart->ErrorCode;
-        	HAL_UART_DeInit(&huart3);
-        	MX_USART3_UART_Init();
-        	HAL_UART_Receive_DMA(&huart3, uart3_rx_buffer, 6);
-    	}
+		if(error & HAL_UART_ERROR_FE) {
+			// Framing Error - ложный стартовый бит
+			error_framing_cnt++;
+		}
+		if(error & HAL_UART_ERROR_NE) {
+			// Noise Error - шум на линии
+			error_noise_cnt++;
+		}
+		if(error & HAL_UART_ERROR_ORE) {
+			// Overrun Error - переполнение
+			error_overrun_cnt++;
+		}
+		if(error & HAL_UART_ERROR_PE) {
+			// Parity Error
+			error_parity_cnt++;
+		}
+
+		// Важно: перезапустить прием после ошибки
+		HAL_UART_Receive_DMA(&huart3, uart3_rx_buffer, 6);
     }
 }
 
