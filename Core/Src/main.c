@@ -2030,6 +2030,7 @@ void parser() {
 		createResponsePacket(0x0F,ACCEPTED__);
 		memcpy(uart3_rx_safe_buffer, uart3_rx_buffer, 6);
 		if (uart3_rx_safe_buffer[2] == 0xFF) { 		// выбрана вертикальная платформа
+			chosen_drv = 1;
 			if (uart3_rx_safe_buffer[1] == 0xFF) { 	// выбрано направление вращения назад
 				HAL_GPIO_WritePin(GPIOC, GPIO_PIN_5, GPIO_PIN_RESET);
 				driver_dir2 = false;
@@ -2037,8 +2038,9 @@ void parser() {
 				HAL_GPIO_WritePin(GPIOC, GPIO_PIN_5, GPIO_PIN_SET);
 				driver_dir2 = true;
 			}
-			startMotorRotation(VERTICAL_, encoder1_data);
-		} else {									// выбрана горизонтальная платформа
+			startMotorRotation(VERTICAL_, encoder2_data);
+		} else {
+			chosen_drv = 0; // выбрана горизонтальная платформа
 			if (uart3_rx_safe_buffer[1] == 0xFF) { 	// выбрано направление вращения назад
 				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
 				driver_dir1 = false;
@@ -2046,7 +2048,7 @@ void parser() {
 				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
 				driver_dir1 = true;
 			}
-			startMotorRotation(HORIZONTAL_, encoder2_data);
+			startMotorRotation(HORIZONTAL_, encoder1_data);
 		}
 
 		cur_action = TEST_TURN;
