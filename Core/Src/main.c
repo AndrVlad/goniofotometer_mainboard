@@ -2083,6 +2083,8 @@ void parser() {
 		test_angle = 360 - test_angle;
 		temp_pos = (test_angle * ENCODER_RESOLUTION) / 360;
 
+		target_motor_freq = 860;
+
 		// определение платформы для вращения
 		if(chosen_drv) { // вертикальная платформа
 
