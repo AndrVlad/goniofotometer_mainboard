@@ -605,16 +605,25 @@ int main(void)
 	 // increase motor frequency
 
 	 if (tim4_ovflw) {
-		 if (target_motor_freq > (current_motor_freq + motor_freq_inc_hz)) {
-			 setMotorFrequency(chosen_drv,current_motor_freq + motor_freq_inc_hz);
-			 tim4_ovflw = false;
-			 __HAL_TIM_SET_COUNTER(&htim4, 0);
-			 HAL_TIM_Base_Start_IT(&htim4);
-		 } else { // the required frequency has been reached
-			 setMotorFrequency(chosen_drv,target_motor_freq);
+
+		 if (HAL_TIM_Base_GetState(&htim12) == HAL_TIM_STATE_BUSY) {
 			 HAL_TIM_Base_Stop_IT(&htim4);
+			 __HAL_TIM_SET_COUNTER(&htim4, 0);
 			 tim4_ovflw = false;
-			 is_req_freq_reach = true;
+
+		 } else {
+
+			 if (target_motor_freq > (current_motor_freq + motor_freq_inc_hz)) {
+				 setMotorFrequency(chosen_drv,current_motor_freq + motor_freq_inc_hz);
+				 tim4_ovflw = false;
+				 __HAL_TIM_SET_COUNTER(&htim4, 0);
+				 HAL_TIM_Base_Start_IT(&htim4);
+			 } else { // the required frequency has been reached
+				 setMotorFrequency(chosen_drv,target_motor_freq);
+				 HAL_TIM_Base_Stop_IT(&htim4);
+				 tim4_ovflw = false;
+				 is_req_freq_reach = true;
+			 }
 		 }
 	 }
 
@@ -1941,8 +1950,7 @@ void parser() {
 
 			break;
 		case TEST_TURN:
-			stopMotorRotation(HORIZONTAL_);
-			stopMotorRotation(VERTICAL_);
+			stopMotorRotationReq(chosen_drv);
 			break;
 		case TEST_ANGLE_OFFSET:
 			stopMotorRotation(HORIZONTAL_);
@@ -2067,6 +2075,8 @@ void parser() {
 		test_angle |= uart3_rx_safe_buffer[1];
 		test_angle = 360 - test_angle;
 		temp_pos = (test_angle * ENCODER_RESOLUTION) / 360;
+
+		target_motor_freq = 860;
 
 		// определение платформы для вращения
 		if(chosen_drv) { // вертикальная платформа
